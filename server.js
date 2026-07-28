@@ -41,6 +41,17 @@ async function initSchema() {
   await pool.query(sql);
   console.log('Database schema is ready.');
 
+  // Stage rename migration (idempotent). Older data used a different
+  // stage structure; map it onto the current one so existing rows
+  // keep working: "تم الترشيح" merges into "الفرز", and "العرض"
+  // becomes "العرض الوظيفي".
+  const renames = [["تم الترشيح","الفرز"],["العرض","العرض الوظيفي"]];
+  for (const [from,to] of renames) {
+    await pool.query('UPDATE candidates SET stage=$2 WHERE stage=$1', [from,to]);
+    await pool.query('UPDATE candidates SET previous_stage=$2 WHERE previous_stage=$1', [from,to]);
+    await pool.query('UPDATE stage_history SET stage=$2 WHERE stage=$1', [from,to]);
+  }
+
   // Trigram indexes need the pg_trgm extension, which some managed
   // Postgres services only allow a superuser to create. Applied
   // separately so a permissions failure degrades performance rather
@@ -90,6 +101,25 @@ const wrap = fn => (req, res) => fn(req, res).catch(e => {
 
 const uid = p => p + '_' + crypto.randomBytes(5).toString('hex');
 const ALT_STAGE = 'مناسب لشاغر آخر';
+
+// Who is making this change. The frontend sends the person's
+// self-identified name (URI-encoded — HTTP headers can't carry Arabic
+// directly); fall back to the shared login name, then to "unknown".
+function getActor(req){
+  const raw = req.get('x-actor');
+  if (raw) {
+    try { const d = decodeURIComponent(raw).trim().slice(0, 60); if (d) return d; }
+    catch (e) { /* malformed encoding — fall through */ }
+  }
+  return AUTH_USER || 'غير معروف';
+}
+// q = pool or an open transaction client, so audit rows commit (or
+// roll back) atomically with the change they describe.
+async function audit(q, actor, action, candidateId, candidateName, details){
+  await q.query(
+    'INSERT INTO audit_log (actor,action,candidate_id,candidate_name,details) VALUES ($1,$2,$3,$4,$5)',
+    [actor, action, candidateId || null, candidateName || null, details || null]);
+}
 
 // Map a DB row to the shape the frontend expects.
 function rowToCandidate(r) {
@@ -142,11 +172,15 @@ app.post('/api/jobs', wrap(async (req, res) => {
     [id, b.title, b.department || null, b.seniority || null,
      Math.max(1, Number(b.headcount) || 1), b.postDate || null,
      b.approved !== false, b.requiredSkills || [], b.niceSkills || [], b.description || null]);
+  await audit(pool, getActor(req), 'إضافة وظيفة', null, null, b.title);
   res.json({ id });
 }));
 
 app.delete('/api/jobs/:id', wrap(async (req, res) => {
+  const jt = await pool.query('SELECT title FROM jobs WHERE id=$1', [req.params.id]);
   await pool.query('DELETE FROM jobs WHERE id=$1', [req.params.id]);
+  await audit(pool, getActor(req), 'حذف وظيفة', null, null,
+    jt.rows[0] ? jt.rows[0].title : null);
   res.json({ deleted: true });
 }));
 
@@ -217,7 +251,7 @@ app.post('/api/candidates', wrap(async (req, res) => {
   const b = req.body || {};
   if (!b.name) return res.status(400).json({ error: 'name is required' });
   const id = uid('cand');
-  const stage = b.stage || 'تم الترشيح';
+  const stage = b.stage || 'الفرز';
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -230,6 +264,8 @@ app.post('/api/candidates', wrap(async (req, res) => {
        b.skills || [], b.resumeText || null, stage,
        !!b.fileBase64, b.resumeFileName || null, b.resumeFileType || null]);
     await client.query('INSERT INTO stage_history (candidate_id,stage) VALUES ($1,$2)', [id, stage]);
+    await audit(client, getActor(req), 'إضافة مرشح', id, b.name,
+      b.fileBase64 ? 'مع ملف سيرة ذاتية' : null);
     if (b.fileBase64) {
       await client.query(
         'INSERT INTO resume_files (candidate_id,file_name,mime_type,bytes) VALUES ($1,$2,$3,$4)',
@@ -251,6 +287,7 @@ app.put('/api/candidates/:id', wrap(async (req, res) => {
     [req.params.id, b.name || null, b.email || null, b.phone || null, b.currentTitle || null,
      b.source || null, Number(b.experienceYears) || 0, b.appliedFor || null,
      b.skills || [], b.resumeText || null]);
+  await audit(pool, getActor(req), 'تعديل بيانات مرشح', req.params.id, b.name || null, null);
   res.json({ updated: true });
 }));
 
@@ -273,6 +310,9 @@ app.post('/api/candidates/:id/stage', wrap(async (req, res) => {
       [req.params.id, stage, prev]);
     await client.query('INSERT INTO stage_history (candidate_id,stage) VALUES ($1,$2)',
       [req.params.id, stage]);
+    const nm = await client.query('SELECT name FROM candidates WHERE id=$1', [req.params.id]);
+    await audit(client, getActor(req), 'نقل مرحلة', req.params.id,
+      nm.rows[0] ? nm.rows[0].name : null, currentStage + ' ← ' + stage);
     await client.query('COMMIT');
     res.json({ stage });
   } catch (e) { await client.query('ROLLBACK'); throw e; }
@@ -282,12 +322,22 @@ app.post('/api/candidates/:id/stage', wrap(async (req, res) => {
 app.post('/api/candidates/:id/alt-job', wrap(async (req, res) => {
   await pool.query('UPDATE candidates SET alternative_job_id=$2 WHERE id=$1',
     [req.params.id, req.body.alternativeJobId || null]);
+  const jt = req.body.alternativeJobId
+    ? await pool.query('SELECT title FROM jobs WHERE id=$1', [req.body.alternativeJobId]) : null;
+  const nm = await pool.query('SELECT name FROM candidates WHERE id=$1', [req.params.id]);
+  await audit(pool, getActor(req), 'تحديد وظيفة بديلة', req.params.id,
+    nm.rows[0] ? nm.rows[0].name : null,
+    jt && jt.rows[0] ? jt.rows[0].title : 'إلغاء التحديد');
   res.json({ updated: true });
 }));
 
 app.delete('/api/candidates/:id', wrap(async (req, res) => {
-  // stage_history, assessments and resume_files cascade automatically.
+  // stage_history, assessments and resume_files cascade automatically;
+  // the audit entry's candidate_id becomes NULL but keeps the name.
+  const nm = await pool.query('SELECT name FROM candidates WHERE id=$1', [req.params.id]);
   await pool.query('DELETE FROM candidates WHERE id=$1', [req.params.id]);
+  await audit(pool, getActor(req), 'حذف مرشح', null,
+    nm.rows[0] ? nm.rows[0].name : null, null);
   res.json({ deleted: true });
 }));
 
@@ -335,11 +385,20 @@ app.post('/api/assessments', wrap(async (req, res) => {
      VALUES ($1,$2,$3,$4,$5,$6)`,
     [id, b.candidateId, b.type || 'تقييم',
      Math.max(0, Math.min(30, Number(b.score) || 0)), b.signature || null, b.notes || null]);
+  const nm = await pool.query('SELECT name FROM candidates WHERE id=$1', [b.candidateId]);
+  await audit(pool, getActor(req), 'إضافة تقييم', b.candidateId,
+    nm.rows[0] ? nm.rows[0].name : null,
+    'الدرجة ' + Math.max(0, Math.min(30, Number(b.score) || 0)) + '/30');
   res.json({ id });
 }));
 
 app.delete('/api/assessments/:id', wrap(async (req, res) => {
+  const old = await pool.query(
+    `SELECT a.candidate_id, c.name FROM assessments a
+     LEFT JOIN candidates c ON c.id=a.candidate_id WHERE a.id=$1`, [req.params.id]);
   await pool.query('DELETE FROM assessments WHERE id=$1', [req.params.id]);
+  if (old.rows[0]) await audit(pool, getActor(req), 'حذف تقييم',
+    old.rows[0].candidate_id, old.rows[0].name, null);
   res.json({ deleted: true });
 }));
 
@@ -399,9 +458,9 @@ app.get('/api/kpis', wrap(async (req, res) => {
     FROM (
       SELECT c.id,
         EXISTS(SELECT 1 FROM stage_history s WHERE s.candidate_id=c.id
-               AND s.stage IN ('المقابلة','العرض','تم التعيين')) AS reached_interview,
+               AND s.stage IN ('المقابلة','العرض الوظيفي','تم التعيين')) AS reached_interview,
         EXISTS(SELECT 1 FROM stage_history s WHERE s.candidate_id=c.id
-               AND s.stage IN ('العرض','تم التعيين')) AS reached_offer,
+               AND s.stage IN ('العرض الوظيفي','تم التعيين')) AS reached_offer,
         (c.stage='تم التعيين') AS is_hired
       FROM candidates c ${job ? 'WHERE c.applied_for = $1' : ''}
     ) x`, p);
@@ -458,7 +517,7 @@ app.get('/api/insights', wrap(async (req, res) => {
     SELECT c.id, c.name, c.stage,
            FLOOR(EXTRACT(EPOCH FROM (NOW()-c.stage_changed_at))/86400) AS days
     FROM candidates c
-    WHERE c.stage IN ('تم الترشيح','الفرز','المقابلة','العرض')
+    WHERE c.stage IN ('الفرز','المقابلة الهاتفية','المقابلة','العرض الوظيفي')
       AND c.stage_changed_at < NOW() - INTERVAL '14 days'
     ORDER BY c.stage_changed_at ASC LIMIT 8`);
   stale.rows.forEach(r => out.push({
@@ -515,7 +574,7 @@ app.get('/api/insights', wrap(async (req, res) => {
     SELECT c.id, c.name, c.stage,
       (SELECT COUNT(*) FROM assessments a WHERE a.candidate_id=c.id) AS n
     FROM candidates c
-    WHERE c.stage IN ('المقابلة','العرض','تم التعيين')
+    WHERE c.stage IN ('المقابلة','العرض الوظيفي','تم التعيين')
       AND (SELECT COUNT(*) FROM assessments a WHERE a.candidate_id=c.id) < 3
     ORDER BY c.stage_changed_at DESC LIMIT 8`);
   unassessed.rows.forEach(r => out.push({
@@ -590,6 +649,27 @@ app.get('/api/export/candidates.csv', wrap(async (req, res) => {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="candidates.csv"');
   res.send('\uFEFF' + head.map(esc).join(',') + '\n' + lines.join('\n'));
+}));
+
+// Audit log — global feed, or one candidate's history.
+app.get('/api/audit', wrap(async (req, res) => {
+  const limit = Math.min(300, Math.max(1, Number(req.query.limit) || 100));
+  const params = [];
+  let where = '';
+  if (req.query.candidateId) {
+    params.push(req.query.candidateId);
+    where = `WHERE candidate_id = $${params.length}`;
+  }
+  params.push(limit);
+  const { rows } = await pool.query(`
+    SELECT actor, action, candidate_id, candidate_name, details, created_at
+    FROM audit_log ${where}
+    ORDER BY created_at DESC LIMIT $${params.length}`, params);
+  res.json(rows.map(r => ({
+    actor: r.actor, action: r.action, candidateId: r.candidate_id,
+    candidateName: r.candidate_name, details: r.details,
+    at: new Date(r.created_at).getTime()
+  })));
 }));
 
 app.get('/healthz', wrap(async (req, res) => {

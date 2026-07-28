@@ -438,7 +438,25 @@
    entire dataset. This is what lets the app stay responsive with
    tens of thousands of candidates.
 --------------------------------------------------------- */
+// Every change is attributed in the audit log. Since the platform has
+// one shared login, each person identifies themselves once per browser;
+// the name travels on every request as an X-Actor header.
+function getActor(){
+  let a = localStorage.getItem('tad_actor') || '';
+  if(!a){
+    a = (prompt('اسمك — سيظهر في سجل التدقيق مع كل تغيير تقوم به:') || '').trim();
+    if(a) localStorage.setItem('tad_actor', a);
+  }
+  return a || 'غير معروف';
+}
+function changeActor(){
+  const a = (prompt('الاسم الجديد لسجل التدقيق:') || '').trim();
+  if(a){ localStorage.setItem('tad_actor', a); render(); }
+}
 async function apiFetch(url, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers,
+    { 'X-Actor': encodeURIComponent(getActor()) });
   const res = await fetch(url, opts);
   if(!res.ok){
     let msg = 'HTTP ' + res.status;
@@ -466,6 +484,7 @@ const api = {
 
   rankings:    (params={})   => apiFetch('/api/rankings?' + new URLSearchParams(params)),
   insights:    ()            => apiFetch('/api/insights'),
+  audit:       (params={})   => apiFetch('/api/audit?' + new URLSearchParams(params)),
   kpis:        (params={})   => apiFetch('/api/kpis?' + new URLSearchParams(params)),
   pipeline:    (params={})   => apiFetch('/api/pipeline?' + new URLSearchParams(params)),
   settings:    ()            => apiFetch('/api/settings'),
@@ -494,10 +513,10 @@ async function mutate(fn){
   }
 }
 
-const STAGES = ['تم الترشيح','الفرز','المقابلة','العرض','تم التعيين','مرفوض','مناسب لشاغر آخر'];
+const STAGES = ['الفرز','المقابلة الهاتفية','المقابلة','العرض الوظيفي','تم التعيين','مرفوض','مناسب لشاغر آخر'];
 const STAGE_COLOR = {
-  'تم الترشيح':'#8b93a1', 'الفرز':'#3fa796', 'المقابلة':'#d4a24c',
-  'العرض':'#7aa7d9', 'تم التعيين':'#5fb87a', 'مرفوض':'#c1585f', 'مناسب لشاغر آخر':'#9b6fd1'
+  'الفرز':'#8b93a1', 'المقابلة الهاتفية':'#3fa796', 'المقابلة':'#d4a24c',
+  'العرض الوظيفي':'#7aa7d9', 'تم التعيين':'#5fb87a', 'مرفوض':'#c1585f', 'مناسب لشاغر آخر':'#9b6fd1'
 };
 const REGULAR_STAGES = STAGES.filter(s=>s!=='مناسب لشاغر آخر');
 
@@ -642,26 +661,38 @@ function guessEmailFromText(text){
   return m ? m[0] : '';
 }
 function guessPhoneFromText(text){
-  // Best-effort: matches +9665xxxxxxxx, 05xxxxxxxx, (050) 123-4567, 050-123-4567, etc.
+  text = normalizeDigits(text);
+  // Prefer an explicit Saudi mobile (05xxxxxxxx or +9665xxxxxxxx) —
+  // unambiguous, so it can never be confused with dates or IDs.
+  let m = text.match(/(?:\+?\s?9\s?6\s?6[\s.-]?|0)5\d(?:[\s.-]?\d){7}/);
+  if(m) return m[0].replace(/\s+/g,' ').trim();
+  // Fallback: general phone-looking numbers, excluding year ranges
+  // like "2021 - 2025" that a loose pattern can swallow.
   const matches = text.match(/(\+?\d{1,3}[\s.-]?)?\(?\d{2,4}\)?[\s.-]?\d{3}[\s.-]?\d{3,4}/g) || [];
   const candidate = matches
     .map(s=>s.trim())
     .find(s=>{
+      if(/^(19|20)\d{2}\s*[-–—]\s*(19|20)\d{2}$/.test(s)) return false;
       const digits = s.replace(/\D/g,'');
       return digits.length>=7 && digits.length<=15;
     });
   return candidate || '';
 }
+// Lines that are structural parts of a résumé, not the person's name
+// or title — section headers, locations, links. A naive parser (like
+// many real ATS systems) grabs these by mistake.
+const NOT_NAME_PATTERNS = /\b(summary|profile|objective|contact|education|experience|skills|projects|certifications?|languages?|references?|address|linkedin|github|portfolio|riyadh|jeddah|dammam|makkah|madinah|saudi|arabia|ksa)\b|الملخص|نبذة|الهدف|التواصل|التعليم|المؤهلات|الخبرات|الخبرة|المهارات|المشاريع|الشهادات|اللغات|العنوان|الرياض|جدة|الدمام|مكة|المدينة|السعودية/i;
 function guessNameFromText(text){
   const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
   for(let i=0;i<Math.min(lines.length,8);i++){
     const line = lines[i];
     if(line.length<3 || line.length>60) continue;
-    if(line.includes('@')) continue;
+    if(line.includes('@') || line.includes('http')) continue;
     if((line.match(/\d/g)||[]).length>2) continue;
     const wordCount = line.split(/\s+/).length;
     if(wordCount<2 || wordCount>5) continue;
     if(/^(cv|resume|résumé|السيرة الذاتية|سيرة ذاتية)$/i.test(line)) continue;
+    if(NOT_NAME_PATTERNS.test(line)) continue;
     return line;
   }
   return '';
@@ -672,11 +703,15 @@ const TITLE_KEYWORDS = ['engineer','developer','manager','director','analyst','d
   'مهندس','مهندسة','مدير','مديرة','محلل','محللة','مطور','مطورة','مصمم','مصممة','مستشار','مستشارة',
   'مختص','مختصة','منسق','منسقة','محاسب','محاسبة','مسؤول','مسؤولة','مساعد','مساعدة','رئيس','رئيسة',
   'مشرف','مشرفة','فني','فنية','أخصائي','أخصائية','موظف','موظفة'];
+// Education-context words: a line like "College of Engineering" contains
+// "engineer" but is a school, not a job title.
+const EDU_LINE = /university|college|bachelor|master|phd|diploma|degree|faculty|institute|gpa|جامعة|كلية|بكالوريوس|ماجستير|دكتوراه|دبلوم|معهد|المعدل|شهادة/i;
 function guessJobTitleFromText(text){
   const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
   for(let i=0;i<Math.min(lines.length,30);i++){
     const line = lines[i];
     if(line.length<3 || line.length>80) continue;
+    if(EDU_LINE.test(line)) continue;
     const low = line.toLowerCase();
     if(TITLE_KEYWORDS.some(k=>low.includes(k))) return line;
   }
@@ -691,31 +726,66 @@ function normalizeDigits(text){
   const arabicIndic = '٠١٢٣٤٥٦٧٨٩';
   return text.replace(/[٠-٩]/g, d => String(arabicIndic.indexOf(d)));
 }
+// Section headers that tell us what part of the résumé we're in.
+const EXP_SECTION = /^\s*(?:professional\s+)?(?:work\s+)?(?:experience|employment(?:\s+history)?|career(?:\s+history)?|الخبرات?(?:\s+العملية| المهنية)?|الخبرة(?:\s+العملية| المهنية)?|التاريخ الوظيفي|السجل الوظيفي)\s*:?\s*$/i;
+const EDU_SECTION = /^\s*(?:education|academic(?:\s+background)?|qualifications?|التعليم|المؤهلات?(?:\s+العلمية| الأكاديمية)?|الشهادات العلمية|الدراسة)\s*:?\s*$/i;
+const OTHER_SECTION = /^\s*(?:skills|projects|certifications?|courses?|training|languages?|volunteer(?:ing)?|references?|awards?|interests?|المهارات|المشاريع|الشهادات|الدورات(?:\s+التدريبية)?|التدريب|اللغات|التطوع|الأعمال التطوعية|المراجع|الجوائز|الاهتمامات)\s*:?\s*$/i;
+
 function guessExperienceYears(text){
   text = normalizeDigits(text);
 
-  // Tier 1: an explicit statement of total years, English or Arabic phrasing
-  let m = text.match(/(\d{1,2})\s*\+?\s*(?:years?|yrs?)\b/i);
+  // Tier 1: an explicit statement of total experience. The keyword
+  // "experience/خبرة" must actually be attached to the number —
+  // otherwise "a 4-year program" or "مدة البرنامج 4 سنوات" in the
+  // education section gets mistaken for work experience.
+  let m = text.match(/(\d{1,2})\s*\+?\s*(?:years?|yrs?)(?:\s+of)?\s+(?:\w+\s+){0,2}?experience/i);
   if(m) return Math.min(45, Number(m[1]));
-  m = text.match(/(\d{1,2})\s*(?:سنة|سنوات|سنه|عام|أعوام)\s*(?:خبرة|من الخبرة)?/);
+  m = text.match(/experience\s*[:\-]?\s*(\d{1,2})\s*\+?\s*(?:years?|yrs?)/i);
   if(m) return Math.min(45, Number(m[1]));
-  m = text.match(/(?:خبرة|أكثر من|تزيد عن|تفوق)\D{0,10}(\d{1,2})\s*(?:سنة|سنوات|سنه|عام|أعوام)/);
+  m = text.match(/(?:خبرة|الخبرة)\D{0,15}?(\d{1,2})\s*(?:سنة|سنوات|سنه|عام|أعوام)/);
+  if(m) return Math.min(45, Number(m[1]));
+  m = text.match(/(\d{1,2})\s*(?:سنة|سنوات|سنه|عام|أعوام)\s*(?:من\s+)?(?:ال)?خبرة/);
   if(m) return Math.min(45, Number(m[1]));
 
-  // Tier 2: no explicit statement — infer from work-history year ranges
-  // (e.g. "2018 - 2023", "2019 – Present"), which is how most résumés
-  // actually convey experience.
+  // Tier 2: infer from year ranges — but section-aware. Ranges inside
+  // the education section (Bachelor 2021–2025) are NOT experience;
+  // that's the classic ATS mistake that turns a fresh graduate into
+  // "4 years of experience". A line's own content can also mark it as
+  // education (e.g. "بكالوريوس ... 2021 - 2025" with no section header).
   const currentYear = new Date().getFullYear();
-  const years = [...text.matchAll(/\b(19[7-9]\d|20[0-4]\d)\b/g)].map(mm=>Number(mm[1]));
-  const present = /present|current|now|حتى الآن|حتى الان|الآن|حاليًا|حاليا|ما زال|مازال|إلى الآن|الى الان/i.test(text);
-  // One year is enough when the résumé says the role is ongoing
-  // ("2018 - Present"); otherwise we need a start and an end.
-  if(years.length >= (present ? 1 : 2)){
-    const minYear = Math.min(...years);
-    const maxYear = present ? currentYear : Math.max(...years);
-    const span = maxYear - minYear;
-    if(span>0 && span<=45) return span;
+  const presentRe = /present|current|now|حتى الآن|حتى الان|الآن حاليًا|حاليا|حاليًا|ما زال|مازال|إلى الآن|الى الان/i;
+  const lines = text.split('\n');
+  let section = 'other';           // until a header says otherwise
+  let sawExpSection = false;
+  const expRanges = [], otherRanges = [];
+
+  for(const raw of lines){
+    const line = raw.trim();
+    if(!line) continue;
+    if(EXP_SECTION.test(line)){ section='experience'; sawExpSection=true; continue; }
+    if(EDU_SECTION.test(line)){ section='education'; continue; }
+    if(OTHER_SECTION.test(line)){ section='other'; continue; }
+
+    const isEduLine = EDU_LINE.test(line);
+    const years = [...line.matchAll(/\b(19[7-9]\d|20[0-4]\d)\b/g)].map(x=>Number(x[1]));
+    if(!years.length) continue;
+    const hasPresent = presentRe.test(line);
+    let span = null;
+    if(years.length>=2) span = Math.max(...years) - Math.min(...years);
+    else if(hasPresent) span = currentYear - years[0];
+    if(span===null || span<0 || span>45) continue;
+
+    if(section==='education' || isEduLine){ continue; }
+    if(section==='experience') expRanges.push(span);
+    else otherRanges.push(span);
   }
+
+  // Prefer ranges from an explicit experience section; sum them so two
+  // jobs of 2 years each read as 4, not as the outer span of 6 with a
+  // gap. Cap at 45.
+  const sum = a => a.reduce((s,x)=>s+x,0);
+  if(sawExpSection && expRanges.length) return Math.min(45, sum(expRanges));
+  if(!sawExpSection && otherRanges.length) return Math.min(45, sum(otherRanges));
   return 0;
 }
 
@@ -823,6 +893,7 @@ const NAV = [
   {id:'assessments', label:'التقييمات', num:'٠٢'},
   {id:'jobs', label:'الوظائف الشاغرة', num:'٠٣'},
   {id:'candidates', label:'قاعدة السير الذاتية', num:'٠٤'},
+  {id:'audit', label:'سجل التدقيق', num:'٠٥'},
 ];
 let currentView = 'dashboard';
 
@@ -861,6 +932,7 @@ async function render(){
     else if(currentView==='pipeline')   html = await viewPipeline();
     else if(currentView==='assessments')html = await viewAssessments();
     else if(currentView==='jobs')       html = await viewJobs();
+    else if(currentView==='audit')      html = await viewAudit();
     main.innerHTML = html;
     renderNav();
     attachViewHandlers();
@@ -1234,6 +1306,28 @@ async function viewJobs(){
 }
 
 /* ---------------------------------------------------------
+   VIEW: AUDIT LOG
+--------------------------------------------------------- */
+async function viewAudit(){
+  const rows = await api.audit({ limit: 150 });
+  return `
+  <div class="page-head">
+    <div><h1>سجل التدقيق</h1><div class="sub">كل تغيير على المرشحين والوظائف والتقييمات — من قام به ومتى. يسجل تلقائيًا ولا يمكن تعديله من الواجهة.</div></div>
+    <button class="btn btn-ghost" id="btnChangeActor">أنت: ${esc(getActor())} — تغيير</button>
+  </div>
+  ${rows.length ? `<table><thead><tr><th>الوقت</th><th>المستخدم</th><th>الإجراء</th><th>المرشح</th><th>التفاصيل</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr>
+      <td class="mono" style="font-size:11px;color:var(--muted);white-space:nowrap">${new Date(r.at).toLocaleString('ar-EG')}</td>
+      <td><strong>${esc(r.actor)}</strong></td>
+      <td><span class="chip ar">${esc(r.action)}</span></td>
+      <td>${r.candidateName ? (r.candidateId ? `<span class="rowlink" data-cand="${r.candidateId}" style="cursor:pointer"><strong>${esc(r.candidateName)}</strong></span>` : esc(r.candidateName)) : '—'}</td>
+      <td style="color:var(--muted);font-size:12px;">${esc(r.details||'—')}</td>
+    </tr>`).join('')}
+  </tbody></table>` : emptyState('لا توجد تغييرات مسجلة بعد', 'أي إضافة أو تعديل أو نقل مرحلة سيظهر هنا فور حدوثه.')}
+  `;
+}
+
+/* ---------------------------------------------------------
    MODALS
 --------------------------------------------------------- */
 function openModal(html){
@@ -1557,9 +1651,12 @@ function openAddAssessment(presetCandId){
 async function openDetail(candId){
   // Fetch the full record — the list view only carries summary fields,
   // not stage history or the assessment list.
-  let c;
+  let c, auditRows = [];
   try{
-    c = await api.candidate(candId);
+    [c, auditRows] = await Promise.all([
+      api.candidate(candId),
+      api.audit({ candidateId: candId, limit: 30 }).catch(()=>[])
+    ]);
   }catch(e){
     alert('تعذّر تحميل بيانات المرشح: ' + e.message);
     return;
@@ -1615,6 +1712,14 @@ async function openDetail(candId){
     </div>
 
     <div class="detail-section">
+      <h3>سجل التغييرات على هذا المرشح</h3>
+      ${auditRows.length ? auditRows.map(r=>`
+        <div class="assess-row">
+          <span><strong>${esc(r.actor)}</strong> — ${esc(r.action)}${r.details?': '+esc(r.details):''}</span>
+          <span class="mono" style="font-size:10.5px;color:var(--muted)">${new Date(r.at).toLocaleString('ar-EG')}</span>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:12px;">لا توجد تغييرات مسجلة بعد.</div>'}
+    </div>
+    <div class="detail-section">
       <h3>أسئلة مقابلة مقترحة</h3>
       <div class="qlist">${questions.map(q=>`<div class="qitem">${esc(q)}</div>`).join('')}</div>
     </div>
@@ -1659,7 +1764,7 @@ async function openDetail(candId){
   document.querySelectorAll('#altToggle span').forEach(el=>{
     el.onclick = async ()=>{
       // "No" restores whatever stage the candidate was in before.
-      const target = el.dataset.altval==='yes' ? ALT_STAGE : (c.previousStage || 'تم الترشيح');
+      const target = el.dataset.altval==='yes' ? ALT_STAGE : (c.previousStage || 'الفرز');
       await mutate(()=>api.setStage(c.id, target));
       closeModal(); render();
     };
@@ -1687,6 +1792,8 @@ function attachViewHandlers(){
   if(importCand) importCand.onclick = ()=>openBulkImport();
   const addJob = document.getElementById('btnAddJob');
   if(addJob) addJob.onclick = openAddJob;
+  const chActor = document.getElementById('btnChangeActor');
+  if(chActor) chActor.onclick = changeActor;
   const addAssess = document.getElementById('btnAddAssessment');
   if(addAssess) addAssess.onclick = ()=>openAddAssessment();
   const assessFilter = document.getElementById('assessJobFilter');
