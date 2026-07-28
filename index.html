@@ -9,232 +9,395 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
+  /* ============================================================
+     DESIGN SYSTEM v2 — "aurora glass"
+     Animated gradient mesh over deep navy, glassmorphic surfaces,
+     glow accents drawn from the KACST emblem palette (blue, purple,
+     green, orange), spring-like micro-interactions.
+     Every selector matches the previous stylesheet 1:1 — the markup
+     is untouched.
+     ============================================================ */
   :root{
-    --bg:#0a2a46;
-    --panel:#0f3559;
-    --panel-2:#164370;
-    --paper:#eef3f6;
-    --paper-2:#e2e9ee;
+    --bg:#081f36;
+    --panel:rgba(15,53,89,0.55);
+    --panel-2:rgba(30,72,116,0.55);
+    --paper:#f2f7fa;
     --ink:#152736;
-    --ink-soft:#4c6072;
-    --gold:#c9a227;
-    --teal:#14958a;
-    --rose:#c1585f;
-    --muted:#8fa3b3;
-    --line: rgba(238,243,246,0.12);
-    --radius: 3px;
+    --gold:#e8b93e;
+    --teal:#19b8a6;
+    --blue:#2f7ff0;
+    --purple:#8b5cf6;
+    --green:#22c07a;
+    --orange:#f97340;
+    --rose:#e0636c;
+    --muted:#93a9bc;
+    --line:rgba(226,240,248,0.10);
+    --radius:14px;
+    --radius-sm:9px;
+    --glass-blur:saturate(150%) blur(14px);
+    --shadow-1:0 4px 20px rgba(2,10,20,0.35);
+    --shadow-2:0 10px 44px rgba(2,10,20,0.5);
+    --spring:cubic-bezier(.34,1.56,.64,1);
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0;
-    background:var(--bg);
-    color:#e7eef2;
+    color:#e9f1f6;
     font-family:'Tajawal',sans-serif;
     -webkit-font-smoothing:antialiased;
+    background:var(--bg);
+    position:relative;
+    overflow-x:hidden;
   }
-  ::selection{background:var(--teal);color:#ffffff;}
+  /* Animated aurora mesh — pure CSS, respects reduced-motion */
+  body::before, body::after{
+    content:'';
+    position:fixed; inset:-30%;
+    z-index:-1;
+    background:
+      radial-gradient(38% 34% at 22% 24%, rgba(47,127,240,0.32), transparent 68%),
+      radial-gradient(30% 30% at 82% 18%, rgba(139,92,246,0.26), transparent 66%),
+      radial-gradient(34% 32% at 74% 82%, rgba(25,184,166,0.24), transparent 70%),
+      radial-gradient(26% 26% at 14% 86%, rgba(249,115,64,0.16), transparent 66%);
+    filter:blur(46px);
+    animation:aurora 26s ease-in-out infinite alternate;
+  }
+  body::after{
+    animation-duration:34s;
+    animation-direction:alternate-reverse;
+    opacity:.6;
+    background:
+      radial-gradient(30% 30% at 68% 30%, rgba(25,184,166,0.20), transparent 70%),
+      radial-gradient(26% 28% at 24% 70%, rgba(47,127,240,0.20), transparent 70%);
+  }
+  @keyframes aurora{
+    0%{transform:translate3d(0,0,0) rotate(0deg) scale(1);}
+    50%{transform:translate3d(3%,-2%,0) rotate(2deg) scale(1.06);}
+    100%{transform:translate3d(-3%,2%,0) rotate(-2deg) scale(1.02);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    body::before, body::after{animation:none;}
+    *{transition-duration:.01ms !important; animation-duration:.01ms !important;}
+  }
+  ::selection{background:var(--teal);color:#fff;}
   h1,h2,h3,.display{font-family:'Tajawal',sans-serif;font-weight:800;}
   .mono{font-family:'IBM Plex Mono','Tajawal',monospace;letter-spacing:0.01em;direction:ltr;unicode-bidi:isolate;}
 
   /* Layout */
   #app{display:flex;min-height:100vh;}
   nav.sidebar{
-    width:230px;flex-shrink:0;background:var(--panel);
+    width:238px;flex-shrink:0;
+    background:linear-gradient(180deg, rgba(13,44,74,0.85), rgba(10,34,58,0.85));
+    backdrop-filter:var(--glass-blur);
     border-inline-start:1px solid var(--line);
     display:flex;flex-direction:column;
     padding:36px 0 20px;
+    position:sticky; top:0; height:100vh;
   }
-  .brand{
-    padding:0 22px 24px;
-    border-bottom:1px solid var(--line);
-    margin-bottom:14px;
+  .brand{padding:0 22px 24px;border-bottom:1px solid var(--line);margin-bottom:14px;}
+  .brand img{filter:drop-shadow(0 6px 18px rgba(47,127,240,0.35));transition:transform .5s var(--spring);}
+  .brand img:hover{transform:scale(1.06) rotate(3deg);}
+  .brand .display{
+    font-size:20px;font-weight:800;line-height:1.35;
+    background:linear-gradient(120deg,#f2f7fa 30%, #9fd7cf 70%, #7fb2f0);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
   }
-  .brand .display{font-size:21px;font-weight:800;color:var(--paper);line-height:1.3;}
-  .brand .mono{font-size:10px;color:var(--teal);letter-spacing:0.06em;margin-top:4px;display:block;direction:rtl;font-family:'Tajawal',sans-serif;}
+  .brand .mono{font-size:10px;color:var(--teal);letter-spacing:0.06em;margin-top:5px;display:block;direction:rtl;font-family:'Tajawal',sans-serif;opacity:.9;}
 
-  .navtabs{display:flex;flex-direction:column;gap:2px;padding:0 12px;}
+  .navtabs{display:flex;flex-direction:column;gap:4px;padding:0 12px;}
   .navtab{
     display:flex;align-items:center;gap:10px;
-    padding:11px 14px;border-radius:var(--radius);
-    color:var(--muted);cursor:pointer;font-size:13.5px;font-weight:500;
-    border-inline-end:2px solid transparent;
-    position:relative;
-    transition:background .15s, color .15s;
+    padding:12px 14px;border-radius:var(--radius-sm);
+    color:var(--muted);cursor:pointer;font-size:13.5px;font-weight:600;
+    position:relative; overflow:hidden;
+    transition:background .25s, color .25s, transform .25s var(--spring);
   }
-  .navtab:hover{background:var(--panel-2);color:#e9e6dd;}
+  .navtab::before{
+    content:''; position:absolute; inset-inline-end:0; top:20%; bottom:20%;
+    width:3px; border-radius:3px; background:linear-gradient(180deg,var(--teal),var(--blue));
+    transform:scaleY(0); transition:transform .3s var(--spring);
+  }
+  .navtab:hover{background:rgba(226,240,248,0.06);color:#eef5f9;transform:translateX(-3px);}
   .navtab.active{
-    background:var(--panel-2);color:var(--paper);
-    border-inline-end:2px solid var(--teal);
+    background:linear-gradient(120deg, rgba(25,184,166,0.16), rgba(47,127,240,0.12));
+    color:var(--paper);
   }
-  .navtab .tabnum{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--teal);opacity:.8;direction:ltr;}
+  .navtab.active::before{transform:scaleY(1);}
+  .navtab .tabnum{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--teal);opacity:.85;direction:ltr;}
   .navtab .count{
-    margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
-    color:var(--muted);background:rgba(255,255,255,0.05);
-    padding:1px 6px;border-radius:10px;
+    margin-inline-start:auto;font-size:10.5px;font-family:'IBM Plex Mono',monospace;
+    background:rgba(25,184,166,0.16);color:#8fe0d6;
+    border:1px solid rgba(25,184,166,0.35);
+    padding:2px 8px;border-radius:99px;direction:ltr;
   }
+  .sidebar-foot{margin-top:auto;padding:16px 22px 0;border-top:1px solid var(--line);font-size:10.5px;color:var(--muted);display:flex;align-items:center;gap:8px;}
+  #syncDot{width:9px;height:9px;border-radius:50%;background:#8b93a1;display:inline-block;box-shadow:0 0 10px currentColor;transition:background .3s;}
 
-  .sidebar-foot{margin-top:auto;padding:16px 22px 0;border-top:1px solid var(--line);}
-  .sidebar-foot .mono{font-size:10px;color:var(--muted);line-height:1.6;direction:rtl;font-family:'Tajawal',sans-serif;}
+  main{flex:1;padding:38px 46px 70px;overflow-x:hidden;max-width:1320px;}
 
-  main{flex:1;padding:34px 42px 60px;overflow-x:hidden;max-width:1280px;}
-  .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:26px;flex-wrap:wrap;gap:14px;}
-  .page-head h1{font-size:26px;font-weight:800;color:var(--paper);margin:0 0 6px;}
-  .page-head .sub{color:var(--muted);font-size:13.5px;max-width:540px;}
-  .btn{
-    font-family:'Tajawal',sans-serif;font-weight:700;font-size:13px;
-    padding:10px 18px;border-radius:var(--radius);border:1px solid transparent;
-    cursor:pointer;transition:transform .1s, filter .15s;
+  /* Page head */
+  .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:26px;animation:rise .5s var(--spring) both;}
+  .page-head h1{
+    margin:0;font-size:30px;letter-spacing:-0.01em;
+    background:linear-gradient(115deg,#f5fafd 40%, #a9e2da 75%, #8db9f2);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
   }
-  .btn:active{transform:translateY(1px);}
-  .btn-primary{background:var(--teal);color:#eafbf8;}
-  .btn-primary:hover{filter:brightness(1.08);}
-  .btn-ghost{background:transparent;border:1px solid var(--line);color:#e9e6dd;}
-  .btn-ghost:hover{background:var(--panel-2);}
-  .btn-sm{padding:6px 12px;font-size:12px;}
-  .btn-danger{background:transparent;border:1px solid rgba(193,88,95,.4);color:var(--rose);}
-  .btn-danger:hover{background:rgba(193,88,95,.12);}
+  .page-head .sub{color:var(--muted);font-size:13px;margin-top:7px;max-width:600px;line-height:1.7;}
+  @keyframes rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
 
-  /* Stat row */
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px;}
+  /* Stat tiles */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
   .stat{
-    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-    padding:18px 20px;position:relative;
+    background:var(--panel);
+    backdrop-filter:var(--glass-blur);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px 16px;
+    position:relative; overflow:hidden;
+    box-shadow:var(--shadow-1);
+    transition:transform .35s var(--spring), box-shadow .35s, border-color .35s;
+    animation:rise .5s var(--spring) both;
   }
-  .stat .n{font-family:'Tajawal',sans-serif;font-size:30px;font-weight:800;color:var(--paper);line-height:1;direction:ltr;text-align:right;}
-  .stat .l{font-size:11.5px;color:var(--muted);margin-top:8px;}
-  .stat .accent{position:absolute;top:16px;left:16px;width:6px;height:6px;border-radius:50%;}
+  .stats .stat:nth-child(2){animation-delay:.05s;}
+  .stats .stat:nth-child(3){animation-delay:.1s;}
+  .stats .stat:nth-child(4){animation-delay:.15s;}
+  .stats .stat:nth-child(5){animation-delay:.2s;}
+  .stats .stat:nth-child(6){animation-delay:.25s;}
+  .stat:hover{transform:translateY(-4px);box-shadow:var(--shadow-2);border-color:rgba(25,184,166,0.35);}
+  .stat .accent{position:absolute;inset-inline-start:0;top:0;bottom:0;width:3px;opacity:.9;}
+  .stat .n{font-size:30px;font-weight:800;font-family:'IBM Plex Mono','Tajawal',monospace;letter-spacing:-0.02em;}
+  .stat .l{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5;}
 
-  /* Index cards for candidates */
-  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;}
-  .idxcard{
-    background:var(--paper);color:var(--ink);border-radius:2px;
-    padding:18px 18px 16px;position:relative;cursor:pointer;
-    box-shadow:0 1px 0 rgba(0,0,0,.2), 0 8px 18px -10px rgba(0,0,0,.5);
-    transform:rotate(var(--tilt,0deg));
-    transition:transform .15s ease, box-shadow .15s ease;
-    border-top:3px solid var(--stage-color, var(--teal));
-  }
-  .idxcard:hover{transform:rotate(0deg) translateY(-2px);box-shadow:0 4px 24px -8px rgba(0,0,0,.6);}
-  .idxcard .top-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
-  .idxcard .name{font-family:'Tajawal',sans-serif;font-size:17px;font-weight:700;line-height:1.3;}
-  .idxcard .role{font-size:11.5px;color:var(--ink-soft);margin-top:3px;}
-  .seal{
-    width:38px;height:38px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;flex-shrink:0;
-    font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;
-    border:1.5px dashed rgba(0,0,0,0.35);color:#fff;direction:ltr;
-  }
-  .idxcard .skills{display:flex;flex-wrap:wrap;gap:5px;margin:12px 0 10px;}
-  .chip{
-    font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 7px;
-    background:rgba(0,0,0,0.06);border-radius:9px;color:var(--ink-soft);direction:ltr;
-  }
-  .chip.ar{font-family:'Tajawal',sans-serif;direction:rtl;font-size:11px;}
-  .idxcard .meta-row{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink-soft);border-top:1px dashed rgba(0,0,0,0.18);padding-top:10px;margin-top:2px;}
-  .stagepill{
-    font-family:'Tajawal',sans-serif;font-size:10.5px;
-    padding:3px 9px;border-radius:9px;color:#fff;font-weight:600;
-  }
-
-  /* Filters bar */
-  .toolbar{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;align-items:center;}
-  input[type=text], input[type=email], input[type=tel], input[type=number], select, textarea{
-    background:var(--panel-2);border:1px solid var(--line);color:#e9e6dd;
-    padding:9px 12px;border-radius:var(--radius);font-family:'Tajawal',sans-serif;font-size:13px;
-    outline:none;
-  }
-  input:focus, select:focus, textarea:focus{border-color:var(--teal);}
-  textarea{resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.6;direction:ltr;text-align:left;}
+  /* Toolbar + inputs */
+  .toolbar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;animation:rise .5s var(--spring) both;}
   .searchbox{flex:1;min-width:220px;}
+  input[type=text],input[type=email],input[type=tel],input[type=number],input[type=date],select,textarea{
+    width:100%;
+    background:rgba(8,26,44,0.55);
+    border:1px solid var(--line);
+    color:#ecf3f8;border-radius:var(--radius-sm);
+    padding:11px 14px;font-size:13px;font-family:'Tajawal',sans-serif;
+    outline:none;
+    transition:border-color .25s, box-shadow .25s, background .25s;
+  }
+  input:focus,select:focus,textarea:focus{
+    border-color:var(--teal);
+    box-shadow:0 0 0 3px rgba(25,184,166,0.18), 0 0 24px rgba(25,184,166,0.12);
+    background:rgba(8,26,44,0.8);
+  }
   select{cursor:pointer;}
+  input[type=file]{padding:9px 10px;background:rgba(8,26,44,0.45);border:1px dashed rgba(226,240,248,0.22);border-radius:var(--radius-sm);width:100%;color:var(--muted);font-size:12px;cursor:pointer;transition:border-color .25s;}
+  input[type=file]:hover{border-color:var(--teal);}
+  label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:6px;font-weight:700;letter-spacing:.02em;}
+
+  /* Cards */
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+  .idxcard{
+    background:var(--panel);
+    backdrop-filter:var(--glass-blur);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    cursor:pointer;
+    position:relative; overflow:hidden;
+    box-shadow:var(--shadow-1);
+    transition:transform .35s var(--spring), box-shadow .35s, border-color .35s;
+    animation:rise .45s var(--spring) both;
+  }
+  .idxcard::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(130deg, transparent 55%, rgba(255,255,255,0.05));
+    opacity:0;transition:opacity .35s;pointer-events:none;
+  }
+  .idxcard:hover{transform:translateY(-5px) scale(1.012);box-shadow:var(--shadow-2);border-color:color-mix(in srgb, var(--stage-color, var(--teal)) 55%, transparent);}
+  .idxcard:hover::after{opacity:1;}
+  .idxcard{border-inline-start:3px solid var(--stage-color, var(--teal));}
+  .top-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;}
+  .idxcard .name{font-size:16px;font-weight:800;color:var(--paper);}
+  .idxcard .role{font-size:12px;color:var(--muted);margin-top:3px;}
+  .seal{
+    min-width:44px;height:44px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#04121f;
+    box-shadow:0 0 0 3px rgba(255,255,255,0.08), 0 4px 14px rgba(0,0,0,0.35), 0 0 22px color-mix(in srgb, currentColor 30%, transparent);
+    flex-shrink:0;
+  }
+  .skills{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
+  .chip{
+    font-size:10.5px;font-family:'IBM Plex Mono',monospace;direction:ltr;
+    background:rgba(47,127,240,0.13);color:#a9c9f5;
+    border:1px solid rgba(47,127,240,0.3);
+    padding:3px 9px;border-radius:99px;
+    transition:transform .2s var(--spring), background .2s;
+  }
+  .chip:hover{transform:scale(1.08);background:rgba(47,127,240,0.22);}
+  .chip.ar{font-family:'Tajawal',sans-serif;direction:rtl;}
+  .meta-row{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;margin-top:6px;gap:8px;flex-wrap:wrap;}
+  .stagepill{
+    font-size:10.5px;color:#04121f;font-weight:800;
+    padding:3px 11px;border-radius:99px;
+    box-shadow:0 2px 10px color-mix(in srgb, currentColor 35%, transparent);
+  }
 
   /* Kanban */
-  .kanban{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:start;}
-  .kcol{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);min-height:200px;}
-  .kcol-head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
-  .kcol-head .t{font-size:12.5px;font-weight:700;}
-  .kcol-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:120px;}
-  .kcard{
-    background:var(--paper);color:var(--ink);border-radius:2px;padding:10px 12px;
-    font-size:12.5px;cursor:grab;border-inline-start:3px solid var(--teal);
+  .kanban{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px;align-items:start;}
+  .kcol{
+    background:rgba(10,32,54,0.5);
+    backdrop-filter:var(--glass-blur);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px;
+    animation:rise .5s var(--spring) both;
   }
-  .kcard.dragging{opacity:.4;}
-  .kcard .kn{font-weight:700;font-family:'Tajawal',sans-serif;font-size:14px;}
-  .kcard .kr{color:var(--ink-soft);font-size:11px;margin-top:2px;}
-  .kcard .kd{color:var(--ink-soft);font-size:10px;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(0,0,0,0.15);opacity:.85;}
-  .kcol-body.dragover{background:rgba(212,162,76,0.08);}
+  .kcol-head{display:flex;justify-content:space-between;align-items:center;padding:2px 6px 10px;}
+  .kcol-head .t{font-size:12.5px;font-weight:800;text-shadow:0 0 18px currentColor;}
+  .kcol-body{display:flex;flex-direction:column;gap:8px;min-height:60px;border-radius:var(--radius-sm);transition:background .25s, outline-color .25s;outline:2px dashed transparent;outline-offset:-2px;}
+  .kcol-body.dragover{background:rgba(25,184,166,0.08);outline-color:rgba(25,184,166,0.5);}
+  .kcard{
+    background:rgba(18,52,86,0.85);
+    border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:11px 12px;cursor:grab;
+    box-shadow:var(--shadow-1);
+    transition:transform .25s var(--spring), box-shadow .25s, border-color .25s;
+  }
+  .kcard:hover{transform:translateY(-2px) rotate(-0.4deg);border-color:rgba(25,184,166,0.45);box-shadow:var(--shadow-2);}
+  .kcard.dragging{opacity:.45;transform:scale(.97) rotate(1.5deg);cursor:grabbing;}
+  .kcard .kn{font-size:13px;font-weight:800;color:var(--paper);}
+  .kcard .kr{font-size:11px;color:var(--muted);margin-top:2px;}
+  .kcard .kd{font-size:10px;color:var(--muted);opacity:.75;margin-top:5px;font-family:'IBM Plex Mono',monospace;direction:ltr;text-align:right;}
 
   /* Tables */
-  table{width:100%;border-collapse:collapse;font-size:13px;}
+  table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:var(--panel);backdrop-filter:var(--glass-blur);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-1);}
   thead th{
-    text-align:start;font-family:'Tajawal',sans-serif;font-size:11px;
-    font-weight:700;color:var(--muted);
-    padding:0 12px 10px;border-bottom:1px solid var(--line);
+    text-align:right;font-size:10.5px;letter-spacing:.05em;color:var(--muted);
+    padding:12px;border-bottom:1px solid var(--line);
+    background:rgba(8,26,44,0.5);font-weight:800;
   }
   tbody td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
-  tbody tr:hover{background:var(--panel-2);}
-  .scoreband{font-family:'IBM Plex Mono',monospace;font-weight:600;direction:ltr;}
+  tbody tr{transition:background .2s;}
+  tbody tr:hover{background:rgba(226,240,248,0.04);}
+  tbody tr:last-child td{border-bottom:none;}
+  .rowlink:hover strong{color:var(--teal);}
+  .scoreband{font-family:'IBM Plex Mono',monospace;font-weight:700;direction:ltr;text-shadow:0 0 16px currentColor;}
+
+  /* Buttons */
+  .btn{
+    border:none;cursor:pointer;font-family:'Tajawal',sans-serif;font-weight:800;
+    font-size:13px;padding:11px 20px;border-radius:var(--radius-sm);
+    display:inline-flex;align-items:center;gap:6px;
+    position:relative;overflow:hidden;
+    transition:transform .25s var(--spring), box-shadow .25s, background .25s, border-color .25s;
+  }
+  .btn:active{transform:scale(.96);}
+  .btn-primary{
+    background:linear-gradient(120deg,var(--teal),#128d7f 60%, var(--blue));
+    background-size:180% 100%;
+    color:#03110d;
+    box-shadow:0 4px 18px rgba(25,184,166,0.35);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(25,184,166,0.5);background-position:80% 0;}
+  .btn-ghost{
+    background:rgba(226,240,248,0.05);color:#dfeaf1;
+    border:1px solid var(--line);
+  }
+  .btn-ghost:hover{border-color:var(--teal);color:#fff;background:rgba(25,184,166,0.1);transform:translateY(-1px);}
+  .btn-danger{background:rgba(224,99,108,0.12);color:#f1a7ac;border:1px solid rgba(224,99,108,0.4);}
+  .btn-danger:hover{background:rgba(224,99,108,0.25);color:#ffd9dc;transform:translateY(-1px);}
+  .btn-sm{padding:6px 12px;font-size:11.5px;}
+
+  /* Empty state */
+  .empty{
+    text-align:center;padding:60px 20px;color:var(--muted);
+    background:var(--panel);backdrop-filter:var(--glass-blur);
+    border:1px dashed rgba(226,240,248,0.18);border-radius:var(--radius);
+    animation:rise .5s var(--spring) both;
+  }
+  .empty .display{font-size:19px;color:#c3d2dd;margin-bottom:8px;}
 
   /* Modal */
   .overlay{
-    position:fixed;inset:0;background:rgba(10,12,16,0.72);
-    display:none;align-items:flex-start;justify-content:center;z-index:100;
-    padding:40px 20px;overflow-y:auto;
+    position:fixed;inset:0;background:rgba(4,14,25,0.6);
+    backdrop-filter:blur(8px);
+    display:none;align-items:flex-start;justify-content:center;
+    padding:40px 20px;overflow-y:auto;z-index:50;
   }
-  .overlay.open{display:flex;}
+  .overlay.open{display:flex;animation:fadeIn .25s both;}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
   .modal{
-    background:var(--panel);border:1px solid var(--line);border-radius:6px;
-    width:100%;max-width:640px;padding:28px 30px 30px;
-    box-shadow:0 30px 80px -20px rgba(0,0,0,0.6);
+    background:linear-gradient(165deg, rgba(16,48,80,0.92), rgba(10,32,56,0.94));
+    backdrop-filter:var(--glass-blur);
+    border:1px solid rgba(226,240,248,0.14);
+    border-radius:18px;max-width:680px;width:100%;
+    padding:26px 28px 24px;
+    box-shadow:0 30px 90px rgba(0,0,0,0.6), 0 0 0 1px rgba(25,184,166,0.06);
+    animation:pop .35s var(--spring) both;
   }
-  .modal h2{margin:0 0 4px;font-size:20px;color:var(--paper);}
-  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;}
-  .modal-head .xbtn{cursor:pointer;color:var(--muted);font-size:20px;line-height:1;padding:4px;}
-  .modal-head .xbtn:hover{color:#fff;}
+  @keyframes pop{from{opacity:0;transform:translateY(22px) scale(.97);}to{opacity:1;transform:none;}}
+  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:14px;}
+  .modal-head h2{margin:0;font-size:21px;}
+  .xbtn{cursor:pointer;font-size:24px;line-height:1;color:var(--muted);transition:color .2s, transform .3s var(--spring);}
+  .xbtn:hover{color:var(--rose);transform:rotate(90deg);}
   .field{margin-bottom:14px;}
-  .field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:6px;}
-  .field input, .field select, .field textarea{width:100%;}
   .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-start;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);}
 
-  /* Detail modal specific */
-  .detail-header{display:flex;gap:16px;align-items:flex-start;margin-bottom:18px;}
-  .detail-header .seal{width:56px;height:56px;font-size:16px;}
-  .detail-header h2{margin:0;}
-  .detail-header .role{color:var(--muted);font-size:13px;margin-top:3px;}
+  /* Detail sections */
+  .detail-section{margin-bottom:22px;}
+  .detail-section h3{
+    font-size:12px;letter-spacing:.05em;color:var(--teal);margin:0 0 10px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .detail-section h3::after{content:'';flex:1;height:1px;background:linear-gradient(90deg, rgba(25,184,166,0.4), transparent);}
+  .detail-header{display:flex;gap:14px;align-items:center;margin-bottom:14px;}
   .detail-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-  .detail-section{margin-top:18px;}
-  .detail-section h3{font-size:13px;color:var(--teal);margin:0 0 10px;font-family:'Tajawal',sans-serif;font-weight:700;}
-  .resume-box{
-    background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);
-    padding:14px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.7;
-    color:#cdd2db;max-height:180px;overflow-y:auto;white-space:pre-wrap;direction:ltr;text-align:left;
-  }
-  .qlist{display:flex;flex-direction:column;gap:8px;}
-  .qitem{
-    background:var(--panel-2);border-inline-start:2px solid var(--teal);
-    padding:9px 12px;font-size:12.5px;border-radius:2px;color:#e5e8ee;
-  }
-  .assess-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.5px;}
-  .assess-row:last-child{border-bottom:none;}
-
-  .empty{
-    text-align:center;padding:60px 20px;color:var(--muted);
-    border:1px dashed var(--line);border-radius:6px;
-  }
-  .empty .display{font-size:18px;color:#c9cdd6;margin-bottom:8px;}
-
   .stagesel{display:flex;gap:6px;flex-wrap:wrap;}
   .stagesel span{
-    font-family:'Tajawal',sans-serif;font-size:11px;font-weight:600;padding:5px 10px;border-radius:10px;
-    cursor:pointer;border:1px solid var(--line);color:var(--muted);
+    font-size:11.5px;padding:6px 13px;border-radius:99px;cursor:pointer;
+    border:1px solid var(--line);color:var(--muted);font-weight:700;
+    transition:all .25s var(--spring);
   }
-  .stagesel span.active{color:#fff;}
+  .stagesel span:hover{border-color:var(--teal);color:#fff;transform:translateY(-1px);}
+  .stagesel span.active{color:#04121f;font-weight:800;box-shadow:0 2px 12px color-mix(in srgb, currentColor 30%, transparent);}
+  .assess-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);font-size:12.5px;}
+  .assess-row:last-child{border-bottom:none;}
+  .qlist{display:flex;flex-direction:column;gap:8px;}
+  .qitem{
+    background:rgba(8,26,44,0.5);border:1px solid var(--line);
+    border-inline-start:3px solid var(--gold);
+    border-radius:var(--radius-sm);padding:11px 14px;font-size:12.5px;line-height:1.7;
+    transition:border-color .25s, transform .25s;
+  }
+  .qitem:hover{border-inline-start-color:var(--teal);transform:translateX(-3px);}
+  .resume-box{
+    background:rgba(8,26,44,0.5);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:14px;font-size:11.5px;line-height:1.8;font-family:'IBM Plex Mono',monospace;
+    color:#ccd9e2;max-height:190px;overflow-y:auto;white-space:pre-wrap;direction:ltr;text-align:left;
+  }
+
+  /* Insights */
+  .insights{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:26px;}
+  .insight{
+    background:var(--panel);backdrop-filter:var(--glass-blur);
+    border:1px solid var(--line);border-radius:var(--radius);
+    border-inline-start:3px solid var(--icolor,var(--teal));
+    padding:14px 16px;font-size:12.5px;line-height:1.7;
+    box-shadow:var(--shadow-1);
+    animation:rise .5s var(--spring) both;
+    transition:transform .3s var(--spring), box-shadow .3s;
+  }
+  .insight:hover{transform:translateY(-3px);box-shadow:var(--shadow-2);}
+  .insight .ic{font-size:10.5px;font-weight:800;letter-spacing:.05em;color:var(--icolor,var(--teal));margin-bottom:5px;display:block;}
+  .insight .iv{color:#dce8f0;}
+  .insight .im{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--icolor,var(--teal));direction:ltr;unicode-bidi:isolate;}
+
+  ::-webkit-scrollbar{width:9px;height:9px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:rgba(147,169,188,0.25);border-radius:99px;}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(25,184,166,0.5);}
 
   @media(max-width:900px){
     #app{flex-direction:column;}
-    nav.sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:14px;border-inline-start:none;}
+    nav.sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:14px;border-inline-start:none;position:static;height:auto;}
     .brand{display:none;}
     .navtabs{flex-direction:row;}
     .sidebar-foot{display:none;}
@@ -268,50 +431,69 @@
 
 <script>
 /* ---------------------------------------------------------
-   SELF-HOSTED STORAGE SHIM
-   Re-implements the window.storage.get/set/delete/list API
-   (originally provided by Claude's artifact environment) using
-   fetch() calls to this app's own Express backend instead.
-   Everything below this point is unchanged from the original
-   frontend — it has no idea it's not running inside Claude.
+   API CLIENT — PostgreSQL-backed
+   Replaces the old whole-database-in-memory model. Data is
+   queried per view with server-side filtering and pagination, and
+   every change updates a single record instead of rewriting the
+   entire dataset. This is what lets the app stay responsive with
+   tens of thousands of candidates.
 --------------------------------------------------------- */
-window.storage = {
-  get: async (key) => {
-    const res = await fetch('/api/storage/' + encodeURIComponent(key));
-    if (res.status === 404) throw new Error('key not found');
-    if (!res.ok) throw new Error('storage read failed');
-    const data = await res.json();
-    return { key, value: data.value, shared: true };
-  },
-  set: async (key, value) => {
-    const res = await fetch('/api/storage/' + encodeURIComponent(key), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ value })
-    });
-    if (!res.ok) throw new Error('storage write failed');
-    const data = await res.json();
-    return { key, value: data.value, shared: true };
-  },
-  delete: async (key) => {
-    const res = await fetch('/api/storage/' + encodeURIComponent(key), { method: 'DELETE' });
-    if (!res.ok) throw new Error('storage delete failed');
-    return { key, deleted: true, shared: true };
-  },
-  list: async (prefix) => {
-    const res = await fetch('/api/storage?prefix=' + encodeURIComponent(prefix || ''));
-    if (!res.ok) throw new Error('storage list failed');
-    return await res.json();
+async function apiFetch(url, opts){
+  const res = await fetch(url, opts);
+  if(!res.ok){
+    let msg = 'HTTP ' + res.status;
+    try { const j = await res.json(); if(j.error) msg = j.error; } catch(e){}
+    throw new Error(msg);
   }
+  return res.status === 204 ? null : res.json();
+}
+const api = {
+  jobs:        ()            => apiFetch('/api/jobs'),
+  createJob:   (j)           => apiFetch('/api/jobs', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(j)}),
+  deleteJob:   (id)          => apiFetch('/api/jobs/'+encodeURIComponent(id), {method:'DELETE'}),
+
+  candidates:  (params={})   => apiFetch('/api/candidates?' + new URLSearchParams(params)),
+  candidate:   (id)          => apiFetch('/api/candidates/'+encodeURIComponent(id)),
+  createCandidate: (c)       => apiFetch('/api/candidates', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(c)}),
+  updateCandidate: (id,c)    => apiFetch('/api/candidates/'+encodeURIComponent(id), {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(c)}),
+  setStage:    (id,stage)    => apiFetch('/api/candidates/'+encodeURIComponent(id)+'/stage', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({stage})}),
+  setAltJob:   (id,jobId)    => apiFetch('/api/candidates/'+encodeURIComponent(id)+'/alt-job', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alternativeJobId:jobId})}),
+  deleteCandidate: (id)      => apiFetch('/api/candidates/'+encodeURIComponent(id), {method:'DELETE'}),
+
+  assessments: (params={})   => apiFetch('/api/assessments?' + new URLSearchParams(params)),
+  createAssessment: (a)      => apiFetch('/api/assessments', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(a)}),
+  deleteAssessment: (id)     => apiFetch('/api/assessments/'+encodeURIComponent(id), {method:'DELETE'}),
+
+  rankings:    (params={})   => apiFetch('/api/rankings?' + new URLSearchParams(params)),
+  insights:    ()            => apiFetch('/api/insights'),
+  kpis:        (params={})   => apiFetch('/api/kpis?' + new URLSearchParams(params)),
+  pipeline:    (params={})   => apiFetch('/api/pipeline?' + new URLSearchParams(params)),
+  settings:    ()            => apiFetch('/api/settings'),
+  saveSettings:(s)           => apiFetch('/api/settings', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(s)})
 };
 
-/* ---------------------------------------------------------
-   DATA LAYER — shared cloud storage
---------------------------------------------------------- */
-// Internal storage key — intentionally unchanged despite the rename to
-// "Talent Acquisition Department". It's never shown to users, and
-// changing it would orphan any data already saved under the old key.
-const DB_KEY = 'talent_ledger_db_v1';
+function setSyncStatus(status){
+  const el = document.getElementById('syncDot');
+  if(!el) return;
+  const map = {saving:['#d4a24c','جارٍ الحفظ…'], saved:['#5fb87a','تم الحفظ'], error:['#c1585f','فشل الحفظ']};
+  const [color,label] = map[status] || ['#8b93a1',''];
+  el.style.background = color; el.title = label;
+}
+// Wrap a mutation so the sync indicator and error handling are consistent.
+async function mutate(fn){
+  try{
+    setSyncStatus('saving');
+    const out = await fn();
+    setSyncStatus('saved');
+    return out;
+  }catch(e){
+    setSyncStatus('error');
+    console.error('Save failed:', e);
+    alert('تعذّر حفظ التغيير: ' + e.message);
+    throw e;
+  }
+}
+
 const STAGES = ['تم الترشيح','الفرز','المقابلة','العرض','تم التعيين','مرفوض','مناسب لشاغر آخر'];
 const STAGE_COLOR = {
   'تم الترشيح':'#8b93a1', 'الفرز':'#3fa796', 'المقابلة':'#d4a24c',
@@ -343,34 +525,14 @@ const GENERIC_QUESTIONS = [
   'حدثني عن موقف اضطررت فيه لتعلم شيء بسرعة لإنجاز مهمة ما.'
 ];
 
-function loadDBSync(){ return null; }
-async function loadDB(){
-  try{
-    const res = await window.storage.get(DB_KEY, true);
-    if(res && res.value) return JSON.parse(res.value);
-  }catch(e){ /* key doesn't exist yet */ }
-  const seeded = seedDB();
-  await persistDB(seeded);
-  return seeded;
+// DB is now a per-view CACHE, not the whole database. jobs and
+// settings are small enough to hold in full; candidates hold only the
+// current page; assessments/rankings/KPIs are fetched per view.
+async function refreshJobs(){
+  DB.jobs = await api.jobs();
 }
-async function persistDB(dbObj){
-  try{
-    setSyncStatus('saving');
-    await window.storage.set(DB_KEY, JSON.stringify(dbObj), true);
-    setSyncStatus('saved');
-  }catch(e){
-    console.error('Storage save failed', e);
-    setSyncStatus('error');
-  }
-}
-function saveDB(){ persistDB(DB); }
-function setSyncStatus(status){
-  const el = document.getElementById('syncDot');
-  if(!el) return;
-  const map = {saving:['#d4a24c','جارٍ المزامنة…'], saved:['#5fb87a','تمت المزامنة'], error:['#c1585f','فشل الحفظ — قد تساعد إعادة المحاولة']};
-  const [color,label] = map[status] || ['#8b93a1',''];
-  el.style.background = color;
-  el.title = label;
+async function refreshSettings(){
+  DB.settings = await api.settings();
 }
 function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
 
@@ -404,80 +566,25 @@ function fileToBase64(file){
   });
 }
 const MIME_BY_EXT = {pdf:'application/pdf', docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document', txt:'text/plain'};
-async function storeOriginalFile(candidateId, file){
-  try{
-    const b64 = await fileToBase64(file);
-    await window.storage.set('resume_file_'+candidateId, b64, true);
-    return true;
-  }catch(e){
-    console.error('Failed to store original résumé file', e);
-    return false;
-  }
-}
-async function downloadOriginalFile(candidate){
-  const ext = (candidate.resumeFileType||'pdf');
-  const mime = MIME_BY_EXT[ext] || 'application/octet-stream';
-  const res = await window.storage.get('resume_file_'+candidate.id, true);
-  const byteChars = atob(res.value);
-  const bytes = new Uint8Array(byteChars.length);
-  for(let i=0;i<byteChars.length;i++) bytes[i] = byteChars.charCodeAt(i);
-  const blob = new Blob([bytes], {type:mime});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = candidate.resumeFileName || (safeFilename(candidate.name)+'.'+ext);
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
-}
-async function downloadCandidateCV(candidate){
+// The original file is stored server-side with the candidate record;
+// downloads stream straight from the API endpoint.
+function downloadCandidateCV(candidate){
   if(candidate.hasOriginalFile){
-    try{
-      await downloadOriginalFile(candidate);
-      return;
-    }catch(e){
-      console.error('Falling back to text export — original file unavailable', e);
-    }
+    // Let the browser fetch it directly — no need to pull megabytes
+    // of base64 through JS just to re-encode it as a blob.
+    window.location.href = '/api/candidates/' + encodeURIComponent(candidate.id) + '/resume-file';
+    return;
   }
   downloadBlob(safeFilename(candidate.name) + '.txt', candidate.resumeText || 'لا يوجد نص سيرة ذاتية مسجل.', 'text/plain;charset=utf-8;');
 }
 
-function csvValue(v){
-  const s = String(v==null?'':v);
-  return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
-}
-function candidatesToCSV(list){
-  const headers = ['الاسم','البريد الإلكتروني','الهاتف','المسمى الوظيفي الحالي/الأخير','المصدر','سنوات الخبرة','الوظيفة المتقدم لها','المهارات','المرحلة','نسبة المطابقة','تاريخ الإضافة','نص السيرة الذاتية'];
-  const rows = list.map(c=>{
-    const job = DB.jobs.find(j=>j.id===c.appliedFor);
-    const r = compositeRank(c);
-    return [
-      c.name, c.email||'', c.phone||'', c.currentTitle||'', c.source||'', c.experienceYears||0,
-      job?job.title:'', c.skills.join('؛ '), c.stage, r.matchPct+'%',
-      new Date(c.createdAt).toLocaleDateString('ar-EG'), c.resumeText||''
-    ].map(csvValue).join(',');
-  });
-  return '\uFEFF' + headers.map(csvValue).join(',') + '\n' + rows.join('\n');
-}
-function changeStage(candidate, newStage){
-  const now = Date.now();
-  candidate.stage = newStage;
-  if(!candidate.stageHistory) candidate.stageHistory = [];
-  candidate.stageHistory.push({stage:newStage, at:now});
-  candidate.stageChangedAt = now;
-}
+// CSV export is now generated by the server (/api/export/candidates.csv)
+// so it works at any table size without loading everything client-side.
+
+// Stage transitions (including remembering the previous stage when a
+// candidate enters the alt-vacancy pool) are handled by the server in
+// a single transaction — see POST /api/candidates/:id/stage.
 const ALT_STAGE = 'مناسب لشاغر آخر';
-function setAlternativeCandidate(candidate, isAlternative){
-  if(isAlternative){
-    if(candidate.stage !== ALT_STAGE){
-      candidate.previousStage = candidate.stage;
-      changeStage(candidate, ALT_STAGE);
-    }
-  }else{
-    if(candidate.stage === ALT_STAGE){
-      changeStage(candidate, candidate.previousStage || 'تم الترشيح');
-      candidate.previousStage = null;
-    }
-  }
-}
 
 /* ---------------------------------------------------------
    RÉSUMÉ FILE PARSING
@@ -627,17 +734,7 @@ function guessSignatureFromAssessmentText(text){
   return m ? m[1].trim() : '';
 }
 
-function seedDB(){
-  // Ships empty — no sample data. The app starts as a clean database
-  // and fills up as real jobs and candidates are added.
-  return {
-    jobs: [],
-    candidates: [],
-    assessments: [],
-    settings: { totalJobsTargeted: 0 }
-  };
-}
-
+// DB is a per-view cache, not the whole database (see the API client above).
 let DB = null;
 
 /* ---------------------------------------------------------
@@ -662,20 +759,13 @@ function matchScore(candidate, job){
   return Math.round(Math.min(100, score));
 }
 const ASSESSMENT_MAX = 30;
-function avgAssessment(candidateId){
-  const rows = DB.assessments.filter(a=>a.candidateId===candidateId);
-  if(!rows.length) return null;
-  return Math.round((rows.reduce((s,a)=>s+Number(a.score),0)/rows.length)*10)/10;
-}
-function highestAssessment(candidateId){
-  const rows = DB.assessments.filter(a=>a.candidateId===candidateId);
-  if(!rows.length) return null;
-  return Math.max(...rows.map(a=>Number(a.score)));
-}
+// Assessment aggregates now arrive with each candidate from the
+// server (assessAvg / assessMax / assessCount), computed in SQL —
+// no need to scan a full in-memory assessments table.
 function compositeRank(candidate){
   const job = DB.jobs.find(j=>j.id===candidate.appliedFor);
   const m = matchScore(candidate, job) ?? 50;
-  const a = avgAssessment(candidate.id);
+  const a = candidate.assessAvg ?? null;
   const aNormalized = a!==null ? (a/ASSESSMENT_MAX)*100 : null;
   const composite = aNormalized!==null ? Math.round(m*0.55 + aNormalized*0.45) : m;
   return {matchPct:m, assessAvg:a, composite};
@@ -739,8 +829,9 @@ let currentView = 'dashboard';
 function renderNav(){
   const el = document.getElementById('navtabs');
   el.innerHTML = NAV.map(n=>{
-    const count = n.id==='candidates' ? DB.candidates.length
-      : n.id==='assessments' ? DB.assessments.length
+    // Counts come from the server's totals, not from a fully-loaded
+    // client-side table — only jobs are held in full.
+    const count = n.id==='candidates' ? (DB.candidateTotal ?? null)
       : n.id==='jobs' ? DB.jobs.length : null;
     return `<div class="navtab ${currentView===n.id?'active':''}" data-nav="${n.id}">
       <span class="tabnum">${n.num}</span><span>${n.label}</span>
@@ -748,104 +839,66 @@ function renderNav(){
     </div>`;
   }).join('');
   el.querySelectorAll('.navtab').forEach(t=>{
-    t.onclick = ()=>{ currentView = t.dataset.nav; render(); };
+    t.onclick = ()=>{ currentView = t.dataset.nav; candOffset = 0; render(); };
   });
 }
 
-function render(){
+function showLoading(){
+  const main = document.getElementById('main');
+  if(main) main.innerHTML = `<div class="empty" style="margin-top:60px;">
+    <div class="display">جارٍ التحميل…</div></div>`;
+}
+
+// Views now fetch their own data from the server, so render() is async.
+async function render(){
   renderNav();
   const main = document.getElementById('main');
-  if(currentView==='dashboard') main.innerHTML = viewDashboard();
-  if(currentView==='candidates') main.innerHTML = viewCandidates();
-  if(currentView==='pipeline') main.innerHTML = viewPipeline();
-  if(currentView==='assessments') main.innerHTML = viewAssessments();
-  if(currentView==='jobs') main.innerHTML = viewJobs();
-  attachViewHandlers();
+  showLoading();
+  try{
+    let html = '';
+    if(currentView==='dashboard')       html = await viewDashboard();
+    else if(currentView==='candidates') html = await viewCandidates();
+    else if(currentView==='pipeline')   html = await viewPipeline();
+    else if(currentView==='assessments')html = await viewAssessments();
+    else if(currentView==='jobs')       html = await viewJobs();
+    main.innerHTML = html;
+    renderNav();
+    attachViewHandlers();
+  }catch(e){
+    console.error('Failed to render view:', e);
+    main.innerHTML = `<div class="empty" style="margin-top:60px;">
+      <div class="display">تعذّر تحميل البيانات</div>
+      <div>${esc(e.message)}</div>
+      <div style="margin-top:14px;"><button class="btn btn-primary" onclick="render()">إعادة المحاولة</button></div>
+    </div>`;
+  }
 }
 
 /* ---------------------------------------------------------
    VIEW: DASHBOARD
 --------------------------------------------------------- */
-function computeKPIs(jobId){
-  let candidates = DB.candidates.map(c=> (c.stageHistory && c.stageHistory.length) ? c : {...c, stageHistory:[{stage:c.stage, at:c.createdAt||Date.now()}]});
-  if(jobId && jobId!=='الكل') candidates = candidates.filter(c=>c.appliedFor===jobId);
-
-  const hired = candidates.filter(c=>c.stage==='تم التعيين');
-
-  // 1) Time to Hire (days) — average days from first stage entry to hire
-  let timeToHire = null;
-  if(hired.length){
-    const totalDays = hired.reduce((sum,c)=>{
-      const first = c.stageHistory[0].at;
-      const hireEntry = [...c.stageHistory].reverse().find(h=>h.stage==='تم التعيين');
-      const hireAt = hireEntry ? hireEntry.at : (c.stageChangedAt || Date.now());
-      return sum + Math.max(0,(hireAt-first)/86400000);
-    },0);
-    timeToHire = Math.round(totalDays/hired.length);
-  }
-
-  // 2) Source of Hire — breakdown of hired candidates by source
-  const sourceCounts = {};
-  hired.forEach(c=>{
-    const src = (c.source||'').trim() || 'غير محدد';
-    sourceCounts[src] = (sourceCounts[src]||0) + 1;
-  });
-  const sourceBreakdown = Object.entries(sourceCounts)
-    .map(([source,count])=>({source,count}))
-    .sort((a,b)=>b.count-a.count);
-
-  // 3) Interview → Offer Ratio
-  const reachedInterview = candidates.filter(c=>c.stageHistory.some(h=>['المقابلة','العرض','تم التعيين'].includes(h.stage)));
-  const reachedOfferOfThose = reachedInterview.filter(c=>c.stageHistory.some(h=>['العرض','تم التعيين'].includes(h.stage))).length;
-  const interviewToOfferRatio = reachedInterview.length ? Math.round((reachedOfferOfThose/reachedInterview.length)*100) : null;
-
-  // 4) Offer → Join Ratio
-  const reachedOffer = candidates.filter(c=>c.stageHistory.some(h=>['العرض','تم التعيين'].includes(h.stage)));
-  const offerToHire = reachedOffer.filter(c=>c.stage==='تم التعيين').length;
-  const offerToJoinRatio = reachedOffer.length ? Math.round((offerToHire/reachedOffer.length)*100) : null;
-
-  // 5) Vacancy Fill Rate — filled headcount vs required headcount
-  const jobsInScope = (jobId && jobId!=='الكل') ? DB.jobs.filter(j=>j.id===jobId) : DB.jobs;
-  let totalHeadcount = 0, totalFilled = 0;
-  jobsInScope.forEach(j=>{
-    const need = j.headcount || 1;
-    const filled = DB.candidates.filter(c=>c.appliedFor===j.id && c.stage==='تم التعيين').length;
-    totalHeadcount += need;
-    totalFilled += Math.min(filled, need);
-  });
-  const vacancyFillRate = totalHeadcount ? Math.round((totalFilled/totalHeadcount)*100) : null;
-
-  // 6) Jobs Filled ÷ Jobs Approved × 100
-  const approvedJobs = jobsInScope.filter(j=>j.approved!==false);
-  const filledJobsCount = approvedJobs.filter(j=>{
-    const need = j.headcount || 1;
-    const filled = DB.candidates.filter(c=>c.appliedFor===j.id && c.stage==='تم التعيين').length;
-    return filled>=need;
-  }).length;
-  const jobsFilledApprovedRate = approvedJobs.length ? Math.round((filledJobsCount/approvedJobs.length)*100) : null;
-
-  // 7) Total Vacancy Days (since manual job-post date) ÷ Total Jobs Targeted (manual)
-  const jobsWithPostDate = jobsInScope.filter(j=>j.postDate);
-  const totalVacancyDays = jobsWithPostDate.reduce((sum,j)=>{
-    const posted = new Date(j.postDate).getTime();
-    if(isNaN(posted)) return sum;
-    return sum + Math.max(0, Math.floor((Date.now()-posted)/86400000));
-  },0);
-  const targetJobs = (DB.settings && DB.settings.totalJobsTargeted) || 0;
-  const vacancyDaysPerTarget = targetJobs>0 ? Math.round((totalVacancyDays/targetJobs)*10)/10 : null;
-
-  return {timeToHire, sourceBreakdown, interviewToOfferRatio, offerToJoinRatio, vacancyFillRate,
-          jobsFilledApprovedRate, totalVacancyDays, vacancyDaysPerTarget};
-}
-
 let dashboardJobFilter = 'الكل';
 
-function viewDashboard(){
-  const total = DB.candidates.length;
-  const hired = DB.candidates.filter(c=>c.stage==='تم التعيين').length;
-  const inPipe = DB.candidates.filter(c=>!['تم التعيين','مرفوض','مناسب لشاغر آخر'].includes(c.stage)).length;
-  const avgMatch = total ? Math.round(DB.candidates.reduce((s,c)=>s+compositeRank(c).matchPct,0)/total) : 0;
-  const kpis = computeKPIs(dashboardJobFilter);
+// KPIs are now computed in SQL by the server. The old client-side
+// computeKPIs() is gone — it required every candidate in memory.
+const INSIGHT_COLOR = { warn:'var(--orange)', info:'var(--blue)', good:'var(--green)' };
+async function viewDashboard(){
+  const [k, insights] = await Promise.all([
+    api.kpis({ job: dashboardJobFilter }),
+    api.insights()
+  ]);
+
+  const insightsHTML = insights.length ? `
+  <div class="detail-section" style="margin-top:2px;">
+    <h3>رؤى ذكية — يحسبها النظام مباشرة من بياناتك</h3>
+    <div class="insights">
+      ${insights.map((it,i)=>`
+        <div class="insight" style="--icolor:${INSIGHT_COLOR[it.severity]||'var(--teal)'};animation-delay:${i*0.05}s;${it.candidateId?'cursor:pointer;':''}" ${it.candidateId?`data-cand="${it.candidateId}"`:''}>
+          <span class="ic">${esc(it.title)}</span>
+          <span class="iv">${esc(it.body)}</span>
+        </div>`).join('')}
+    </div>
+  </div>` : '';
 
   return `
   <div class="page-head">
@@ -855,11 +908,13 @@ function viewDashboard(){
     </div>
   </div>
   <div class="stats">
-    <div class="stat"><div class="accent" style="background:${STAGE_COLOR['تم الترشيح']}"></div><div class="n mono">${total}</div><div class="l">إجمالي المرشحين</div></div>
-    <div class="stat"><div class="accent" style="background:${STAGE_COLOR['المقابلة']}"></div><div class="n mono">${inPipe}</div><div class="l">نشط في المسار</div></div>
-    <div class="stat"><div class="accent" style="background:${STAGE_COLOR['تم التعيين']}"></div><div class="n mono">${hired}</div><div class="l">تم تعيينهم</div></div>
-    <div class="stat"><div class="accent" style="background:${scoreColor(avgMatch)}"></div><div class="n mono">${avgMatch}%</div><div class="l">متوسط مطابقة السيرة الذاتية</div></div>
+    <div class="stat"><div class="accent" style="background:${STAGE_COLOR['تم الترشيح']}"></div><div class="n mono">${k.total}</div><div class="l">إجمالي المرشحين</div></div>
+    <div class="stat"><div class="accent" style="background:${STAGE_COLOR['المقابلة']}"></div><div class="n mono">${k.inPipe}</div><div class="l">نشط في المسار</div></div>
+    <div class="stat"><div class="accent" style="background:${STAGE_COLOR['تم التعيين']}"></div><div class="n mono">${k.hired}</div><div class="l">تم تعيينهم</div></div>
+    <div class="stat"><div class="accent" style="background:#8b93a1"></div><div class="n mono">${DB.jobs.length}</div><div class="l">الوظائف الشاغرة</div></div>
   </div>
+
+  ${insightsHTML}
 
   <div class="detail-section" style="margin-top:6px;">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
@@ -870,13 +925,13 @@ function viewDashboard(){
       </select>
     </div>
     <div class="stats" style="grid-template-columns:repeat(3,1fr);">
-      <div class="stat"><div class="n mono">${kpis.timeToHire!==null?kpis.timeToHire:'—'}</div><div class="l">الوقت للتوظيف (أيام)</div></div>
-      <div class="stat"><div class="n mono">${kpis.interviewToOfferRatio!==null?kpis.interviewToOfferRatio+'%':'—'}</div><div class="l">نسبة التحويل من المقابلة إلى العرض</div></div>
-      <div class="stat"><div class="n mono">${kpis.offerToJoinRatio!==null?kpis.offerToJoinRatio+'%':'—'}</div><div class="l">نسبة القبول من العرض إلى الانضمام</div></div>
-      <div class="stat"><div class="n mono">${kpis.vacancyFillRate!==null?kpis.vacancyFillRate+'%':'—'}</div><div class="l">معدل تعبئة الشواغر</div></div>
-      <div class="stat"><div class="n mono">${kpis.jobsFilledApprovedRate!==null?kpis.jobsFilledApprovedRate+'%':'—'}</div><div class="l">الوظائف المشغولة ÷ الوظائف المعتمدة</div></div>
+      <div class="stat"><div class="n mono">${k.timeToHire!==null?k.timeToHire:'—'}</div><div class="l">الوقت للتوظيف (أيام)</div></div>
+      <div class="stat"><div class="n mono">${k.interviewToOfferRatio!==null?k.interviewToOfferRatio+'%':'—'}</div><div class="l">نسبة التحويل من المقابلة إلى العرض</div></div>
+      <div class="stat"><div class="n mono">${k.offerToJoinRatio!==null?k.offerToJoinRatio+'%':'—'}</div><div class="l">نسبة القبول من العرض إلى الانضمام</div></div>
+      <div class="stat"><div class="n mono">${k.vacancyFillRate!==null?k.vacancyFillRate+'%':'—'}</div><div class="l">معدل تعبئة الشواغر</div></div>
+      <div class="stat"><div class="n mono">${k.jobsFilledApprovedRate!==null?k.jobsFilledApprovedRate+'%':'—'}</div><div class="l">الوظائف المشغولة ÷ الوظائف المعتمدة</div></div>
       <div class="stat">
-        <div class="n mono">${kpis.vacancyDaysPerTarget!==null?kpis.vacancyDaysPerTarget:'—'}</div>
+        <div class="n mono">${k.vacancyDaysPerTarget!==null?k.vacancyDaysPerTarget:'—'}</div>
         <div class="l">إجمالي أيام الشغور ÷ الوظائف المستهدفة</div>
         <div style="margin-top:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
           <span>الوظائف المستهدفة:</span>
@@ -886,8 +941,8 @@ function viewDashboard(){
     </div>
     <div style="margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;">
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">مصدر التوظيف</div>
-      ${kpis.sourceBreakdown.length ? kpis.sourceBreakdown.map(s=>{
-        const max = kpis.sourceBreakdown[0].count;
+      ${k.sourceBreakdown.length ? k.sourceBreakdown.map(s=>{
+        const max = k.sourceBreakdown[0].count;
         const pct = Math.round((s.count/max)*100);
         return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
           <div style="width:120px;font-size:12.5px;flex-shrink:0;">${esc(s.source)}</div>
@@ -907,27 +962,33 @@ function viewDashboard(){
 let candFilterStage = 'الكل';
 let candFilterJob = 'الكل';
 let candSearch = '';
+let candOffset = 0;
+const CAND_PAGE_SIZE = 50;
+let candSearchTimer = null;
 
-function filteredCandidates(){
-  return DB.candidates.filter(c=>{
-    if(candFilterStage!=='الكل' && c.stage!==candFilterStage) return false;
-    if(candFilterJob!=='الكل' && c.appliedFor!==candFilterJob) return false;
-    if(candSearch){
-      const hay = (c.name+c.resumeText+c.skills.join(' ')).toLowerCase();
-      if(!hay.includes(candSearch.toLowerCase())) return false;
-    }
-    return true;
-  });
-}
+// Filtering, searching and paging all happen in SQL now. The browser
+// only ever holds one page of candidates, so this stays fast no matter
+// how many records exist.
+async function viewCandidates(){
+  const params = { limit: CAND_PAGE_SIZE, offset: candOffset };
+  if(candFilterJob !== 'الكل')   params.job = candFilterJob;
+  if(candFilterStage !== 'الكل') params.stage = candFilterStage;
+  if(candSearch)                 params.q = candSearch;
 
-function viewCandidates(){
-  let list = filteredCandidates();
+  const page = await api.candidates(params);
+  DB.candidates = page.candidates;
+  DB.candidateTotal = page.total;
+
+  const from = page.total === 0 ? 0 : candOffset + 1;
+  const to = Math.min(candOffset + CAND_PAGE_SIZE, page.total);
+  const hasPrev = candOffset > 0;
+  const hasNext = candOffset + CAND_PAGE_SIZE < page.total;
 
   return `
   <div class="page-head">
     <div><h1>قاعدة السير الذاتية</h1><div class="sub">كل سيرة ذاتية جمعتها، قابلة للبحث ومُقيّمة مقابل وظائفك الشاغرة.</div></div>
     <div style="display:flex;gap:10px;">
-      <button class="btn btn-ghost" id="btnExportCandidates">تصدير (CSV)</button>
+      <a class="btn btn-ghost" href="/api/export/candidates.csv" style="text-decoration:none;">تصدير (CSV)</a>
       <button class="btn btn-ghost" id="btnImportCandidates">استيراد السير الذاتية</button>
       <button class="btn btn-primary" id="btnAddCandidate">+ إضافة مرشح</button>
     </div>
@@ -943,7 +1004,14 @@ function viewCandidates(){
       ${DB.jobs.map(j=>`<option value="${j.id}" ${candFilterJob===j.id?'selected':''}>${esc(j.title)}</option>`).join('')}
     </select>
   </div>
-  ${list.length ? `<div class="card-grid">${list.map(cardHTML).join('')}</div>`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:12.5px;color:var(--muted);">
+    <span>${page.total ? `عرض ${from}–${to} من ${page.total}` : ''}</span>
+    <span style="display:flex;gap:8px;">
+      <button class="btn btn-sm btn-ghost" id="candPrev" ${hasPrev?'':'disabled style="opacity:.4;cursor:default;"'}>السابق</button>
+      <button class="btn btn-sm btn-ghost" id="candNext" ${hasNext?'':'disabled style="opacity:.4;cursor:default;"'}>التالي</button>
+    </span>
+  </div>
+  ${page.candidates.length ? `<div class="card-grid">${page.candidates.map(cardHTML).join('')}</div>`
     : emptyState('لا يوجد مرشحون مطابقون', 'جرّب مسح الفلاتر أو أضف مرشحًا جديدًا.')}
   `;
 }
@@ -989,10 +1057,8 @@ function stageSinceLabel(c){
 
 let pipelineJobFilter = 'الكل';
 
-function viewPipeline(){
-  const filteredCandidates = pipelineJobFilter==='الكل'
-    ? DB.candidates
-    : DB.candidates.filter(c=>c.appliedFor===pipelineJobFilter);
+async function viewPipeline(){
+  const cards = await api.pipeline({ job: pipelineJobFilter });
   const filterJob = pipelineJobFilter!=='الكل' ? DB.jobs.find(j=>j.id===pipelineJobFilter) : null;
 
   return `
@@ -1007,21 +1073,18 @@ function viewPipeline(){
   </div>
   <div class="kanban">
     ${STAGES.map(stage=>{
-      const items = filteredCandidates.filter(c=>c.stage===stage);
+      const items = cards.filter(c=>c.stage===stage);
       return `<div class="kcol">
         <div class="kcol-head">
           <span class="t" style="color:${STAGE_COLOR[stage]}">${stage}</span>
           <span class="mono" style="font-size:11px;color:var(--muted)">${items.length}</span>
         </div>
         <div class="kcol-body" data-stage="${stage}">
-          ${items.map(c=>{
-            const job = DB.jobs.find(j=>j.id===c.appliedFor);
-            return `<div class="kcard" draggable="true" data-cand="${c.id}">
+          ${items.map(c=>`<div class="kcard" draggable="true" data-cand="${c.id}">
               <div class="kn">${esc(c.name)}</div>
-              <div class="kr">${job?esc(job.title):'—'}</div>
-              <div class="kd">${stageSinceLabel(c)}</div>
-            </div>`;
-          }).join('')}
+              <div class="kr">${c.jobTitle?esc(c.jobTitle):'—'}</div>
+              <div class="kd">${stageSinceLabel({stageChangedAt:c.stageChangedAt})}</div>
+            </div>`).join('')}
         </div>
       </div>`;
     }).join('')}
@@ -1044,15 +1107,10 @@ function attachDragHandlers(){
       e.preventDefault();
       col.classList.remove('dragover');
       const id = e.dataTransfer.getData('text/plain');
-      const c = DB.candidates.find(x=>x.id===id);
-      if(c){
-        if(col.dataset.stage===ALT_STAGE){
-          setAlternativeCandidate(c, true);
-        }else{
-          if(c.stage===ALT_STAGE) c.previousStage = null;
-          changeStage(c, col.dataset.stage);
-        }
-        saveDB(); render();
+      if(id){
+        // The server records the stage change and its history row, and
+        // remembers the previous stage when entering the alt pool.
+        mutate(()=>api.setStage(id, col.dataset.stage)).then(()=>render());
       }
     });
   });
@@ -1063,27 +1121,15 @@ function attachDragHandlers(){
 --------------------------------------------------------- */
 let assessJobFilter = 'الكل';
 
-function viewAssessments(){
-  let rows = [...DB.assessments].sort((a,b)=>b.date-a.date);
-  if(assessJobFilter!=='الكل'){
-    rows = rows.filter(a=>{
-      const cand = DB.candidates.find(c=>c.id===a.candidateId);
-      return cand && cand.appliedFor===assessJobFilter;
-    });
-  }
-
-  let candsInScope = DB.candidates.filter(c=>DB.assessments.some(a=>a.candidateId===c.id));
-  if(assessJobFilter!=='الكل') candsInScope = candsInScope.filter(c=>c.appliedFor===assessJobFilter);
-  const ranked = candsInScope.map(c=>({
-    c, highest: highestAssessment(c.id), avg: avgAssessment(c.id),
-    count: DB.assessments.filter(a=>a.candidateId===c.id).length
-  })).sort((x,y)=>(y.highest??-1)-(x.highest??-1));
-
-  let altCandidates = DB.candidates.filter(c=>c.stage===ALT_STAGE);
-  if(assessJobFilter!=='الكل') altCandidates = altCandidates.filter(c=>c.alternativeJobId===assessJobFilter);
-  altCandidates = altCandidates.map(c=>({
-    c, highest: highestAssessment(c.id)
-  })).sort((x,y)=>(y.highest??-1)-(x.highest??-1));
+async function viewAssessments(){
+  // Rankings and the alt-vacancy pool are both computed server-side.
+  const [rows, ranked, altPage] = await Promise.all([
+    api.assessments({ job: assessJobFilter }),
+    api.rankings({ job: assessJobFilter }),
+    api.candidates({ stage: ALT_STAGE, limit: 200,
+                     ...(assessJobFilter!=='الكل' ? {altJob: assessJobFilter} : {}) })
+  ]);
+  const altCandidates = altPage.candidates;
 
   return `
   <div class="page-head">
@@ -1100,18 +1146,15 @@ function viewAssessments(){
   <div class="detail-section" style="margin-top:0;">
     <h3>أعلى المرشحين تقييمًا</h3>
     ${ranked.length ? `<table><thead><tr><th>الاسم</th><th>الوظيفة المتقدم لها</th><th>المرحلة</th><th>أعلى درجة</th><th>متوسط الدرجات</th><th>عدد التقييمات</th><th></th></tr></thead><tbody>
-      ${ranked.map(({c,highest,avg,count})=>{
-        const job = DB.jobs.find(j=>j.id===c.appliedFor);
-        return `<tr>
-          <td class="rowlink" data-cand="${c.id}" style="cursor:pointer"><strong>${esc(c.name)}</strong></td>
-          <td>${job?esc(job.title):'—'}</td>
-          <td><span class="stagepill" style="background:${STAGE_COLOR[c.stage]}">${c.stage}</span></td>
-          <td class="scoreband" style="color:${assessmentScoreColor(highest)}">${highest}/${ASSESSMENT_MAX}</td>
-          <td class="scoreband" style="color:${assessmentScoreColor(avg)}">${avg}/${ASSESSMENT_MAX}</td>
-          <td class="mono" style="font-size:11px;color:${count<3?'var(--rose)':'var(--muted)'}">${count}${count<3?' (أقل من 3 موصى بها)':''}</td>
-          <td><span class="btn btn-sm btn-ghost" data-downloadcv="${c.id}">PDF</span></td>
-        </tr>`;
-      }).join('')}
+      ${ranked.map(r=>`<tr>
+          <td class="rowlink" data-cand="${r.id}" style="cursor:pointer"><strong>${esc(r.name)}</strong></td>
+          <td>${r.jobTitle?esc(r.jobTitle):'—'}</td>
+          <td><span class="stagepill" style="background:${STAGE_COLOR[r.stage]}">${r.stage}</span></td>
+          <td class="scoreband" style="color:${assessmentScoreColor(r.highest)}">${r.highest}/${ASSESSMENT_MAX}</td>
+          <td class="scoreband" style="color:${assessmentScoreColor(r.avg)}">${r.avg}/${ASSESSMENT_MAX}</td>
+          <td class="mono" style="font-size:11px;color:${r.count<3?'var(--rose)':'var(--muted)'}">${r.count}${r.count<3?' (أقل من 3 موصى بها)':''}</td>
+          <td><span class="btn btn-sm btn-ghost" data-downloadcv="${r.id}">PDF</span></td>
+        </tr>`).join('')}
     </tbody></table>` : emptyState('لا توجد تقييمات بعد', 'سجّل تقييمًا لمرشح لعرضه هنا.')}
   </div>
 
@@ -1119,14 +1162,14 @@ function viewAssessments(){
     <h3>مناسب لشاغر آخر</h3>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">مرشحون في قائمة الانتظار — لم يكونوا الخيار الأول لوظيفتهم الأصلية، لكنهم محفوظون للرجوع إليهم عند الحاجة. اختر وظيفة من القائمة أعلاه لعرض من رُشِّح لها تحديدًا.</div>
     ${altCandidates.length ? `<table><thead><tr><th>الاسم</th><th>الوظيفة الأصلية</th><th>الوظيفة البديلة المقترحة</th><th>أعلى درجة</th><th></th></tr></thead><tbody>
-      ${altCandidates.map(({c,highest})=>{
+      ${altCandidates.map(c=>{
         const origJob = DB.jobs.find(j=>j.id===c.appliedFor);
         const altJob = DB.jobs.find(j=>j.id===c.alternativeJobId);
         return `<tr>
           <td class="rowlink" data-cand="${c.id}" style="cursor:pointer"><strong>${esc(c.name)}</strong></td>
           <td>${origJob?esc(origJob.title):'—'}</td>
-          <td>${altJob?esc(altJob.title):'<span style=\"color:var(--muted)\">لم تحدد بعد</span>'}</td>
-          <td class="scoreband" style="color:${highest!==null?assessmentScoreColor(highest):'var(--muted)'}">${highest!==null?highest+'/'+ASSESSMENT_MAX:'—'}</td>
+          <td>${altJob?esc(altJob.title):'<span style="color:var(--muted)">لم تحدد بعد</span>'}</td>
+          <td class="scoreband" style="color:${c.assessMax!==null?assessmentScoreColor(c.assessMax):'var(--muted)'}">${c.assessMax!==null?c.assessMax+'/'+ASSESSMENT_MAX:'—'}</td>
           <td><span class="btn btn-sm btn-ghost" data-downloadcv="${c.id}">PDF</span></td>
         </tr>`;
       }).join('')}
@@ -1136,18 +1179,15 @@ function viewAssessments(){
   <div class="detail-section">
     <h3>سجل التقييمات</h3>
     ${rows.length ? `<table><thead><tr><th>المرشح</th><th>النوع</th><th>الدرجة</th><th>التوقيع</th><th>ملاحظات</th><th>التاريخ</th><th></th></tr></thead><tbody>
-      ${rows.map(a=>{
-        const cand = DB.candidates.find(c=>c.id===a.candidateId);
-        return `<tr>
-          <td><strong>${cand?esc(cand.name):'غير معروف'}</strong></td>
+      ${rows.map(a=>`<tr>
+          <td><strong>${esc(a.candidateName||'غير معروف')}</strong></td>
           <td>${esc(a.type)}</td>
           <td class="scoreband" style="color:${assessmentScoreColor(a.score)}">${a.score}/${ASSESSMENT_MAX}</td>
           <td style="font-size:12px;color:var(--muted)">${esc(a.signature||'—')}</td>
           <td style="max-width:220px;color:var(--muted)">${esc((a.notes||'—').slice(0,80))}${a.notes&&a.notes.length>80?'…':''}</td>
           <td class="mono" style="font-size:11px;color:var(--muted)">${new Date(a.date).toLocaleDateString('ar-EG')}</td>
           <td><span class="btn btn-sm btn-danger" data-delassess="${a.id}">حذف</span></td>
-        </tr>`;
-      }).join('')}
+        </tr>`).join('')}
     </tbody></table>` : emptyState('لا توجد تقييمات مسجلة', 'سجّل أول تقييم لمرشح.')}
   </div>
   `;
@@ -1156,17 +1196,18 @@ function viewAssessments(){
 /* ---------------------------------------------------------
    VIEW: JOBS
 --------------------------------------------------------- */
-function viewJobs(){
+async function viewJobs(){
+  await refreshJobs();   // counts come from the server
   return `
   <div class="page-head">
     <div><h1>الوظائف الشاغرة</h1><div class="sub">حدد معايير النجاح لكل وظيفة — هذا يشغّل نسبة المطابقة وأسئلة المقابلة. ارفع السير الذاتية مباشرة إلى أي وظيفة من هنا لربطها تلقائيًا بها.</div></div>
     <button class="btn btn-primary" id="btnAddJob">+ إضافة وظيفة</button>
   </div>
   ${DB.jobs.length ? `<div class="card-grid">${DB.jobs.map(j=>{
-    const n = DB.candidates.filter(c=>c.appliedFor===j.id).length;
+    const n = j.candidateCount || 0;
     const need = j.headcount || 1;
-    const filled = DB.candidates.filter(c=>c.appliedFor===j.id && c.stage==='تم التعيين').length;
-    return `<div class="idxcard" style="--stage-color:${'#3fa796'}">
+    const filled = j.hiredCount || 0;
+    return `<div class="idxcard" style="--stage-color:#3fa796">
       <div class="top-row">
         <div>
           <div class="name">${esc(j.title)}</div>
@@ -1284,7 +1325,7 @@ function openAddCandidate(editId, presetJobId){
     }
   };
 
-  document.getElementById('mSave').onclick = ()=>{
+  document.getElementById('mSave').onclick = async ()=>{
     const name = document.getElementById('fName').value.trim();
     if(!name){ alert('الاسم مطلوب.'); return; }
     const payload = {
@@ -1298,23 +1339,19 @@ function openAddCandidate(editId, presetJobId){
       skills: document.getElementById('fSkills').value.split(',').map(s=>s.trim()).filter(Boolean),
       resumeText: document.getElementById('fResume').value.trim(),
     };
-    let candidateRef;
-    if(editing){
-      Object.assign(editing, payload);
-      candidateRef = editing;
-    }else{
-      const now = Date.now();
-      candidateRef = {id: uid('cand'), stage:'تم الترشيح', tags:[], notes:'', createdAt: now, stageHistory:[{stage:'تم الترشيح', at:now}], stageChangedAt: now, ...payload};
-      DB.candidates.push(candidateRef);
-    }
+    // Attach the original file (base64) so the server can store it
+    // alongside the record in a single transaction.
     if(pendingFile){
       const ext = pendingFile.name.split('.').pop().toLowerCase();
-      candidateRef.hasOriginalFile = true;
-      candidateRef.resumeFileName = pendingFile.name;
-      candidateRef.resumeFileType = ext;
-      storeOriginalFile(candidateRef.id, pendingFile).then(()=>saveDB());
+      payload.fileBase64 = await fileToBase64(pendingFile);
+      payload.resumeFileName = pendingFile.name;
+      payload.resumeFileType = ext;
+      payload.mimeType = MIME_BY_EXT[ext] || 'application/octet-stream';
     }
-    saveDB(); closeModal(); render();
+    await mutate(()=> editing
+      ? api.updateCandidate(editing.id, payload)
+      : api.createCandidate(payload));
+    closeModal(); render();
   };
 }
 
@@ -1349,9 +1386,11 @@ async function openBulkImport(presetJobId){
       try{
         const text = await extractResumeText(file);
         const fileExt = file.name.split('.').pop().toLowerCase();
-        const c = {
-          id: uid('cand'),
-          name: guessNameFromText(text) || guessNameFromFilename(file.name),
+        const guessedName = guessNameFromText(text) || guessNameFromFilename(file.name);
+        // Each résumé is posted individually, so one bad file can't
+        // fail the whole batch.
+        await api.createCandidate({
+          name: guessedName,
           email: guessEmailFromText(text),
           phone: guessPhoneFromText(text),
           currentTitle: guessJobTitleFromText(text),
@@ -1360,13 +1399,12 @@ async function openBulkImport(presetJobId){
           appliedFor: presetJob ? presetJob.id : null,
           skills: guessSkillsFromText(text),
           resumeText: text,
-          hasOriginalFile: true, resumeFileName: file.name, resumeFileType: fileExt,
-          stage:'تم الترشيح', tags:[], notes:'', createdAt: Date.now(),
-          stageHistory:[{stage:'تم الترشيح', at:Date.now()}], stageChangedAt: Date.now()
-        };
-        DB.candidates.push(c);
-        storeOriginalFile(c.id, file);
-        line.textContent = '✓ ' + file.name + ' ← أضيف باسم "' + c.name + '"' + (presetJob ? ' — الوظيفة: ' + presetJob.title : '');
+          fileBase64: await fileToBase64(file),
+          resumeFileName: file.name,
+          resumeFileType: fileExt,
+          mimeType: MIME_BY_EXT[fileExt] || 'application/octet-stream'
+        });
+        line.textContent = '✓ ' + file.name + ' ← أضيف باسم "' + guessedName + '"' + (presetJob ? ' — الوظيفة: ' + presetJob.title : '');
         line.style.color = '#5fb87a';
         ok++;
       }catch(err){
@@ -1375,7 +1413,6 @@ async function openBulkImport(presetJobId){
         failed++;
       }
     }
-    saveDB();
     const summary = document.createElement('div');
     summary.style.marginTop='10px'; summary.style.fontWeight='700';
     summary.textContent = presetJob
@@ -1385,19 +1422,23 @@ async function openBulkImport(presetJobId){
   };
 }
 
-function deleteJob(jobId){
+async function deleteJob(jobId){
   const job = DB.jobs.find(j=>j.id===jobId);
   if(!job) return;
-  const linked = DB.candidates.filter(c=>c.appliedFor===jobId);
-  const msg = linked.length>0
-    ? `هذه الوظيفة ("${job.title}") مرتبطة حاليًا بـ ${linked.length} مرشح. حذفها سيُلغي ربطهم بها فقط (تبقى بياناتهم وسيرهم الذاتية كما هي). هل تريد المتابعة؟`
+  const linked = job.candidateCount || 0;
+  const msg = linked>0
+    ? `هذه الوظيفة ("${job.title}") مرتبطة حاليًا بـ ${linked} مرشح. حذفها سيُلغي ربطهم بها فقط (تبقى بياناتهم وسيرهم الذاتية كما هي). هل تريد المتابعة؟`
     : `هل تريد حذف وظيفة "${job.title}"؟ لا يمكن التراجع عن هذا الإجراء.`;
   if(!confirm(msg)) return;
-  linked.forEach(c=>{ c.appliedFor = null; });
-  DB.jobs = DB.jobs.filter(j=>j.id!==jobId);
+  // The DB nulls out applied_for on linked candidates automatically
+  // (ON DELETE SET NULL), so their records survive.
+  await mutate(()=>api.deleteJob(jobId));
   if(dashboardJobFilter===jobId) dashboardJobFilter = 'الكل';
   if(candFilterJob===jobId) candFilterJob = 'الكل';
-  saveDB(); render();
+  if(pipelineJobFilter===jobId) pipelineJobFilter = 'الكل';
+  if(assessJobFilter===jobId) assessJobFilter = 'الكل';
+  await refreshJobs();
+  render();
 }
 
 function openAddJob(){
@@ -1430,21 +1471,23 @@ function openAddJob(){
   `);
   document.getElementById('mClose').onclick = closeModal;
   document.getElementById('mCancel').onclick = closeModal;
-  document.getElementById('mSave').onclick = ()=>{
+  document.getElementById('mSave').onclick = async ()=>{
     const title = document.getElementById('jTitle').value.trim();
     if(!title){ alert('المسمى الوظيفي مطلوب.'); return; }
     const j = {
-      id: uid('job'), title,
+      title,
       department: document.getElementById('jDept').value.trim(),
       seniority: document.getElementById('jSeniority').value,
       headcount: Math.max(1, Number(document.getElementById('jHeadcount').value)||1),
-      postDate: document.getElementById('jPostDate').value || '',
+      postDate: document.getElementById('jPostDate').value || null,
       approved: document.getElementById('jApproved').checked,
       requiredSkills: document.getElementById('jReq').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean),
       niceSkills: document.getElementById('jNice').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean),
       description: document.getElementById('jDesc').value.trim(),
     };
-    DB.jobs.push(j); saveDB(); closeModal(); render();
+    await mutate(()=>api.createJob(j));
+    await refreshJobs();
+    closeModal(); render();
   };
 }
 
@@ -1497,28 +1540,34 @@ function openAddAssessment(presetCandId){
     }
   };
 
-  document.getElementById('mSave').onclick = ()=>{
-    if(!DB.candidates.length){ alert('أضف مرشحًا أولًا.'); return; }
-    const a = {
-      id: uid('as'),
-      candidateId: document.getElementById('aCand').value,
+  document.getElementById('mSave').onclick = async ()=>{
+    const candId = document.getElementById('aCand').value;
+    if(!candId){ alert('اختر مرشحًا أولًا.'); return; }
+    await mutate(()=>api.createAssessment({
+      candidateId: candId,
       type: document.getElementById('aType').value.trim() || 'تقييم',
       score: Math.max(0, Math.min(ASSESSMENT_MAX, Number(document.getElementById('aScore').value)||0)),
       signature: document.getElementById('aSignature').value.trim(),
-      notes: document.getElementById('aNotes').value.trim(),
-      date: Date.now()
-    };
-    DB.assessments.push(a); saveDB(); closeModal(); render();
+      notes: document.getElementById('aNotes').value.trim()
+    }));
+    closeModal(); render();
   };
 }
 
-function openDetail(candId){
-  const c = DB.candidates.find(x=>x.id===candId);
-  if(!c) return;
+async function openDetail(candId){
+  // Fetch the full record — the list view only carries summary fields,
+  // not stage history or the assessment list.
+  let c;
+  try{
+    c = await api.candidate(candId);
+  }catch(e){
+    alert('تعذّر تحميل بيانات المرشح: ' + e.message);
+    return;
+  }
   const job = DB.jobs.find(j=>j.id===c.appliedFor);
   const r = compositeRank(c);
   const questions = genQuestions(job);
-  const assessments = DB.assessments.filter(a=>a.candidateId===c.id);
+  const assessments = c.assessments || [];
 
   openModal(`
     <div class="modal-head">
@@ -1594,25 +1643,30 @@ function openDetail(candId){
   document.getElementById('mExport').onclick = ()=>{
     downloadCandidateCV(c);
   };
-  document.getElementById('mDelete').onclick = ()=>{
+  document.getElementById('mDelete').onclick = async ()=>{
     if(confirm('هل تريد حذف هذا المرشح؟ لا يمكن التراجع عن هذا الإجراء.')){
-      DB.candidates = DB.candidates.filter(x=>x.id!==c.id);
-      DB.assessments = DB.assessments.filter(a=>a.candidateId!==c.id);
-      if(c.hasOriginalFile){
-        window.storage.delete('resume_file_'+c.id, true).catch(()=>{});
-      }
-      saveDB(); closeModal(); render();
+      // Assessments, stage history and the résumé file cascade in the DB.
+      await mutate(()=>api.deleteCandidate(c.id));
+      closeModal(); render();
     }
   };
   document.querySelectorAll('#stageSelector span').forEach(el=>{
-    el.onclick = ()=>{ changeStage(c, el.dataset.setstage); saveDB(); closeModal(); render(); };
+    el.onclick = async ()=>{
+      await mutate(()=>api.setStage(c.id, el.dataset.setstage));
+      closeModal(); render();
+    };
   });
   document.querySelectorAll('#altToggle span').forEach(el=>{
-    el.onclick = ()=>{ setAlternativeCandidate(c, el.dataset.altval==='yes'); saveDB(); closeModal(); render(); };
+    el.onclick = async ()=>{
+      // "No" restores whatever stage the candidate was in before.
+      const target = el.dataset.altval==='yes' ? ALT_STAGE : (c.previousStage || 'تم الترشيح');
+      await mutate(()=>api.setStage(c.id, target));
+      closeModal(); render();
+    };
   });
-  document.getElementById('altJobSelect').onchange = (e)=>{
-    c.alternativeJobId = e.target.value || null;
-    saveDB(); closeModal(); render();
+  document.getElementById('altJobSelect').onchange = async (e)=>{
+    await mutate(()=>api.setAltJob(c.id, e.target.value || null));
+    closeModal(); render();
   };
 }
 
@@ -1631,12 +1685,6 @@ function attachViewHandlers(){
   if(addCand) addCand.onclick = ()=>openAddCandidate();
   const importCand = document.getElementById('btnImportCandidates');
   if(importCand) importCand.onclick = ()=>openBulkImport();
-  const exportCand = document.getElementById('btnExportCandidates');
-  if(exportCand) exportCand.onclick = ()=>{
-    const list = filteredCandidates();
-    if(!list.length){ alert('لا يوجد مرشحون لتصديرهم.'); return; }
-    downloadBlob('السير_الذاتية.csv', candidatesToCSV(list), 'text/csv;charset=utf-8;');
-  };
   const addJob = document.getElementById('btnAddJob');
   if(addJob) addJob.onclick = openAddJob;
   const addAssess = document.getElementById('btnAddAssessment');
@@ -1657,26 +1705,37 @@ function attachViewHandlers(){
 
   const searchInput = document.getElementById('candSearchInput');
   if(searchInput){
-    searchInput.oninput = ()=>{ candSearch = searchInput.value; renderCandidatesOnly(); };
+    // Debounced so typing doesn't fire a query per keystroke.
+    searchInput.oninput = ()=>{
+      clearTimeout(candSearchTimer);
+      candSearchTimer = setTimeout(()=>{
+        candSearch = searchInput.value; candOffset = 0; renderCandidatesOnly();
+      }, 300);
+    };
   }
   const stageFilter = document.getElementById('candStageFilter');
-  if(stageFilter) stageFilter.onchange = ()=>{ candFilterStage = stageFilter.value; renderCandidatesOnly(); };
+  if(stageFilter) stageFilter.onchange = ()=>{ candFilterStage = stageFilter.value; candOffset = 0; renderCandidatesOnly(); };
   const jobFilter = document.getElementById('candJobFilter');
-  if(jobFilter) jobFilter.onchange = ()=>{ candFilterJob = jobFilter.value; renderCandidatesOnly(); };
+  if(jobFilter) jobFilter.onchange = ()=>{ candFilterJob = jobFilter.value; candOffset = 0; renderCandidatesOnly(); };
+  const prevBtn = document.getElementById('candPrev');
+  if(prevBtn) prevBtn.onclick = ()=>{ if(candOffset>0){ candOffset -= CAND_PAGE_SIZE; renderCandidatesOnly(); } };
+  const nextBtn = document.getElementById('candNext');
+  if(nextBtn) nextBtn.onclick = ()=>{ if(candOffset+CAND_PAGE_SIZE < DB.candidateTotal){ candOffset += CAND_PAGE_SIZE; renderCandidatesOnly(); } };
   const dashJobFilter = document.getElementById('dashboardJobFilter');
   if(dashJobFilter) dashJobFilter.onchange = ()=>{ dashboardJobFilter = dashJobFilter.value; render(); };
   const targetedInput = document.getElementById('totalJobsTargetedInput');
-  if(targetedInput) targetedInput.onchange = ()=>{
-    if(!DB.settings) DB.settings = {totalJobsTargeted:0};
-    DB.settings.totalJobsTargeted = Math.max(0, Number(targetedInput.value)||0);
-    saveDB(); render();
+  if(targetedInput) targetedInput.onchange = async ()=>{
+    const v = Math.max(0, Number(targetedInput.value)||0);
+    await mutate(()=>api.saveSettings({totalJobsTargeted:v}));
+    await refreshSettings();
+    render();
   };
 
   document.querySelectorAll('[data-delassess]').forEach(el=>{
-    el.onclick = (e)=>{
+    el.onclick = async (e)=>{
       e.stopPropagation();
-      DB.assessments = DB.assessments.filter(a=>a.id!==el.dataset.delassess);
-      saveDB(); render();
+      await mutate(()=>api.deleteAssessment(el.dataset.delassess));
+      render();
     };
   });
   document.querySelectorAll('[data-downloadcv]').forEach(el=>{
@@ -1690,35 +1749,32 @@ function attachViewHandlers(){
   attachDragHandlers();
 }
 
-function renderCandidatesOnly(){
+async function renderCandidatesOnly(){
   const main = document.getElementById('main');
   const focusWasSearch = document.activeElement && document.activeElement.id==='candSearchInput';
-  main.innerHTML = viewCandidates();
+  main.innerHTML = await viewCandidates();
+  renderNav();
   attachViewHandlers();
   if(focusWasSearch){
     const inp = document.getElementById('candSearchInput');
-    inp.focus();
-    inp.setSelectionRange(inp.value.length, inp.value.length);
+    if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
   }
 }
 
 async function boot(){
-  document.getElementById('main').innerHTML = `<div class="empty" style="margin-top:80px;"><div class="display">جارٍ تحميل مساحة العمل المشتركة…</div><div>يتم سحب أحدث المرشحين والوظائف والتقييمات.</div></div>`;
+  document.getElementById('main').innerHTML = `<div class="empty" style="margin-top:80px;"><div class="display">جارٍ الاتصال بقاعدة البيانات…</div></div>`;
   try{
-    DB = await loadDB();
-    // Backfill stageHistory for candidates saved before this field existed
-    DB.candidates.forEach(c=>{
-      if(!c.stageHistory || !c.stageHistory.length){
-        c.stageHistory = [{stage:c.stage, at:c.createdAt||Date.now()}];
-      }
-      if(!c.stageChangedAt) c.stageChangedAt = c.stageHistory[c.stageHistory.length-1].at;
-    });
-    delete DB.execRequests;
-    if(!DB.settings) DB.settings = { totalJobsTargeted: 0 };
-    if(typeof DB.settings.totalJobsTargeted !== 'number') DB.settings.totalJobsTargeted = 0;
+    // Only jobs and settings are small enough to hold in full.
+    // Candidates, assessments and KPIs are fetched per view.
+    DB = { jobs: [], candidates: [], candidateTotal: 0, settings: {totalJobsTargeted:0} };
+    await Promise.all([refreshJobs(), refreshSettings()]);
   }catch(e){
-    console.error('Failed to load shared storage', e);
-    document.getElementById('main').innerHTML = `<div class="empty" style="margin-top:80px;"><div class="display">تعذّر الوصول إلى التخزين المشترك</div><div>أعد تحميل الصفحة للمحاولة مرة أخرى.</div></div>`;
+    console.error('Startup failed', e);
+    document.getElementById('main').innerHTML = `<div class="empty" style="margin-top:80px;">
+      <div class="display">تعذّر الاتصال بالخادم</div>
+      <div>${esc(e.message)}</div>
+      <div style="margin-top:14px;"><button class="btn btn-primary" onclick="boot()">إعادة المحاولة</button></div>
+    </div>`;
     return;
   }
   render();

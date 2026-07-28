@@ -1,91 +1,96 @@
 # إدارة استقطاب الكفاءات — Talent Acquisition Department (KACST)
 
-Recruiting platform: CV database, sourcing pipeline, assessments,
-job roles, and talent-acquisition KPIs. Arabic (RTL) interface.
+PostgreSQL-backed recruiting platform: CV database, sourcing pipeline,
+assessments, job roles, and talent-acquisition KPIs. Arabic (RTL).
 
-**This is the flat-layout version** — every file sits at the repo root
-with no subfolders, which avoids the folder-upload issues GitHub's web
-uploader can cause.
+Built for scale — filtering, search, ranking and KPIs all run as SQL,
+lists are paginated, and each change updates a single row instead of
+rewriting the dataset.
 
 ## Files
 
-- `index.html` — the entire frontend (UI, matching logic, résumé parsing)
-- `server.js` — Express server (serves the frontend + storage API + optional auth)
-- `package.json` — dependencies
-- `render.yaml` — Render Blueprint (auto-configures the service)
+| File | Purpose |
+|---|---|
+| `index.html` | Entire frontend |
+| `server.js` | API server |
+| `db/schema.sql` | Tables + indexes (applied automatically on startup) |
+| `db/optional-indexes.sql` | Trigram search indexes (applied separately) |
+| `render.yaml` | Render Blueprint — provisions web service **and** database |
+| `package.json` | Dependencies (`express`, `pg`) |
 
 ## Deploying to Render
 
-**Easiest:** in Render choose **New + → Blueprint** and point it at this
-repo. `render.yaml` sets everything up automatically.
+**New + → Blueprint**, point at this repo. `render.yaml` creates both
+the web service and a managed PostgreSQL database and wires
+`DATABASE_URL` between them. **No disk needed** — everything, including
+résumé files, lives in Postgres.
 
-**Manual setup instead:**
+Then set these in the dashboard (Environment tab):
 
-| Setting | Value |
+| Key | Value |
 |---|---|
-| Runtime | Node |
-| Root Directory | *(leave blank)* |
-| Build Command | `npm install` |
-| Start Command | `npm start` |
+| `BASIC_AUTH_USER` | e.g. `admin` |
+| `BASIC_AUTH_PASS` | a strong password |
 
-Then add:
+Without them anyone with the URL can read all candidate data and
+download résumés. The server logs a warning at startup if unset.
 
-- **A Disk** — mount path `/var/data`
-- **Environment variable** `DATA_DIR` = `/var/data`
-
-Both are required. Without a disk, Render erases every candidate, job,
-and résumé each time the service restarts or redeploys.
-
-⚠️ **Persistent disks are not available on Render's free tier.** On the
-free plan it will build and run, but data will not survive a restart.
-
-## Authentication
-
-No login is required by default. **Before this is reachable publicly**,
-set these two environment variables in Render's dashboard:
-
-- `BASIC_AUTH_USER` — e.g. `admin`
-- `BASIC_AUTH_PASS` — a strong password
-
-Every request then requires that login. Without them, anyone with the
-URL can read all candidate data and download résumés. The server logs a
-warning on startup when it's running without auth.
+**Manual setup instead:** Runtime `Node`, Root Directory blank,
+Build `npm install`, Start `npm start`, and add `DATABASE_URL` pointing
+at your PostgreSQL instance.
 
 ## Running locally
 
 ```bash
 npm install
+export DATABASE_URL="postgres://user:pass@localhost:5432/talent"
+export PGSSL=off          # local databases usually have no TLS
 npm start
 ```
 
-Then open http://localhost:3000
+Open http://localhost:3000 — the schema creates itself on first run.
 
-## Data storage
+## Environment variables
 
-Data is stored as individual files under `DATA_DIR` (defaults to
-`./data` locally, `/var/data` on Render). Each record — including each
-uploaded résumé file — is its own file, so saving a small change never
-rewrites unrelated data.
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | **yes** | PostgreSQL connection string |
+| `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` | strongly recommended | Enables login |
+| `PGSSL` | no | Set `off` for local databases without TLS |
+| `PG_POOL_MAX` | no | Connection pool size (default 10) |
+| `PORT` | no | Default 3000 |
 
-Before treating this as the permanent system of record, consider:
+## Scale characteristics
 
-- **Back up the data directory regularly** — it's the whole database.
-- **A real database** (Postgres/MySQL) for heavy concurrent use or
-  proper reporting. All reads/writes go through four route handlers in
-  `server.js` (`GET/PUT/DELETE /api/storage/:key` and `GET
-  /api/storage`); swap those for DB calls and the frontend needs no
-  changes. Résumé blobs suit object storage (S3-compatible) better than
-  a DB column.
-- **No audit trail or soft deletes** — deletions are permanent.
-- **Disk usage** grows with stored résumés (base64 is ~1.3× the
-  original file size).
+- Candidate lists load 50 at a time; the browser never holds the full table.
+- Search, filters and rankings execute in SQL against indexed columns.
+- Résumé files live in their own table, so listing/searching candidates
+  never transfers PDF data.
+- Stage changes write one row plus one history row.
 
-## Notes
+Comfortable well into tens of thousands of candidates. If volumes grow
+far beyond that, the natural next step is moving résumé blobs to
+S3-compatible object storage — only the `resume_files` reads/writes in
+`server.js` would change.
 
-- The browser loads fonts and the PDF/DOCX parsing libraries from
-  public CDNs (Google Fonts, cdnjs), so **end-user machines** need
-  internet access. The server itself does not.
-- Résumé parsing (name, email, phone, job title, years of experience)
-  is pattern-based, not AI. It handles common Arabic and English
-  layouts well, but unusual formats or scanned image-only PDFs may need
-  manual correction — every extracted field stays editable.
+## Known gaps before production use
+
+- **One shared login.** No individual accounts, roles, or permissions.
+- **No audit trail.** Deletions are permanent and unattributed.
+- **Data residency.** If KACST is subject to PDPL restrictions on
+  transferring personal data abroad, verify the hosting region before
+  real CVs are entered.
+- **Backups.** Configure them on the database — none are automatic.
+
+## Testing status
+
+Verified: KPI query logic against a real SQL engine with known
+fixtures (interview→offer, offer→join, time-to-hire, vacancy fill,
+jobs-filled/approved, rankings, pagination); all five views rendering
+from a mocked API; every endpoint the UI calls; pagination and search
+wiring.
+
+**Not verified:** the server has never run against a live PostgreSQL
+instance — none was available in the build environment. Run it once
+against a real database and click through each screen before trusting
+it. Expect the possibility of a minor dialect fix.

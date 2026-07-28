@@ -1,36 +1,34 @@
-# Render Blueprint — إدارة استقطاب الكفاءات (Talent Acquisition Department)
+# Render Blueprint — إدارة استقطاب الكفاءات (PostgreSQL version)
 #
-# Flat layout: every file sits at the repo root, no subfolders. This
-# avoids the folder-upload problems GitHub's web uploader causes.
-#
-# To use: in Render, choose "New +" → "Blueprint" and point it at this
-# repo. Render reads the settings below automatically.
+# Deploy with "New +" → "Blueprint". This provisions BOTH the web
+# service and a managed PostgreSQL database, and wires DATABASE_URL
+# between them automatically — no disk needed, because all data
+# (including résumé files) lives in Postgres.
+
+databases:
+  - name: talent-acquisition-db
+    databaseName: talent_acquisition
+    user: talent_admin
+    plan: basic-256mb        # free tier expires after 30 days
 
 services:
   - type: web
     name: talent-acquisition-department
     runtime: node
-    plan: starter          # "free" has no persistent disk — see note below
+    plan: starter
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:
       - key: NODE_VERSION
         value: "20"
-      - key: DATA_DIR
-        value: /var/data
-      # Authentication — strongly recommended before this is public.
-      # Set the VALUES in Render's dashboard (Environment tab), not
-      # here, so credentials never get committed to source control.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: talent-acquisition-db
+          property: connectionString
+      # Set the VALUES in Render's dashboard, not here, so credentials
+      # are never committed to source control.
       - key: BASIC_AUTH_USER
         sync: false
       - key: BASIC_AUTH_PASS
         sync: false
-    disk:
-      name: talent-data
-      mountPath: /var/data
-      sizeGB: 1
-
-# NOTE ON PLANS: persistent disks are not available on Render's free
-# tier. On the free plan the app still builds and runs, but all data is
-# erased on every restart and redeploy. Use a paid instance for real use.

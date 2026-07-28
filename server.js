@@ -1,185 +1,627 @@
-// Talent Acquisition Department — self-hosted backend
-// Simple Express server that persists data to local files and serves
-// the frontend. Mirrors the get/set/delete/list storage API that the
-// frontend already expects, so the frontend code is unchanged except
-// for a small compatibility shim in index.html.
+// إدارة استقطاب الكفاءات — Talent Acquisition Department
+// PostgreSQL-backed API server.
 //
-// Storage design: each key is its own file under DATA_DIR/store/,
-// rather than one big JSON blob. This matters once résumé files are
-// stored (as base64, under keys like "resume_file_<candidateId>") —
-// with a single shared blob, saving one small change (like a stage
-// update) would have to rewrite every stored résumé along with it.
-// One file per key means unrelated keys never touch each other.
+// Built for scale: unlike the file-based version, a single change
+// updates one row instead of rewriting the whole database, searching
+// and filtering happen in SQL (not in the browser), and lists are
+// paginated so the client never downloads the entire candidate set.
 
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
+const { Pool } = require('pg');
 
 const app = express();
-app.use(express.json({ limit: '20mb' }));
+app.use(express.json({ limit: '25mb' }));
 
-// DATA_DIR can be overridden so it points at a mounted persistent
-// volume when deploying to a cloud platform with an ephemeral
-// filesystem — see README.md "Cloud Deployment" for platform-specific
-// instructions. Defaults to a local folder for zero-config local use.
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-const STORE_DIR = path.join(DATA_DIR, 'store');
-const OLD_DATA_FILE = path.join(DATA_DIR, 'storage.json'); // pre-migration format
+// ---------------------------------------------------------------
+// Database
+// ---------------------------------------------------------------
+if (!process.env.DATABASE_URL) {
+  console.error('');
+  console.error('FATAL: DATABASE_URL is not set.');
+  console.error('Set it to your PostgreSQL connection string, e.g.');
+  console.error('  postgres://user:password@host:5432/dbname');
+  console.error('See README.md "Setup".');
+  console.error('');
+  process.exit(1);
+}
 
-if (!fs.existsSync(STORE_DIR)) fs.mkdirSync(STORE_DIR, { recursive: true });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // Managed Postgres (Render, Azure, AWS RDS) normally requires TLS.
+  // Disable by setting PGSSL=off for a local dev database.
+  ssl: process.env.PGSSL === 'off' ? false : { rejectUnauthorized: false },
+  max: Number(process.env.PG_POOL_MAX || 10)
+});
 
-// Optional HTTP Basic Auth — off by default so local/first-run testing
-// needs no setup. Set BASIC_AUTH_USER and BASIC_AUTH_PASS (as
-// environment variables) before exposing this server beyond a trusted
-// private network — e.g. before putting it on the public internet.
-// See README.md "Authentication" for setup instructions.
+async function initSchema() {
+  const sql = fs.readFileSync(path.join(__dirname, 'db', 'schema.sql'), 'utf8');
+  await pool.query(sql);
+  console.log('Database schema is ready.');
+
+  // Trigram indexes need the pg_trgm extension, which some managed
+  // Postgres services only allow a superuser to create. Applied
+  // separately so a permissions failure degrades performance rather
+  // than preventing the app from starting.
+  try {
+    const opt = fs.readFileSync(path.join(__dirname, 'db', 'optional-indexes.sql'), 'utf8');
+    await pool.query(opt);
+    console.log('Optional search indexes are in place.');
+  } catch (e) {
+    console.warn('Note: could not create optional trigram search indexes ' +
+      '(' + e.message + '). The app works normally; text search will be ' +
+      'slower on very large candidate sets.');
+  }
+}
+
+// ---------------------------------------------------------------
+// Auth (optional, but strongly recommended — see README)
+// ---------------------------------------------------------------
 const AUTH_USER = process.env.BASIC_AUTH_USER;
 const AUTH_PASS = process.env.BASIC_AUTH_PASS;
 if (AUTH_USER && AUTH_PASS) {
   app.use((req, res, next) => {
-    if (req.path === '/healthz') return next(); // let health checks through unauthenticated
-    const header = req.headers.authorization || '';
-    const [scheme, encoded] = header.split(' ');
+    if (req.path === '/healthz') return next();
+    const [scheme, encoded] = (req.headers.authorization || '').split(' ');
     if (scheme === 'Basic' && encoded) {
-      const [user, pass] = Buffer.from(encoded, 'base64').toString('utf8').split(':');
-      const userOk = user && user.length === AUTH_USER.length &&
-        crypto.timingSafeEqual(Buffer.from(user), Buffer.from(AUTH_USER));
-      const passOk = pass && pass.length === AUTH_PASS.length &&
-        crypto.timingSafeEqual(Buffer.from(pass), Buffer.from(AUTH_PASS));
-      if (userOk && passOk) return next();
+      const [u, p] = Buffer.from(encoded, 'base64').toString('utf8').split(':');
+      const uOk = u && u.length === AUTH_USER.length &&
+        crypto.timingSafeEqual(Buffer.from(u), Buffer.from(AUTH_USER));
+      const pOk = p && p.length === AUTH_PASS.length &&
+        crypto.timingSafeEqual(Buffer.from(p), Buffer.from(AUTH_PASS));
+      if (uOk && pOk) return next();
     }
     res.set('WWW-Authenticate', 'Basic realm="Talent Acquisition Department"');
     res.status(401).send('Authentication required.');
   });
   console.log('Basic Auth is ENABLED.');
 } else {
-  console.warn('⚠️  Basic Auth is DISABLED (BASIC_AUTH_USER/BASIC_AUTH_PASS not set). ' +
-    'Anyone who can reach this server can read and write all candidate data. ' +
-    'Set those environment variables before deploying beyond a trusted private network.');
+  console.warn('⚠️  Basic Auth is DISABLED. Anyone who can reach this server ' +
+    'can read all candidate data and download résumés. Set BASIC_AUTH_USER ' +
+    'and BASIC_AUTH_PASS before exposing it beyond a trusted network.');
 }
 
-function keyToFilePath(key) {
-  // Filesystem-safe encoding of an arbitrary key string.
-  const safe = Buffer.from(key, 'utf8').toString('base64url');
-  return path.join(STORE_DIR, safe + '.txt');
-}
-function filePathToKey(filename) {
-  const base = filename.replace(/\.txt$/, '');
-  return Buffer.from(base, 'base64url').toString('utf8');
-}
+const wrap = fn => (req, res) => fn(req, res).catch(e => {
+  console.error(`${req.method} ${req.path} failed:`, e);
+  res.status(500).json({ error: 'server error' });
+});
 
-// One-time migration: if the old single-blob file exists and the new
-// store is empty, split its contents into individual per-key files.
-(function migrateOldFormat() {
-  if (!fs.existsSync(OLD_DATA_FILE)) return;
-  const existingFiles = fs.readdirSync(STORE_DIR);
-  if (existingFiles.length > 0) return; // already migrated or already has data
-  try {
-    const old = JSON.parse(fs.readFileSync(OLD_DATA_FILE, 'utf8') || '{}');
-    const keys = Object.keys(old);
-    keys.forEach(key => {
-      fs.writeFileSync(keyToFilePath(key), old[key]);
-    });
-    fs.renameSync(OLD_DATA_FILE, OLD_DATA_FILE + '.migrated');
-    console.log(`Migrated ${keys.length} key(s) from old storage.json to data/store/.`);
-  } catch (e) {
-    console.error('Migration from old storage.json failed (continuing with empty store):', e);
-  }
-})();
+const uid = p => p + '_' + crypto.randomBytes(5).toString('hex');
+const ALT_STAGE = 'مناسب لشاغر آخر';
 
-// Serialize writes per key so concurrent requests to the SAME key
-// can't corrupt it. Different keys never block each other.
-const writeQueues = {};
-function queueWrite(key, fn) {
-  const prev = writeQueues[key] || Promise.resolve();
-  const next = prev.then(fn, fn);
-  writeQueues[key] = next;
-  return next;
+// Map a DB row to the shape the frontend expects.
+function rowToCandidate(r) {
+  return {
+    id: r.id, name: r.name, email: r.email || '', phone: r.phone || '',
+    currentTitle: r.current_title || '', source: r.source || '',
+    experienceYears: r.experience_years, appliedFor: r.applied_for,
+    alternativeJobId: r.alternative_job_id, skills: r.skills || [],
+    resumeText: r.resume_text || '', stage: r.stage,
+    previousStage: r.previous_stage, stageChangedAt: r.stage_changed_at,
+    hasOriginalFile: r.has_original_file, resumeFileName: r.resume_file_name,
+    resumeFileType: r.resume_file_type, notes: r.notes || '',
+    createdAt: r.created_at,
+    assessCount: r.assess_count !== undefined ? Number(r.assess_count) : undefined,
+    assessAvg: r.assess_avg !== null && r.assess_avg !== undefined ? Number(r.assess_avg) : null,
+    assessMax: r.assess_max !== null && r.assess_max !== undefined ? Number(r.assess_max) : null
+  };
+}
+function rowToJob(r) {
+  return {
+    id: r.id, title: r.title, department: r.department || '',
+    seniority: r.seniority || '', headcount: r.headcount,
+    postDate: r.post_date ? new Date(r.post_date).toISOString().slice(0, 10) : '',
+    approved: r.approved, requiredSkills: r.required_skills || [],
+    niceSkills: r.nice_skills || [], description: r.description || '',
+    candidateCount: r.candidate_count !== undefined ? Number(r.candidate_count) : undefined,
+    hiredCount: r.hired_count !== undefined ? Number(r.hired_count) : undefined
+  };
 }
 
-// GET /api/storage/:key -> { key, value }
-app.get('/api/storage/:key', (req, res) => {
-  const key = req.params.key;
-  const filePath = keyToFilePath(key);
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'not found' });
+// ---------------------------------------------------------------
+// Jobs
+// ---------------------------------------------------------------
+app.get('/api/jobs', wrap(async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT j.*,
+      (SELECT COUNT(*) FROM candidates c WHERE c.applied_for = j.id) AS candidate_count,
+      (SELECT COUNT(*) FROM candidates c WHERE c.applied_for = j.id AND c.stage = 'تم التعيين') AS hired_count
+    FROM jobs j ORDER BY j.created_at DESC`);
+  res.json(rows.map(rowToJob));
+}));
+
+app.post('/api/jobs', wrap(async (req, res) => {
+  const b = req.body || {};
+  if (!b.title) return res.status(400).json({ error: 'title is required' });
+  const id = uid('job');
+  await pool.query(
+    `INSERT INTO jobs (id,title,department,seniority,headcount,post_date,approved,required_skills,nice_skills,description)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [id, b.title, b.department || null, b.seniority || null,
+     Math.max(1, Number(b.headcount) || 1), b.postDate || null,
+     b.approved !== false, b.requiredSkills || [], b.niceSkills || [], b.description || null]);
+  res.json({ id });
+}));
+
+app.delete('/api/jobs/:id', wrap(async (req, res) => {
+  await pool.query('DELETE FROM jobs WHERE id=$1', [req.params.id]);
+  res.json({ deleted: true });
+}));
+
+// ---------------------------------------------------------------
+// Candidates — paginated + searched server-side. This is the key
+// scalability difference: the browser never loads the full table.
+// ---------------------------------------------------------------
+app.get('/api/candidates', wrap(async (req, res) => {
+  const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
+  const offset = Math.max(0, Number(req.query.offset) || 0);
+  const where = [];
+  const params = [];
+
+  if (req.query.job && req.query.job !== 'الكل') {
+    params.push(req.query.job); where.push(`c.applied_for = $${params.length}`);
+  }
+  if (req.query.stage && req.query.stage !== 'الكل') {
+    params.push(req.query.stage); where.push(`c.stage = $${params.length}`);
+  }
+  if (req.query.altJob) {
+    params.push(req.query.altJob); where.push(`c.alternative_job_id = $${params.length}`);
+  }
+  if (req.query.q) {
+    params.push('%' + req.query.q + '%');
+    where.push(`(c.name ILIKE $${params.length} OR c.resume_text ILIKE $${params.length}
+                 OR array_to_string(c.skills,' ') ILIKE $${params.length})`);
+  }
+  const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+
+  const countQ = await pool.query(`SELECT COUNT(*) FROM candidates c ${whereSql}`, params);
+  const total = Number(countQ.rows[0].count);
+
+  params.push(limit); params.push(offset);
+  const { rows } = await pool.query(`
+    SELECT c.*,
+      (SELECT COUNT(*) FROM assessments a WHERE a.candidate_id=c.id) AS assess_count,
+      (SELECT ROUND(AVG(a.score),1) FROM assessments a WHERE a.candidate_id=c.id) AS assess_avg,
+      (SELECT MAX(a.score) FROM assessments a WHERE a.candidate_id=c.id) AS assess_max
+    FROM candidates c ${whereSql}
+    ORDER BY c.created_at DESC
+    LIMIT $${params.length - 1} OFFSET $${params.length}`, params);
+
+  res.json({ total, limit, offset, candidates: rows.map(rowToCandidate) });
+}));
+
+app.get('/api/candidates/:id', wrap(async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT c.*,
+      (SELECT COUNT(*) FROM assessments a WHERE a.candidate_id=c.id) AS assess_count,
+      (SELECT ROUND(AVG(a.score),1) FROM assessments a WHERE a.candidate_id=c.id) AS assess_avg,
+      (SELECT MAX(a.score) FROM assessments a WHERE a.candidate_id=c.id) AS assess_max
+    FROM candidates c WHERE c.id=$1`, [req.params.id]);
+  if (!rows.length) return res.status(404).json({ error: 'not found' });
+  const cand = rowToCandidate(rows[0]);
+  const hist = await pool.query(
+    'SELECT stage, changed_at FROM stage_history WHERE candidate_id=$1 ORDER BY changed_at', [req.params.id]);
+  cand.stageHistory = hist.rows.map(h => ({ stage: h.stage, at: new Date(h.changed_at).getTime() }));
+  const asmts = await pool.query(
+    'SELECT * FROM assessments WHERE candidate_id=$1 ORDER BY assessed_at DESC', [req.params.id]);
+  cand.assessments = asmts.rows.map(a => ({
+    id: a.id, type: a.type, score: Number(a.score), signature: a.signature || '',
+    notes: a.notes || '', date: new Date(a.assessed_at).getTime()
+  }));
+  res.json(cand);
+}));
+
+app.post('/api/candidates', wrap(async (req, res) => {
+  const b = req.body || {};
+  if (!b.name) return res.status(400).json({ error: 'name is required' });
+  const id = uid('cand');
+  const stage = b.stage || 'تم الترشيح';
+  const client = await pool.connect();
   try {
-    const value = fs.readFileSync(filePath, 'utf8');
-    res.json({ key, value });
-  } catch (e) {
-    console.error('Read failed for key', key, e);
-    res.status(500).json({ error: 'read failed' });
-  }
-});
+    await client.query('BEGIN');
+    await client.query(
+      `INSERT INTO candidates (id,name,email,phone,current_title,source,experience_years,
+        applied_for,skills,resume_text,stage,has_original_file,resume_file_name,resume_file_type)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [id, b.name, b.email || null, b.phone || null, b.currentTitle || null,
+       b.source || null, Number(b.experienceYears) || 0, b.appliedFor || null,
+       b.skills || [], b.resumeText || null, stage,
+       !!b.fileBase64, b.resumeFileName || null, b.resumeFileType || null]);
+    await client.query('INSERT INTO stage_history (candidate_id,stage) VALUES ($1,$2)', [id, stage]);
+    if (b.fileBase64) {
+      await client.query(
+        'INSERT INTO resume_files (candidate_id,file_name,mime_type,bytes) VALUES ($1,$2,$3,$4)',
+        [id, b.resumeFileName || null, b.mimeType || 'application/octet-stream',
+         Buffer.from(b.fileBase64, 'base64')]);
+    }
+    await client.query('COMMIT');
+    res.json({ id });
+  } catch (e) { await client.query('ROLLBACK'); throw e; }
+  finally { client.release(); }
+}));
 
-// PUT /api/storage/:key  body: { value: "..." } -> { key, value }
-app.put('/api/storage/:key', async (req, res) => {
-  const key = req.params.key;
-  const value = req.body && req.body.value;
-  if (typeof value !== 'string') {
-    return res.status(400).json({ error: 'value must be a string' });
-  }
+app.put('/api/candidates/:id', wrap(async (req, res) => {
+  const b = req.body || {};
+  await pool.query(
+    `UPDATE candidates SET name=COALESCE($2,name), email=$3, phone=$4, current_title=$5,
+       source=$6, experience_years=$7, applied_for=$8, skills=$9, resume_text=$10
+     WHERE id=$1`,
+    [req.params.id, b.name || null, b.email || null, b.phone || null, b.currentTitle || null,
+     b.source || null, Number(b.experienceYears) || 0, b.appliedFor || null,
+     b.skills || [], b.resumeText || null]);
+  res.json({ updated: true });
+}));
+
+// Stage change — one row updated, plus one history row appended.
+app.post('/api/candidates/:id/stage', wrap(async (req, res) => {
+  const { stage } = req.body || {};
+  if (!stage) return res.status(400).json({ error: 'stage is required' });
+  const client = await pool.connect();
   try {
-    await queueWrite(key, () => fs.promises.writeFile(keyToFilePath(key), value));
-    res.json({ key, value });
-  } catch (e) {
-    console.error('Write failed for key', key, e);
-    res.status(500).json({ error: 'write failed' });
+    await client.query('BEGIN');
+    const cur = await client.query('SELECT stage FROM candidates WHERE id=$1', [req.params.id]);
+    if (!cur.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'not found' }); }
+    const currentStage = cur.rows[0].stage;
+    // Entering the alt-vacancy pool remembers where the candidate was,
+    // so toggling back off can restore it.
+    let prev = null;
+    if (stage === ALT_STAGE && currentStage !== ALT_STAGE) prev = currentStage;
+    await client.query(
+      `UPDATE candidates SET stage=$2, previous_stage=$3, stage_changed_at=NOW() WHERE id=$1`,
+      [req.params.id, stage, prev]);
+    await client.query('INSERT INTO stage_history (candidate_id,stage) VALUES ($1,$2)',
+      [req.params.id, stage]);
+    await client.query('COMMIT');
+    res.json({ stage });
+  } catch (e) { await client.query('ROLLBACK'); throw e; }
+  finally { client.release(); }
+}));
+
+app.post('/api/candidates/:id/alt-job', wrap(async (req, res) => {
+  await pool.query('UPDATE candidates SET alternative_job_id=$2 WHERE id=$1',
+    [req.params.id, req.body.alternativeJobId || null]);
+  res.json({ updated: true });
+}));
+
+app.delete('/api/candidates/:id', wrap(async (req, res) => {
+  // stage_history, assessments and resume_files cascade automatically.
+  await pool.query('DELETE FROM candidates WHERE id=$1', [req.params.id]);
+  res.json({ deleted: true });
+}));
+
+// Résumé file download — streamed straight from the DB as the
+// original file, not the extracted text.
+app.get('/api/candidates/:id/resume-file', wrap(async (req, res) => {
+  const { rows } = await pool.query(
+    'SELECT file_name, mime_type, bytes FROM resume_files WHERE candidate_id=$1', [req.params.id]);
+  if (!rows.length) return res.status(404).json({ error: 'no file on record' });
+  const f = rows[0];
+  res.setHeader('Content-Type', f.mime_type || 'application/octet-stream');
+  res.setHeader('Content-Disposition',
+    'attachment; filename*=UTF-8\'\'' + encodeURIComponent(f.file_name || 'resume'));
+  res.send(f.bytes);
+}));
+
+// ---------------------------------------------------------------
+// Assessments
+// ---------------------------------------------------------------
+app.get('/api/assessments', wrap(async (req, res) => {
+  const params = [];
+  let where = '';
+  if (req.query.job && req.query.job !== 'الكل') {
+    params.push(req.query.job); where = `WHERE c.applied_for = $${params.length}`;
   }
-});
+  const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
+  params.push(limit);
+  const { rows } = await pool.query(`
+    SELECT a.*, c.name AS candidate_name
+    FROM assessments a JOIN candidates c ON c.id = a.candidate_id
+    ${where} ORDER BY a.assessed_at DESC LIMIT $${params.length}`, params);
+  res.json(rows.map(a => ({
+    id: a.id, candidateId: a.candidate_id, candidateName: a.candidate_name,
+    type: a.type, score: Number(a.score), signature: a.signature || '',
+    notes: a.notes || '', date: new Date(a.assessed_at).getTime()
+  })));
+}));
 
-// DELETE /api/storage/:key -> { key, deleted: true }
-app.delete('/api/storage/:key', async (req, res) => {
-  const key = req.params.key;
-  try {
-    await queueWrite(key, async () => {
-      const filePath = keyToFilePath(key);
-      if (fs.existsSync(filePath)) await fs.promises.unlink(filePath);
-    });
-    res.json({ key, deleted: true });
-  } catch (e) {
-    console.error('Delete failed for key', key, e);
-    res.status(500).json({ error: 'delete failed' });
+app.post('/api/assessments', wrap(async (req, res) => {
+  const b = req.body || {};
+  if (!b.candidateId) return res.status(400).json({ error: 'candidateId is required' });
+  const id = uid('as');
+  await pool.query(
+    `INSERT INTO assessments (id,candidate_id,type,score,signature,notes)
+     VALUES ($1,$2,$3,$4,$5,$6)`,
+    [id, b.candidateId, b.type || 'تقييم',
+     Math.max(0, Math.min(30, Number(b.score) || 0)), b.signature || null, b.notes || null]);
+  res.json({ id });
+}));
+
+app.delete('/api/assessments/:id', wrap(async (req, res) => {
+  await pool.query('DELETE FROM assessments WHERE id=$1', [req.params.id]);
+  res.json({ deleted: true });
+}));
+
+// Ranked candidates by assessment score — computed in SQL so it
+// stays fast regardless of how many candidates exist.
+app.get('/api/rankings', wrap(async (req, res) => {
+  const params = [];
+  let where = 'WHERE EXISTS (SELECT 1 FROM assessments a WHERE a.candidate_id=c.id)';
+  if (req.query.job && req.query.job !== 'الكل') {
+    params.push(req.query.job); where += ` AND c.applied_for = $${params.length}`;
   }
-});
+  const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
+  params.push(limit);
+  const { rows } = await pool.query(`
+    SELECT c.id, c.name, c.stage, c.applied_for, j.title AS job_title,
+      (SELECT COUNT(*) FROM assessments a WHERE a.candidate_id=c.id) AS assess_count,
+      (SELECT ROUND(AVG(a.score),1) FROM assessments a WHERE a.candidate_id=c.id) AS assess_avg,
+      (SELECT MAX(a.score) FROM assessments a WHERE a.candidate_id=c.id) AS assess_max
+    FROM candidates c LEFT JOIN jobs j ON j.id = c.applied_for
+    ${where}
+    ORDER BY assess_max DESC NULLS LAST
+    LIMIT $${params.length}`, params);
+  res.json(rows.map(r => ({
+    id: r.id, name: r.name, stage: r.stage, jobTitle: r.job_title,
+    count: Number(r.assess_count), avg: r.assess_avg === null ? null : Number(r.assess_avg),
+    highest: r.assess_max === null ? null : Number(r.assess_max)
+  })));
+}));
 
-// GET /api/storage?prefix=... -> { keys: [...], prefix }
-app.get('/api/storage', (req, res) => {
-  const prefix = req.query.prefix || '';
-  try {
-    const files = fs.readdirSync(STORE_DIR).filter(f => f.endsWith('.txt'));
-    const keys = files.map(filePathToKey).filter(k => k.startsWith(prefix));
-    res.json({ keys, prefix });
-  } catch (e) {
-    console.error('List failed:', e);
-    res.status(500).json({ error: 'list failed' });
-  }
-});
+// ---------------------------------------------------------------
+// KPIs — aggregated in SQL rather than by pulling every row down.
+// ---------------------------------------------------------------
+app.get('/api/kpis', wrap(async (req, res) => {
+  const job = req.query.job && req.query.job !== 'الكل' ? req.query.job : null;
+  const jobFilter = job ? 'WHERE applied_for = $1' : '';
+  const p = job ? [job] : [];
 
-// Simple health check for load balancers / uptime monitors
-app.get('/healthz', (req, res) => res.json({ ok: true }));
+  const totals = await pool.query(`
+    SELECT COUNT(*) AS total,
+      COUNT(*) FILTER (WHERE stage = 'تم التعيين') AS hired,
+      COUNT(*) FILTER (WHERE stage NOT IN ('تم التعيين','مرفوض','${ALT_STAGE}')) AS in_pipe
+    FROM candidates ${jobFilter}`, p);
 
-// Serve the frontend
-// Serve the frontend from this same directory (flat layout — no
-// public/ subfolder). Because the app's own source files live here
-// too, block direct web access to them first: without this,
-// express.static would happily serve /server.js and /package.json to
-// anyone who asked.
-const PRIVATE_FILES = ['/server.js', '/package.json', '/package-lock.json', '/render.yaml', '/Dockerfile', '/docker-compose.yml', '/README.md'];
+  const tth = await pool.query(`
+    SELECT AVG(EXTRACT(EPOCH FROM (hired_at - first_at))/86400) AS days FROM (
+      SELECT candidate_id, MIN(changed_at) AS first_at,
+             MAX(changed_at) FILTER (WHERE stage='تم التعيين') AS hired_at
+      FROM stage_history GROUP BY candidate_id
+    ) t JOIN candidates c ON c.id=t.candidate_id
+    WHERE t.hired_at IS NOT NULL ${job ? 'AND c.applied_for = $1' : ''}`, p);
+
+  const funnel = await pool.query(`
+    SELECT
+      COUNT(*) FILTER (WHERE reached_interview) AS interviewed,
+      COUNT(*) FILTER (WHERE reached_offer)     AS offered,
+      COUNT(*) FILTER (WHERE is_hired)          AS hired
+    FROM (
+      SELECT c.id,
+        EXISTS(SELECT 1 FROM stage_history s WHERE s.candidate_id=c.id
+               AND s.stage IN ('المقابلة','العرض','تم التعيين')) AS reached_interview,
+        EXISTS(SELECT 1 FROM stage_history s WHERE s.candidate_id=c.id
+               AND s.stage IN ('العرض','تم التعيين')) AS reached_offer,
+        (c.stage='تم التعيين') AS is_hired
+      FROM candidates c ${job ? 'WHERE c.applied_for = $1' : ''}
+    ) x`, p);
+
+  const src = await pool.query(`
+    SELECT COALESCE(NULLIF(source,''),'غير محدد') AS source, COUNT(*) AS count
+    FROM candidates WHERE stage='تم التعيين' ${job ? 'AND applied_for = $1' : ''}
+    GROUP BY 1 ORDER BY count DESC`, p);
+
+  const jobsAgg = await pool.query(`
+    SELECT j.id, j.headcount, j.approved, j.post_date,
+      (SELECT COUNT(*) FROM candidates c WHERE c.applied_for=j.id AND c.stage='تم التعيين') AS hired
+    FROM jobs j ${job ? 'WHERE j.id = $1' : ''}`, p);
+
+  let totalHeadcount = 0, totalFilled = 0, approvedCount = 0, filledJobs = 0, vacancyDays = 0;
+  jobsAgg.rows.forEach(j => {
+    const need = j.headcount || 1, hired = Number(j.hired);
+    totalHeadcount += need; totalFilled += Math.min(hired, need);
+    if (j.approved) { approvedCount++; if (hired >= need) filledJobs++; }
+    if (j.post_date) vacancyDays += Math.max(0,
+      Math.floor((Date.now() - new Date(j.post_date).getTime()) / 86400000));
+  });
+
+  const st = await pool.query('SELECT total_jobs_targeted FROM settings WHERE id=TRUE');
+  const target = st.rows[0]?.total_jobs_targeted || 0;
+  const f = funnel.rows[0];
+
+  res.json({
+    total: Number(totals.rows[0].total),
+    hired: Number(totals.rows[0].hired),
+    inPipe: Number(totals.rows[0].in_pipe),
+    timeToHire: tth.rows[0].days === null ? null : Math.round(Number(tth.rows[0].days)),
+    interviewToOfferRatio: Number(f.interviewed) ? Math.round(Number(f.offered) / Number(f.interviewed) * 100) : null,
+    offerToJoinRatio: Number(f.offered) ? Math.round(Number(f.hired) / Number(f.offered) * 100) : null,
+    vacancyFillRate: totalHeadcount ? Math.round(totalFilled / totalHeadcount * 100) : null,
+    jobsFilledApprovedRate: approvedCount ? Math.round(filledJobs / approvedCount * 100) : null,
+    totalVacancyDays: vacancyDays,
+    vacancyDaysPerTarget: target > 0 ? Math.round(vacancyDays / target * 10) / 10 : null,
+    sourceBreakdown: src.rows.map(r => ({ source: r.source, count: Number(r.count) }))
+  });
+}));
+
+// ---------------------------------------------------------------
+// Insights — the "smart" layer. Each signal is a plain SQL check the
+// team would otherwise have to notice by eye: stalled candidates,
+// probable duplicates, starved or overdue jobs, hires missing
+// assessments, and waiting-pool candidates who fit a live vacancy.
+// ---------------------------------------------------------------
+app.get('/api/insights', wrap(async (req, res) => {
+  const out = [];
+
+  // 1) Candidates stuck >14 days in an active stage
+  const stale = await pool.query(`
+    SELECT c.id, c.name, c.stage,
+           FLOOR(EXTRACT(EPOCH FROM (NOW()-c.stage_changed_at))/86400) AS days
+    FROM candidates c
+    WHERE c.stage IN ('تم الترشيح','الفرز','المقابلة','العرض')
+      AND c.stage_changed_at < NOW() - INTERVAL '14 days'
+    ORDER BY c.stage_changed_at ASC LIMIT 8`);
+  stale.rows.forEach(r => out.push({
+    kind: 'stalled', severity: 'warn',
+    title: 'مرشح متوقف منذ ' + r.days + ' يومًا',
+    body: r.name + ' في مرحلة "' + r.stage + '" دون أي تحرك — يستحق متابعة.',
+    candidateId: r.id
+  }));
+
+  // 2) Probable duplicate candidates (same email or phone)
+  const dup = await pool.query(`
+    SELECT LOWER(email) AS k, COUNT(*) AS n, ARRAY_AGG(name) AS names
+    FROM candidates WHERE email IS NOT NULL AND email <> ''
+    GROUP BY LOWER(email) HAVING COUNT(*) > 1
+    UNION ALL
+    SELECT phone AS k, COUNT(*) AS n, ARRAY_AGG(name) AS names
+    FROM candidates WHERE phone IS NOT NULL AND phone <> ''
+    GROUP BY phone HAVING COUNT(*) > 1
+    LIMIT 6`);
+  dup.rows.forEach(r => out.push({
+    kind: 'duplicate', severity: 'warn',
+    title: 'تكرار محتمل في قاعدة البيانات',
+    body: 'نفس بيانات التواصل (' + r.k + ') مسجلة لأكثر من مرشح: ' + r.names.join('، ')
+  }));
+
+  // 3) Approved jobs with no candidates at all
+  const starved = await pool.query(`
+    SELECT j.id, j.title FROM jobs j
+    WHERE j.approved = TRUE
+      AND NOT EXISTS (SELECT 1 FROM candidates c WHERE c.applied_for = j.id)
+    LIMIT 6`);
+  starved.rows.forEach(r => out.push({
+    kind: 'starved-job', severity: 'info',
+    title: 'وظيفة بلا مرشحين',
+    body: '"' + r.title + '" معتمدة ولا يوجد لها أي مرشح بعد — ابدأ الاستقطاب أو ارفع سيرًا ذاتية إليها.'
+  }));
+
+  // 4) Jobs open >45 days and still not fully hired
+  const overdue = await pool.query(`
+    SELECT j.id, j.title, FLOOR(EXTRACT(EPOCH FROM (NOW()-j.post_date::timestamptz))/86400) AS days,
+      j.headcount,
+      (SELECT COUNT(*) FROM candidates c WHERE c.applied_for=j.id AND c.stage='تم التعيين') AS hired
+    FROM jobs j
+    WHERE j.post_date IS NOT NULL AND j.post_date < (NOW() - INTERVAL '45 days')::date
+    LIMIT 8`);
+  overdue.rows.filter(r => Number(r.hired) < r.headcount).forEach(r => out.push({
+    kind: 'overdue-job', severity: 'warn',
+    title: 'شاغر مفتوح منذ ' + r.days + ' يومًا',
+    body: '"' + r.title + '" شغل ' + r.hired + ' من ' + r.headcount + ' — قد يحتاج مراجعة قناة الاستقطاب أو متطلبات الوظيفة.'
+  }));
+
+  // 5) Candidates at interview or beyond with <3 assessments
+  const unassessed = await pool.query(`
+    SELECT c.id, c.name, c.stage,
+      (SELECT COUNT(*) FROM assessments a WHERE a.candidate_id=c.id) AS n
+    FROM candidates c
+    WHERE c.stage IN ('المقابلة','العرض','تم التعيين')
+      AND (SELECT COUNT(*) FROM assessments a WHERE a.candidate_id=c.id) < 3
+    ORDER BY c.stage_changed_at DESC LIMIT 8`);
+  unassessed.rows.forEach(r => out.push({
+    kind: 'needs-assessment', severity: 'info',
+    title: 'تقييمات ناقصة',
+    body: r.name + ' في مرحلة "' + r.stage + '" ولديه ' + r.n + ' من 3 تقييمات موصى بها.',
+    candidateId: r.id
+  }));
+
+  // 6) Waiting-pool candidates whose suggested job is approved and unfilled
+  const altReady = await pool.query(`
+    SELECT c.id, c.name, j.title,
+      (SELECT MAX(a.score) FROM assessments a WHERE a.candidate_id=c.id) AS best
+    FROM candidates c JOIN jobs j ON j.id = c.alternative_job_id
+    WHERE c.stage = '${ALT_STAGE}' AND j.approved = TRUE
+      AND (SELECT COUNT(*) FROM candidates x
+           WHERE x.applied_for = j.id AND x.stage='تم التعيين') < j.headcount
+    ORDER BY best DESC NULLS LAST LIMIT 6`);
+  altReady.rows.forEach(r => out.push({
+    kind: 'alt-match', severity: 'good',
+    title: 'مرشح جاهز من قائمة الانتظار',
+    body: r.name + (r.best !== null ? ' (أعلى تقييم ' + r.best + '/30)' : '') +
+      ' مقترح لوظيفة "' + r.title + '" التي لا تزال شاغرة — يمكن تفعيله مباشرة.',
+    candidateId: r.id
+  }));
+
+  res.json(out);
+}));
+
+// Pipeline board counts + cards, per stage.
+app.get('/api/pipeline', wrap(async (req, res) => {
+  const job = req.query.job && req.query.job !== 'الكل' ? req.query.job : null;
+  const params = job ? [job] : [];
+  const { rows } = await pool.query(`
+    SELECT c.id, c.name, c.stage, c.stage_changed_at, j.title AS job_title
+    FROM candidates c LEFT JOIN jobs j ON j.id=c.applied_for
+    ${job ? 'WHERE c.applied_for = $1' : ''}
+    ORDER BY c.stage_changed_at DESC`, params);
+  res.json(rows.map(r => ({
+    id: r.id, name: r.name, stage: r.stage, jobTitle: r.job_title,
+    stageChangedAt: new Date(r.stage_changed_at).getTime()
+  })));
+}));
+
+// ---------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------
+app.get('/api/settings', wrap(async (req, res) => {
+  const { rows } = await pool.query('SELECT total_jobs_targeted FROM settings WHERE id=TRUE');
+  res.json({ totalJobsTargeted: rows[0]?.total_jobs_targeted || 0 });
+}));
+app.put('/api/settings', wrap(async (req, res) => {
+  await pool.query('UPDATE settings SET total_jobs_targeted=$1 WHERE id=TRUE',
+    [Math.max(0, Number(req.body.totalJobsTargeted) || 0)]);
+  res.json({ saved: true });
+}));
+
+// CSV export — streamed from the DB so it works at any table size.
+app.get('/api/export/candidates.csv', wrap(async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT c.*, j.title AS job_title FROM candidates c
+    LEFT JOIN jobs j ON j.id=c.applied_for ORDER BY c.created_at DESC`);
+  const esc = v => {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const head = ['الاسم','البريد الإلكتروني','الهاتف','المسمى الوظيفي الحالي/الأخير','المصدر',
+    'سنوات الخبرة','الوظيفة المتقدم لها','المهارات','المرحلة','تاريخ الإضافة','نص السيرة الذاتية'];
+  const lines = rows.map(r => [r.name, r.email, r.phone, r.current_title, r.source,
+    r.experience_years, r.job_title, (r.skills || []).join('؛ '), r.stage,
+    new Date(r.created_at).toLocaleDateString('ar-EG'), r.resume_text].map(esc).join(','));
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="candidates.csv"');
+  res.send('\uFEFF' + head.map(esc).join(',') + '\n' + lines.join('\n'));
+}));
+
+app.get('/healthz', wrap(async (req, res) => {
+  await pool.query('SELECT 1');
+  res.json({ ok: true });
+}));
+
+// ---------------------------------------------------------------
+// Static frontend (flat layout — block direct access to source files)
+// ---------------------------------------------------------------
+const PRIVATE = ['/server.js','/package.json','/package-lock.json','/render.yaml',
+                 '/dockerfile','/docker-compose.yml','/readme.md'];
 app.use((req, res, next) => {
-  const requested = req.path.toLowerCase();
-  if (PRIVATE_FILES.some(f => requested === f.toLowerCase()) || requested.startsWith('/data')) {
-    return res.status(404).send('Not found');
-  }
+  const p = req.path.toLowerCase();
+  if (PRIVATE.includes(p) || p.startsWith('/db')) return res.status(404).send('Not found');
   next();
 });
 app.use(express.static(__dirname));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Talent Acquisition Department server running on http://localhost:${PORT}`);
-  console.log(`Data directory: ${STORE_DIR}`);
-});
+initSchema()
+  .then(() => app.listen(PORT, () => {
+    console.log(`Talent Acquisition Department running on http://localhost:${PORT}`);
+  }))
+  .catch(e => {
+    console.error('');
+    console.error('FATAL: could not connect to PostgreSQL or apply the schema.');
+    console.error('  ' + e.message);
+    console.error('');
+    console.error('Check that DATABASE_URL is correct and the database is reachable.');
+    console.error('For a local database without TLS, also set PGSSL=off');
+    console.error('');
+    process.exit(1);
+  });
