@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS candidates (
   alternative_job_id TEXT REFERENCES jobs(id) ON DELETE SET NULL,
   skills             TEXT[] NOT NULL DEFAULT '{}',
   resume_text        TEXT,
-  stage              TEXT NOT NULL DEFAULT 'تم الترشيح',
+  stage              TEXT NOT NULL DEFAULT 'الفرز',
   previous_stage     TEXT,
   stage_changed_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   has_original_file  BOOLEAN NOT NULL DEFAULT FALSE,
@@ -73,6 +73,21 @@ CREATE TABLE IF NOT EXISTS resume_files (
   bytes        BYTEA NOT NULL,
   uploaded_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Immutable audit trail: who changed what, when. candidate_id is kept
+-- nullable with SET NULL so the log entry survives candidate deletion;
+-- candidate_name is copied in for the same reason.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id             BIGSERIAL PRIMARY KEY,
+  actor          TEXT NOT NULL,
+  action         TEXT NOT NULL,
+  candidate_id   TEXT REFERENCES candidates(id) ON DELETE SET NULL,
+  candidate_name TEXT,
+  details        TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_cand    ON audit_log(candidate_id, created_at DESC);
 
 -- Single-row table for app-wide settings (e.g. manual KPI targets).
 CREATE TABLE IF NOT EXISTS settings (
