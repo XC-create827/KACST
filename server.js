@@ -68,31 +68,100 @@ async function initSchema() {
 }
 
 // ---------------------------------------------------------------
-// Auth (optional, but strongly recommended — see README)
+// Auth — username/password accounts with session cookies.
+// Passwords: scrypt (built into Node) with a per-user random salt.
+// Sessions: random 256-bit tokens in the DB, 7-day expiry, HttpOnly
+// cookie so page scripts can never read them.
 // ---------------------------------------------------------------
-const AUTH_USER = process.env.BASIC_AUTH_USER;
-const AUTH_PASS = process.env.BASIC_AUTH_PASS;
-if (AUTH_USER && AUTH_PASS) {
-  app.use((req, res, next) => {
-    if (req.path === '/healthz') return next();
-    const [scheme, encoded] = (req.headers.authorization || '').split(' ');
-    if (scheme === 'Basic' && encoded) {
-      const [u, p] = Buffer.from(encoded, 'base64').toString('utf8').split(':');
-      const uOk = u && u.length === AUTH_USER.length &&
-        crypto.timingSafeEqual(Buffer.from(u), Buffer.from(AUTH_USER));
-      const pOk = p && p.length === AUTH_PASS.length &&
-        crypto.timingSafeEqual(Buffer.from(p), Buffer.from(AUTH_PASS));
-      if (uOk && pOk) return next();
-    }
-    res.set('WWW-Authenticate', 'Basic realm="Talent Acquisition Department"');
-    res.status(401).send('Authentication required.');
-  });
-  console.log('Basic Auth is ENABLED.');
-} else {
-  console.warn('⚠️  Basic Auth is DISABLED. Anyone who can reach this server ' +
-    'can read all candidate data and download résumés. Set BASIC_AUTH_USER ' +
-    'and BASIC_AUTH_PASS before exposing it beyond a trusted network.');
+const wrapEarly = fn => (req, res) => fn(req, res).catch(e => {
+  console.error(`${req.method} ${req.path} failed:`, e);
+  res.status(500).json({ error: 'server error' });
+});
+const SESSION_COOKIE = 'tad_session';
+const SESSION_DAYS = 7;
+
+function hashPassword(pw){
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(pw, salt, 64).toString('hex');
+  return salt + ':' + hash;
 }
+function verifyPassword(pw, stored){
+  const [salt, hash] = String(stored || '').split(':');
+  if (!salt || !hash) return false;
+  const calc = crypto.scryptSync(pw, salt, 64);
+  const ref = Buffer.from(hash, 'hex');
+  return calc.length === ref.length && crypto.timingSafeEqual(calc, ref);
+}
+function parseCookies(req){
+  const out = {};
+  (req.headers.cookie || '').split(';').forEach(p => {
+    const i = p.indexOf('=');
+    if (i > 0) out[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim());
+  });
+  return out;
+}
+function setSessionCookie(req, res, token, maxAgeSec){
+  const secure = (req.headers['x-forwarded-proto'] === 'https') ? '; Secure' : '';
+  res.setHeader('Set-Cookie',
+    `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; Max-Age=${maxAgeSec}; SameSite=Lax${secure}`);
+}
+
+// Ensure at least one account exists so the first person can log in.
+async function seedAdmin(){
+  const { rows } = await pool.query('SELECT COUNT(*) FROM users');
+  if (Number(rows[0].count) > 0) return;
+  const user = process.env.ADMIN_USER || 'admin';
+  const pass = process.env.ADMIN_PASSWORD || 'admin123';
+  await pool.query(
+    'INSERT INTO users (id, username, display_name, password_hash, is_admin) VALUES ($1,$2,$3,$4,TRUE)',
+    [uid('usr'), user, user, hashPassword(pass)]);
+  console.warn('');
+  console.warn('⚠️  Created the first admin account:  username "' + user + '"' +
+    (process.env.ADMIN_PASSWORD ? ' (password from ADMIN_PASSWORD)' : '  password "admin123"'));
+  console.warn('   Log in and CHANGE THIS PASSWORD IMMEDIATELY from the sidebar.');
+  console.warn('');
+}
+
+// Session middleware: attaches req.user for valid sessions; rejects
+// API calls without one. Static files stay open (they contain no
+// data — everything sensitive flows through /api).
+app.use(async (req, res, next) => {
+  if (req.path === '/healthz' || req.path === '/api/login') return next();
+  const token = parseCookies(req)[SESSION_COOKIE];
+  if (token) {
+    try {
+      const { rows } = await pool.query(`
+        SELECT u.id, u.username, u.display_name, u.is_admin
+        FROM sessions s JOIN users u ON u.id = s.user_id
+        WHERE s.token = $1 AND s.expires_at > NOW()`, [token]);
+      if (rows.length) {
+        req.user = { id: rows[0].id, username: rows[0].username,
+          displayName: rows[0].display_name, isAdmin: rows[0].is_admin };
+      }
+    } catch (e) { console.error('session lookup failed:', e.message); }
+  }
+  if (!req.user && req.path.startsWith('/api/')) {
+    return res.status(401).json({ error: 'auth required' });
+  }
+  next();
+});
+
+app.post('/api/login', wrapEarly(async (req, res) => {
+  const { username, password } = req.body || {};
+  const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [String(username || '').trim()]);
+  const u = rows[0];
+  if (!u || !verifyPassword(String(password || ''), u.password_hash)) {
+    await new Promise(r => setTimeout(r, 400)); // blunt brute-force damper
+    return res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+  }
+  await pool.query('DELETE FROM sessions WHERE expires_at < NOW()');
+  const token = crypto.randomBytes(32).toString('hex');
+  await pool.query(
+    `INSERT INTO sessions (token, user_id, expires_at)
+     VALUES ($1, $2, NOW() + INTERVAL '${SESSION_DAYS} days')`, [token, u.id]);
+  setSessionCookie(req, res, token, SESSION_DAYS * 86400);
+  res.json({ username: u.username, displayName: u.display_name, isAdmin: u.is_admin });
+}));
 
 const wrap = fn => (req, res) => fn(req, res).catch(e => {
   console.error(`${req.method} ${req.path} failed:`, e);
@@ -102,16 +171,9 @@ const wrap = fn => (req, res) => fn(req, res).catch(e => {
 const uid = p => p + '_' + crypto.randomBytes(5).toString('hex');
 const ALT_STAGE = 'مناسب لشاغر آخر';
 
-// Who is making this change. The frontend sends the person's
-// self-identified name (URI-encoded — HTTP headers can't carry Arabic
-// directly); fall back to the shared login name, then to "unknown".
+// Who is making this change — the logged-in account.
 function getActor(req){
-  const raw = req.get('x-actor');
-  if (raw) {
-    try { const d = decodeURIComponent(raw).trim().slice(0, 60); if (d) return d; }
-    catch (e) { /* malformed encoding — fall through */ }
-  }
-  return AUTH_USER || 'غير معروف';
+  return (req.user && (req.user.displayName || req.user.username)) || 'غير معروف';
 }
 // q = pool or an open transaction client, so audit rows commit (or
 // roll back) atomically with the change they describe.
@@ -149,6 +211,73 @@ function rowToJob(r) {
     hiredCount: r.hired_count !== undefined ? Number(r.hired_count) : undefined
   };
 }
+
+// ---------------------------------------------------------------
+// Session + account endpoints
+// ---------------------------------------------------------------
+app.get('/api/me', wrap(async (req, res) => {
+  res.json({ username: req.user.username, displayName: req.user.displayName, isAdmin: req.user.isAdmin });
+}));
+
+app.post('/api/logout', wrap(async (req, res) => {
+  const token = parseCookies(req)[SESSION_COOKIE];
+  if (token) await pool.query('DELETE FROM sessions WHERE token = $1', [token]);
+  setSessionCookie(req, res, '', 0);
+  res.json({ ok: true });
+}));
+
+app.post('/api/change-password', wrap(async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!newPassword || String(newPassword).length < 8) {
+    return res.status(400).json({ error: 'كلمة المرور الجديدة يجب ألا تقل عن 8 أحرف' });
+  }
+  const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+  if (!rows.length || !verifyPassword(String(currentPassword || ''), rows[0].password_hash)) {
+    return res.status(401).json({ error: 'كلمة المرور الحالية غير صحيحة' });
+  }
+  await pool.query('UPDATE users SET password_hash = $2 WHERE id = $1',
+    [req.user.id, hashPassword(String(newPassword))]);
+  await audit(pool, req.user.displayName, 'تغيير كلمة المرور', null, null, null);
+  res.json({ ok: true });
+}));
+
+// User management — admin only.
+app.get('/api/users', wrap(async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'admin only' });
+  const { rows } = await pool.query(
+    'SELECT id, username, display_name, is_admin, created_at FROM users ORDER BY created_at');
+  res.json(rows.map(r => ({ id: r.id, username: r.username, displayName: r.display_name,
+    isAdmin: r.is_admin, createdAt: r.created_at })));
+}));
+
+app.post('/api/users', wrap(async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'admin only' });
+  const { username, displayName, password, isAdmin } = req.body || {};
+  const un = String(username || '').trim();
+  if (!un || !/^[a-zA-Z0-9._-]{3,30}$/.test(un)) {
+    return res.status(400).json({ error: 'اسم المستخدم: 3–30 حرفًا لاتينيًا أو أرقام أو . _ -' });
+  }
+  if (!password || String(password).length < 8) {
+    return res.status(400).json({ error: 'كلمة المرور يجب ألا تقل عن 8 أحرف' });
+  }
+  const dup = await pool.query('SELECT 1 FROM users WHERE username = $1', [un]);
+  if (dup.rows.length) return res.status(409).json({ error: 'اسم المستخدم مستخدم بالفعل' });
+  const id = uid('usr');
+  await pool.query(
+    'INSERT INTO users (id, username, display_name, password_hash, is_admin) VALUES ($1,$2,$3,$4,$5)',
+    [id, un, String(displayName || un).trim().slice(0, 60), hashPassword(String(password)), !!isAdmin]);
+  await audit(pool, req.user.displayName, 'إضافة مستخدم', null, null, un + (isAdmin ? ' (مشرف)' : ''));
+  res.json({ id });
+}));
+
+app.delete('/api/users/:id', wrap(async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'admin only' });
+  if (req.params.id === req.user.id) return res.status(400).json({ error: 'لا يمكنك حذف حسابك الحالي' });
+  const nm = await pool.query('SELECT username FROM users WHERE id = $1', [req.params.id]);
+  await pool.query('DELETE FROM users WHERE id = $1', [req.params.id]);
+  if (nm.rows[0]) await audit(pool, req.user.displayName, 'حذف مستخدم', null, null, nm.rows[0].username);
+  res.json({ deleted: true });
+}));
 
 // ---------------------------------------------------------------
 // Jobs
@@ -692,6 +821,7 @@ app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 const PORT = process.env.PORT || 3000;
 initSchema()
+  .then(() => seedAdmin())
   .then(() => app.listen(PORT, () => {
     console.log(`Talent Acquisition Department running on http://localhost:${PORT}`);
   }))
