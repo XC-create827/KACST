@@ -41,6 +41,11 @@ CREATE TABLE IF NOT EXISTS candidates (
   has_original_file  BOOLEAN NOT NULL DEFAULT FALSE,
   resume_file_name   TEXT,
   resume_file_type   TEXT,
+  date_of_birth      TEXT,
+  specialization     TEXT,
+  degree             TEXT,
+  city               TEXT,
+  address            TEXT,
   notes              TEXT,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -80,6 +85,7 @@ CREATE TABLE IF NOT EXISTS users (
   id            TEXT PRIMARY KEY,
   username      TEXT NOT NULL UNIQUE,
   display_name  TEXT NOT NULL,
+  email         TEXT,
   password_hash TEXT NOT NULL,
   is_admin      BOOLEAN NOT NULL DEFAULT FALSE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -94,6 +100,14 @@ CREATE TABLE IF NOT EXISTS sessions (
   expires_at TIMESTAMPTZ NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
+
+-- One-time password-reset tokens (email recovery flow).
+CREATE TABLE IF NOT EXISTS password_resets (
+  token      TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used       BOOLEAN NOT NULL DEFAULT FALSE
+);
 
 -- Immutable audit trail: who changed what, when. candidate_id is kept
 -- nullable with SET NULL so the log entry survives candidate deletion;
