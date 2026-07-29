@@ -45,6 +45,7 @@ async function initSchema() {
   // stage structure; map it onto the current one so existing rows
   // keep working: "تم الترشيح" merges into "الفرز", and "العرض"
   // becomes "العرض الوظيفي".
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
   const renames = [["تم الترشيح","الفرز"],["العرض","العرض الوظيفي"]];
   for (const [from,to] of renames) {
     await pool.query('UPDATE candidates SET stage=$2 WHERE stage=$1', [from,to]);
@@ -108,6 +109,26 @@ function setSessionCookie(req, res, token, maxAgeSec){
 
 // Ensure at least one account exists so the first person can log in.
 async function seedAdmin(){
+  // RECOVERY PATH: locked out? Set ADMIN_RESET=yes together with
+  // ADMIN_USER + ADMIN_PASSWORD and redeploy — that account is
+  // created (or its password overwritten) as an admin at startup.
+  // Remove ADMIN_RESET afterwards, or every deploy resets it again.
+  if (process.env.ADMIN_RESET === 'yes' && process.env.ADMIN_PASSWORD) {
+    const ru = (process.env.ADMIN_USER || 'admin').trim();
+    const hash = hashPassword(process.env.ADMIN_PASSWORD);
+    const upd = await pool.query(
+      'UPDATE users SET password_hash=$2, is_admin=TRUE WHERE username=$1', [ru, hash]);
+    if (upd.rowCount === 0) {
+      await pool.query(
+        'INSERT INTO users (id, username, display_name, password_hash, is_admin) VALUES ($1,$2,$3,$4,TRUE)',
+        [uid('usr'), ru, ru, hash]);
+    }
+    console.warn('');
+    console.warn('⚠️  ADMIN_RESET applied: account "' + ru + '" now uses ADMIN_PASSWORD and is an admin.');
+    console.warn('   REMOVE the ADMIN_RESET variable now — otherwise every deploy resets this account.');
+    console.warn('');
+    return;
+  }
   const { rows } = await pool.query('SELECT COUNT(*) FROM users');
   if (Number(rows[0].count) > 0) return;
   const user = process.env.ADMIN_USER || 'admin';
@@ -126,7 +147,9 @@ async function seedAdmin(){
 // API calls without one. Static files stay open (they contain no
 // data — everything sensitive flows through /api).
 app.use(async (req, res, next) => {
-  if (req.path === '/healthz' || req.path === '/api/login') return next();
+  const OPEN = ['/healthz', '/api/login', '/api/forgot-password', '/api/reset-password',
+                '/api/public/jobs', '/api/public/apply'];
+  if (OPEN.includes(req.path)) return next();
   const token = parseCookies(req)[SESSION_COOKIE];
   if (token) {
     try {
@@ -213,6 +236,156 @@ function rowToJob(r) {
 }
 
 // ---------------------------------------------------------------
+// Password recovery by email.
+// Activates only when SMTP_* env vars are configured (see README);
+// without them the login screen simply doesn't offer the link, and
+// admins reset passwords from the Users tab instead.
+// ---------------------------------------------------------------
+function mailerConfigured(){ return !!process.env.SMTP_HOST; }
+function getMailer(){
+  const nodemailer = require('nodemailer');
+  const port = Number(process.env.SMTP_PORT || 587);
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure: port === 465,
+    auth: process.env.SMTP_USER
+      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      : undefined
+  });
+}
+
+app.post('/api/forgot-password', wrapEarly(async (req, res) => {
+  if (!mailerConfigured()) {
+    return res.status(503).json({ error: 'استعادة كلمة المرور عبر البريد غير مفعّلة — تواصل مع المشرف ليعيد تعيينها لك.' });
+  }
+  const un = String((req.body || {}).username || '').trim();
+  // Always answer the same way, so usernames can't be probed.
+  const generic = { ok: true, message: 'إن وُجد حساب بهذا الاسم وله بريد مسجل، فسيصله رابط إعادة التعيين خلال دقائق.' };
+  const { rows } = await pool.query('SELECT id, email, display_name FROM users WHERE username = $1', [un]);
+  const u = rows[0];
+  if (!u || !u.email) return res.json(generic);
+  const token = crypto.randomBytes(32).toString('hex');
+  await pool.query(
+    `INSERT INTO password_resets (token, user_id, expires_at)
+     VALUES ($1, $2, NOW() + INTERVAL '1 hour')`, [token, u.id]);
+  const base = process.env.APP_URL || (req.headers['x-forwarded-proto'] || 'https') + '://' + req.headers.host;
+  const link = base.replace(/\/+$/, '') + '/?reset=' + token;
+  try {
+    await getMailer().sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: u.email,
+      subject: 'إعادة تعيين كلمة المرور — إدارة استقطاب الكفاءات',
+      text: 'مرحبًا ' + u.display_name + '،\n\n' +
+        'وصلنا طلب لإعادة تعيين كلمة مرورك. افتح الرابط التالي (صالح لمدة ساعة واحدة):\n\n' +
+        link + '\n\n' +
+        'إن لم تطلب ذلك فتجاهل هذه الرسالة ولن يتغير شيء.'
+    });
+  } catch (e) {
+    console.error('password-reset email failed:', e.message);
+    return res.status(500).json({ error: 'تعذّر إرسال البريد — تحقق من إعدادات SMTP أو تواصل مع المشرف.' });
+  }
+  res.json(generic);
+}));
+
+app.post('/api/reset-password', wrapEarly(async (req, res) => {
+  const { token, newPassword } = req.body || {};
+  if (!newPassword || String(newPassword).length < 8) {
+    return res.status(400).json({ error: 'كلمة المرور الجديدة يجب ألا تقل عن 8 أحرف' });
+  }
+  const { rows } = await pool.query(
+    `SELECT r.token, r.user_id, u.display_name FROM password_resets r
+     JOIN users u ON u.id = r.user_id
+     WHERE r.token = $1 AND r.used = FALSE AND r.expires_at > NOW()`, [String(token || '')]);
+  if (!rows.length) return res.status(400).json({ error: 'الرابط غير صالح أو منتهي الصلاحية — اطلب رابطًا جديدًا.' });
+  await pool.query('UPDATE users SET password_hash = $2 WHERE id = $1',
+    [rows[0].user_id, hashPassword(String(newPassword))]);
+  await pool.query('UPDATE password_resets SET used = TRUE WHERE token = $1', [rows[0].token]);
+  await pool.query('DELETE FROM sessions WHERE user_id = $1', [rows[0].user_id]);
+  await audit(pool, rows[0].display_name, 'إعادة تعيين كلمة المرور (عبر البريد)', null, null, null);
+  res.json({ ok: true });
+}));
+
+// ---------------------------------------------------------------
+// Public application endpoints — no login required. These power the
+// "قدّم الآن" page on the landing screen; submissions become
+// candidates in the same database the team already works in.
+// ---------------------------------------------------------------
+// Blunt per-IP throttle so the open endpoint can't be flooded.
+const applyHits = new Map();
+function applyAllowed(ip){
+  const now = Date.now();
+  const hits = (applyHits.get(ip) || []).filter(t => now - t < 3600000);
+  if (hits.length >= 5) return false;
+  hits.push(now);
+  applyHits.set(ip, hits);
+  if (applyHits.size > 5000) applyHits.clear(); // memory guard
+  return true;
+}
+
+app.get('/api/public/jobs', wrapEarly(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, title, department FROM jobs WHERE approved = TRUE ORDER BY created_at DESC`);
+  res.json(rows.map(r => ({ id: r.id, title: r.title, department: r.department || '' })));
+}));
+
+app.post('/api/public/apply', wrapEarly(async (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || '?';
+  if (!applyAllowed(ip)) {
+    return res.status(429).json({ error: 'تم استلام عدة طلبات من جهازك — حاول مجددًا بعد ساعة.' });
+  }
+  const b = req.body || {};
+  const name = String(b.name || '').trim().slice(0, 120);
+  const email = String(b.email || '').trim().toLowerCase().slice(0, 160);
+  const phone = String(b.phone || '').trim().slice(0, 40);
+  if (!name || name.length < 3) return res.status(400).json({ error: 'الاسم الكامل مطلوب' });
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'بريد إلكتروني صحيح مطلوب' });
+  }
+  // Job must be real and approved; otherwise file as a general application.
+  let jobId = null, jobTitle = null;
+  if (b.jobId) {
+    const j = await pool.query('SELECT id, title FROM jobs WHERE id = $1 AND approved = TRUE', [String(b.jobId)]);
+    if (j.rows.length) { jobId = j.rows[0].id; jobTitle = j.rows[0].title; }
+  }
+  const id = uid('cand');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `INSERT INTO candidates (id,name,email,phone,current_title,source,experience_years,
+        applied_for,skills,resume_text,stage,has_original_file,resume_file_name,resume_file_type)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [id, name, email, phone || null,
+       String(b.currentTitle || '').trim().slice(0, 120) || null,
+       'التقديم المباشر',
+       Math.max(0, Math.min(45, Number(b.experienceYears) || 0)),
+       jobId, [],
+       String(b.resumeText || '').slice(0, 200000) || null,
+       'الفرز',
+       !!b.fileBase64,
+       b.resumeFileName ? String(b.resumeFileName).slice(0, 200) : null,
+       b.resumeFileType ? String(b.resumeFileType).slice(0, 10) : null]);
+    await client.query('INSERT INTO stage_history (candidate_id,stage) VALUES ($1,$2)', [id, 'الفرز']);
+    if (b.fileBase64) {
+      const bytes = Buffer.from(String(b.fileBase64), 'base64');
+      if (bytes.length > 10 * 1024 * 1024) { throw Object.assign(new Error('file too large'), { pub: 'حجم الملف يتجاوز 10MB' }); }
+      await client.query(
+        'INSERT INTO resume_files (candidate_id,file_name,mime_type,bytes) VALUES ($1,$2,$3,$4)',
+        [id, b.resumeFileName || null, b.mimeType || 'application/octet-stream', bytes]);
+    }
+    await audit(client, 'نظام التقديم الخارجي', 'تقديم طلب توظيف', id, name,
+      jobTitle ? ('على وظيفة: ' + jobTitle) : 'تقديم عام');
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    if (e.pub) return res.status(400).json({ error: e.pub });
+    throw e;
+  } finally { client.release(); }
+}));
+
+// ---------------------------------------------------------------
 // Session + account endpoints
 // ---------------------------------------------------------------
 app.get('/api/me', wrap(async (req, res) => {
@@ -245,9 +418,9 @@ app.post('/api/change-password', wrap(async (req, res) => {
 app.get('/api/users', wrap(async (req, res) => {
   if (!req.user.isAdmin) return res.status(403).json({ error: 'admin only' });
   const { rows } = await pool.query(
-    'SELECT id, username, display_name, is_admin, created_at FROM users ORDER BY created_at');
+    'SELECT id, username, display_name, email, is_admin, created_at FROM users ORDER BY created_at');
   res.json(rows.map(r => ({ id: r.id, username: r.username, displayName: r.display_name,
-    isAdmin: r.is_admin, createdAt: r.created_at })));
+    email: r.email || '', isAdmin: r.is_admin, createdAt: r.created_at })));
 }));
 
 app.post('/api/users', wrap(async (req, res) => {
@@ -263,11 +436,32 @@ app.post('/api/users', wrap(async (req, res) => {
   const dup = await pool.query('SELECT 1 FROM users WHERE username = $1', [un]);
   if (dup.rows.length) return res.status(409).json({ error: 'اسم المستخدم مستخدم بالفعل' });
   const id = uid('usr');
+  const email = String((req.body || {}).email || '').trim().toLowerCase() || null;
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'صيغة البريد الإلكتروني غير صحيحة' });
+  }
   await pool.query(
-    'INSERT INTO users (id, username, display_name, password_hash, is_admin) VALUES ($1,$2,$3,$4,$5)',
-    [id, un, String(displayName || un).trim().slice(0, 60), hashPassword(String(password)), !!isAdmin]);
+    'INSERT INTO users (id, username, display_name, email, password_hash, is_admin) VALUES ($1,$2,$3,$4,$5,$6)',
+    [id, un, String(displayName || un).trim().slice(0, 60), email, hashPassword(String(password)), !!isAdmin]);
   await audit(pool, req.user.displayName, 'إضافة مستخدم', null, null, un + (isAdmin ? ' (مشرف)' : ''));
   res.json({ id });
+}));
+
+// Admin fallback: reset any user's password directly — works even
+// with no email system configured.
+app.post('/api/users/:id/reset-password', wrap(async (req, res) => {
+  if (!req.user.isAdmin) return res.status(403).json({ error: 'admin only' });
+  const { newPassword } = req.body || {};
+  if (!newPassword || String(newPassword).length < 8) {
+    return res.status(400).json({ error: 'كلمة المرور يجب ألا تقل عن 8 أحرف' });
+  }
+  const nm = await pool.query('SELECT username FROM users WHERE id = $1', [req.params.id]);
+  if (!nm.rows.length) return res.status(404).json({ error: 'not found' });
+  await pool.query('UPDATE users SET password_hash = $2 WHERE id = $1',
+    [req.params.id, hashPassword(String(newPassword))]);
+  await pool.query('DELETE FROM sessions WHERE user_id = $1', [req.params.id]);
+  await audit(pool, req.user.displayName, 'إعادة تعيين كلمة مرور مستخدم', null, null, nm.rows[0].username);
+  res.json({ ok: true });
 }));
 
 app.delete('/api/users/:id', wrap(async (req, res) => {

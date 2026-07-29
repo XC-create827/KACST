@@ -424,6 +424,207 @@
   ::-webkit-scrollbar-thumb{background:rgba(166,186,204,0.25);border-radius:99px;}
   ::-webkit-scrollbar-thumb:hover{background:rgba(25,184,166,0.5);}
 
+  /* ---- Public landing (pre-login) ---- */
+  .landing{position:fixed;inset:0;z-index:200;overflow-y:auto;background:var(--bg);}
+  .landing::before{
+    content:'';position:fixed;inset:-30%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(38% 34% at 24% 22%, rgba(47,127,240,0.30), transparent 68%),
+      radial-gradient(30% 30% at 80% 20%, rgba(139,92,246,0.22), transparent 66%),
+      radial-gradient(34% 32% at 72% 84%, rgba(25,184,166,0.22), transparent 70%);
+    filter:blur(46px);
+    animation:aurora 26s ease-in-out infinite alternate;
+  }
+  .landing-inner{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:64px 28px 80px;}
+  .landing-hero{text-align:center;padding:24px 0 44px;animation:rise .5s ease-out both;}
+  .landing-hero img{width:120px;height:120px;object-fit:contain;display:block;margin:0 auto 18px;
+    filter:drop-shadow(0 10px 30px rgba(47,127,240,0.4));animation:logoFloat 6s ease-in-out infinite;}
+  .landing-hero h1{
+    margin:0;font-size:38px;letter-spacing:-0.01em;
+    background:linear-gradient(115deg,#f2f7fa 20%,#9fd7cf 40%,#7fb2f0 55%,#f2f7fa 75%);
+    background-size:220% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shimmer 7s ease-in-out infinite;
+  }
+  .landing-hero .org{font-size:16px;color:var(--text);margin-top:10px;font-weight:700;}
+  .landing-hero .tag{font-size:13.5px;color:var(--muted);margin-top:6px;}
+  .vm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:40px;}
+  .vm-card{
+    background:var(--panel);backdrop-filter:var(--glass-blur);
+    border:1px solid var(--line);border-radius:var(--radius);
+    border-inline-start:3px solid var(--teal);
+    padding:22px 24px;box-shadow:var(--shadow-1);
+    animation:rise .5s ease-out both;
+  }
+  .vm-card:nth-child(2){border-inline-start-color:var(--blue);animation-delay:.06s;}
+  .vm-card h2{margin:0 0 10px;font-size:17px;color:var(--teal);}
+  .vm-card:nth-child(2) h2{color:#8db9f2;}
+  .vm-card p{margin:0;font-size:14.5px;line-height:1.9;color:var(--text);}
+  .landing-sec-title{
+    text-align:center;font-size:22px;margin:0 0 18px;
+    background:linear-gradient(115deg,#f5fafd 40%,#a9e2da 75%,#8db9f2);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sector-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:48px;}
+  .sector-card{
+    background:var(--panel);backdrop-filter:var(--glass-blur);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;text-align:center;box-shadow:var(--shadow-1);
+    transition:transform .25s var(--spring), box-shadow .25s, border-color .25s;
+    animation:rise .5s ease-out both;
+  }
+  .sector-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-2);border-color:var(--scolor,var(--teal));}
+  .sector-card svg{width:34px;height:34px;stroke:var(--scolor,var(--teal));fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;margin-bottom:10px;}
+  .sector-card h3{margin:0 0 6px;font-size:15.5px;color:var(--paper);}
+  .sector-card p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.8;}
+  .landing-cta{text-align:center;padding:8px 0 20px;animation:rise .5s ease-out both;}
+  .landing-cta .btn{font-size:16px;padding:14px 44px;}
+  .landing-login{max-width:400px;margin:22px auto 0;display:none;}
+  .landing-login.open{display:block;animation:pop .3s var(--spring) both;}
+  .landing-foot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:40px;padding-top:18px;border-top:1px solid var(--line);}
+  /* ---- Landing slides (scroll-snap) ---- */
+  .landing{scroll-snap-type:y proximity;scroll-behavior:smooth;}
+  .lslide{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    scroll-snap-align:start;position:relative;z-index:1;
+    padding:56px 28px;
+  }
+  .landing-hero{text-align:center;}
+  .scroll-hint{margin-top:34px;font-size:12.5px;color:var(--muted);animation:hintFloat 2.2s ease-in-out infinite;}
+  @keyframes hintFloat{0%,100%{transform:translateY(0);opacity:.7;}50%{transform:translateY(6px);opacity:1;}}
+  .sector-slide{--scolor:var(--teal);}
+  .ss-grid{
+    display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;
+    max-width:1080px;width:100%;
+  }
+  .ss-grid.flip .ss-text{order:2;}
+  .ss-grid.flip .ss-visual{order:1;}
+  .ss-kicker{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--scolor);margin-bottom:8px;}
+  .ss-text h2{
+    margin:0 0 10px;font-size:34px;
+    background:linear-gradient(115deg,#f5fafd 30%, color-mix(in srgb, var(--scolor) 70%, #fff) 80%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .ss-desc{font-size:15px;color:var(--text);margin:0 0 18px;line-height:1.9;}
+  .ss-block{
+    background:var(--panel);backdrop-filter:var(--glass-blur);
+    border:1px solid var(--line);border-inline-start:3px solid var(--scolor);
+    border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:10px;
+  }
+  .ss-block span{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;color:var(--scolor);margin-bottom:4px;}
+  .ss-block p{margin:0;font-size:13.5px;line-height:1.85;color:var(--text);}
+  .ss-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
+  .ss-visual{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:460px;}
+  .ss-model{position:relative;width:min(340px,76vw);aspect-ratio:1;display:flex;align-items:center;justify-content:center;}
+  .ss-model canvas{position:absolute;inset:0;width:100% !important;height:100% !important;filter:drop-shadow(0 0 34px color-mix(in srgb, var(--scolor) 35%, transparent));}
+  .ss-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  .ss-fallback svg{width:120px;height:120px;stroke:var(--scolor);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.9;filter:drop-shadow(0 0 26px color-mix(in srgb, var(--scolor) 40%, transparent));}
+  .ss-model canvas.model-live + .ss-fallback{display:none;}
+  .ss-pillars{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
+  .ss-pillar{
+    background:rgba(8,26,44,0.45);border:1px solid var(--line);
+    border-inline-start:3px solid color-mix(in srgb, var(--scolor) 65%, transparent);
+    border-radius:var(--radius-sm);padding:10px 14px;
+    transition:border-color .2s, transform .2s var(--spring);
+  }
+  .ss-pillar:hover{border-inline-start-color:var(--scolor);transform:translateX(-3px);}
+  .ss-pillar strong{display:block;font-size:13.5px;color:var(--paper);margin-bottom:2px;}
+  .ss-pillar p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.75;}
+  .ss-outcomes{
+    width:min(340px,80vw);
+    background:var(--panel);backdrop-filter:var(--glass-blur);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 18px;box-shadow:var(--shadow-1);
+  }
+  .ss-outcomes > span{display:block;font-size:11px;font-weight:800;letter-spacing:.05em;color:var(--scolor);margin-bottom:8px;}
+  .ss-outcome{
+    position:relative;font-size:13px;color:var(--text);line-height:1.8;
+    padding-inline-start:22px;margin-bottom:6px;
+  }
+  .ss-outcome:last-child{margin-bottom:0;}
+  .ss-outcome::before{
+    content:'✓';position:absolute;inset-inline-start:0;top:0;
+    color:var(--scolor);font-weight:800;
+  }
+  .landing-cta{text-align:center;}
+  /* ---- Official-site light theme (public landing + apply only;
+          the internal workspace keeps its dark identity) ---- */
+  .landing{
+    background:#f5f8fb;color:#16324a;
+    --l-ink:#122b42; --l-muted:#5b7286; --l-line:#e2eaf2; --l-card:#ffffff;
+  }
+  .landing::before{
+    background:
+      radial-gradient(34% 30% at 20% 16%, rgba(139,92,246,0.12), transparent 68%),
+      radial-gradient(30% 28% at 84% 22%, rgba(25,184,166,0.12), transparent 66%),
+      radial-gradient(32% 30% at 70% 88%, rgba(47,127,240,0.10), transparent 70%);
+    filter:blur(70px);
+  }
+  .landing-nav{
+    position:sticky;top:0;z-index:5;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:10px 26px;
+    background:rgba(255,255,255,0.85);backdrop-filter:saturate(150%) blur(12px);
+    border-bottom:1px solid var(--l-line);
+  }
+  .landing-nav .nb{display:flex;align-items:center;gap:10px;}
+  .landing-nav img{width:40px;height:40px;object-fit:contain;animation:none;filter:none;}
+  .landing-nav .nt{font-size:15px;font-weight:800;color:var(--l-ink);}
+  .landing-nav .nt small{display:block;font-size:10px;color:var(--l-muted);font-weight:700;}
+  .landing-nav .na{display:flex;gap:8px;}
+  .landing .landing-hero img{filter:drop-shadow(0 10px 26px rgba(139,92,246,0.25));}
+  .landing .landing-hero h1{
+    background:linear-gradient(115deg,#122b42 30%, #6d3fd6 60%, #149a8b 90%);
+    background-size:220% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .landing .landing-hero .org{color:var(--l-ink);}
+  .landing .landing-hero .tag{color:var(--l-muted);}
+  .landing .scroll-hint{color:var(--l-muted);}
+  .landing .vm-card, .landing .ss-block, .landing .ss-pillar, .landing .ss-outcomes, .landing .modal{
+    background:var(--l-card);border-color:var(--l-line);
+    backdrop-filter:none;
+    box-shadow:0 8px 30px rgba(18,43,66,0.07);
+  }
+  .landing .vm-card p, .landing .ss-block p{color:#2a4258;}
+  .landing .ss-desc{color:#2a4258;}
+  .landing .ss-text h2{
+    background:linear-gradient(115deg,#122b42 30%, color-mix(in srgb, var(--scolor) 80%, #333) 85%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .landing .ss-pillar{background:#fbfdfe;}
+  .landing .ss-pillar strong{color:var(--l-ink);}
+  .landing .ss-pillar p{color:var(--l-muted);}
+  .landing .ss-outcome{color:#2a4258;}
+  .landing .landing-sec-title{
+    background:linear-gradient(115deg,#122b42 40%, #6d3fd6 80%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .landing .chip.ar{background:rgba(139,92,246,0.08);color:#5b34b8;border-color:rgba(139,92,246,0.25);}
+  .landing label{color:#42607a;}
+  .landing input[type=text], .landing input[type=email], .landing input[type=tel],
+  .landing input[type=number], .landing input[type=password], .landing select, .landing textarea{
+    background:#fff;border-color:#d7e2ec;color:var(--l-ink);
+  }
+  .landing input:focus, .landing select:focus, .landing textarea:focus{
+    border-color:var(--teal);box-shadow:0 0 0 3px rgba(25,184,166,0.15);background:#fff;
+  }
+  .landing input[type=file]{background:#fbfdfe;border-color:#cfdce8;color:var(--l-muted);}
+  .landing .btn-ghost{background:#fff;color:var(--l-ink);border-color:#cfdae6;}
+  .landing .btn-ghost:hover{border-color:var(--teal);background:rgba(25,184,166,0.06);}
+  .landing .btn-primary{
+    background:linear-gradient(120deg,#149a8b, #2f7ff0 55%, #6d3fd6);
+    background-size:180% 100%;color:#fff;
+    box-shadow:0 6px 20px rgba(47,127,240,0.28);
+  }
+  .landing .btn-primary:hover{box-shadow:0 10px 30px rgba(109,63,214,0.35);}
+  .landing .modal .display{color:var(--l-ink);}
+  .landing #loginErr{}
+  .landing .ss-model canvas{filter:drop-shadow(0 0 26px color-mix(in srgb, var(--scolor) 22%, transparent));}
+  .landing .landing-foot{
+    color:#c7d6e4;background:#0d2b47;border-top:none;
+    margin:60px -28px -80px;padding:26px 28px;
+  }
   /* ---- Large displays: 1440p ---- */
   @media(min-width:1600px){
     main{padding:46px 64px 80px;}
@@ -440,6 +641,9 @@
     .insights{grid-template-columns:repeat(auto-fill,minmax(325px,1fr));}
     .insight{font-size:13.5px;}
     .modal{max-width:760px;}
+    .ss-visual{min-height:520px;}
+    .ss-model{width:min(400px,80vw);}
+    .ss-outcomes{width:min(400px,80vw);}
   }
   /* ---- Very large displays: 4K ---- */
   @media(min-width:2200px){
@@ -480,6 +684,13 @@
     .stats{grid-template-columns:repeat(2,1fr);}
     .kanban{grid-template-columns:1fr;}
     .field-row{grid-template-columns:1fr;}
+    .ss-grid{grid-template-columns:1fr;gap:20px;}
+    .ss-grid.flip .ss-text{order:1;}
+    .ss-grid.flip .ss-visual{order:2;}
+    .ss-text h2{font-size:26px;}
+    .lslide{min-height:auto;padding:44px 18px;}
+    .ss-visual{min-height:auto;}
+    .ss-model{width:min(280px,74vw);}
   }
 </style>
 </head>
@@ -1434,25 +1645,217 @@ function openAddUser(){
 /* ---------------------------------------------------------
    LOGIN + ACCOUNT
 --------------------------------------------------------- */
+// Public landing shown before sign-in: KACST vision, mission and
+// focus sectors, with the sign-in action at the BOTTOM of the page.
+// All copy lives in LANDING below — edit there to match the exact
+// internal wording if KACST communications provide it.
+const LANDING = {
+  org: 'مدينة الملك عبدالعزيز للعلوم والتقنية — كاكست',
+  tag: 'المختبر الوطني وواحات الابتكار في المملكة العربية السعودية',
+  vision: 'الريادة العالمية في البحث والتطوير والابتكار؛ بما يعزز تنافسية المملكة، ويبني اقتصادًا معرفيًا مزدهرًا يتماشى مع مستهدفات رؤية المملكة 2030.',
+  mission: 'بوصفها المختبر الوطني وواحات الابتكار، تقود كاكست البحث التطبيقي والتطوير التقني وفق الأولويات الوطنية، وتحوّل مخرجات المعرفة إلى منتجات وخدمات ابتكارية ذات قيمة مضافة، وتمكّن رواد الأعمال والشركات الناشئة في التقنيات العميقة، وتؤدي دور الجهة التقنية المرجعية للجهات الحكومية والقطاع الخاص.',
+  sectors: [
+    { name:'الصحة', color:'var(--rose)', hex:0xe0636c, model:'knot',
+      desc:'التقنية الحيوية والحلول الصحية المتقدمة لجودة حياة أفضل للإنسان.',
+      vision:'صحة إنسان أفضل بعلوم وتقنيات سعودية رائدة.',
+      mission:'تطوير التقنية الحيوية والأدوية واللقاحات والأجهزة الطبية، وتوطين الصناعات الصحية بالشراكة مع القطاعين الحكومي والخاص.',
+      pillars:[
+        {t:'التقنية الحيوية والجينوم', d:'أبحاث الجينوم والعلاجات الحيوية للأمراض ذات الأولوية الوطنية.'},
+        {t:'الأدوية واللقاحات', d:'تطوير وتوطين صناعة الأدوية واللقاحات والمستحضرات الحيوية.'},
+        {t:'الأجهزة والحلول الطبية', d:'تقنيات تشخيصية وعلاجية متقدمة بشراكات مع المنظومة الصحية.'}
+      ],
+      outcomes:['علاجات وحلول صحية موطّنة','شراكات بحثية مع المنظومة الصحية','شركات ناشئة في التقنية الحيوية'],
+      icon:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.2-7-9.3C5 7.6 7.2 6 9.3 6c1.2 0 2.1.5 2.7 1.3C12.6 6.5 13.5 6 14.7 6 16.8 6 19 7.6 19 10.7 19 15.8 12 20 12 20z"/><path d="M8 12h2.2l1-1.8 1.6 3.4 1-1.6H16"/></svg>' },
+    { name:'البيئة والاستدامة', color:'var(--green)', hex:0x22c07a, model:'planet',
+      desc:'حلول المياه والبيئة والزراعة لمواجهة تحديات المناخ وتأمين الموارد.',
+      vision:'بيئة مستدامة وموارد مؤمّنة للأجيال القادمة.',
+      mission:'ابتكار حلول المياه والزراعة والبيئة، ومواجهة التحديات المناخية بتقنيات الاستشعار والمراقبة والمعالجة المتقدمة.',
+      pillars:[
+        {t:'تقنيات المياه', d:'التحلية والمعالجة وكفاءة الاستهلاك لمواجهة تحدي شح المياه.'},
+        {t:'البيئة والمناخ', d:'الرصد البيئي والنمذجة المناخية وحلول خفض الانبعاثات.'},
+        {t:'الزراعة والأمن الغذائي', d:'الزراعة الذكية وتقنيات الإنتاج المستدام في البيئات القاحلة.'}
+      ],
+      outcomes:['حلول وطنية لتحديات المياه والغذاء','رصد وبيانات بيئية دقيقة','دعم مستهدفات الاستدامة في رؤية 2030'],
+      icon:'<svg viewBox="0 0 24 24"><path d="M12 3.5C8 8 5.5 11 5.5 14.2a6.5 6.5 0 0 0 13 0C18.5 11 16 8 12 3.5z"/><path d="M9.5 14.5c.4 1.8 1.6 3 3.4 3.4"/></svg>' },
+    { name:'الطاقة والصناعة', color:'var(--gold)', hex:0xe8b93e, model:'octa',
+      desc:'تقنيات الطاقة النظيفة والتصنيع المتقدم لتنويع الاقتصاد الوطني.',
+      vision:'ريادة صناعية وطاقة نظيفة تصنع اقتصادًا منافسًا.',
+      mission:'تطوير تقنيات الطاقة المتجددة والتخزين والتصنيع المتقدم والمواد الجديدة، ودعم توطين الصناعات الإستراتيجية.',
+      pillars:[
+        {t:'الطاقة المتجددة والتخزين', d:'الخلايا الشمسية وتخزين الطاقة والمواد المتقدمة للطاقة النظيفة.'},
+        {t:'التصنيع المتقدم', d:'الروبوتات والأتمتة والتصنيع الرقمي لرفع تنافسية الصناعة الوطنية.'},
+        {t:'المواد المتقدمة', d:'مواد جديدة لقطاعات الطيران والبناء والصناعات الدقيقة.'}
+      ],
+      outcomes:['تقنيات موطّنة للصناعة السعودية','كفاءة أعلى للطاقة','منتجات وطنية ذات قيمة مضافة'],
+      icon:'<svg viewBox="0 0 24 24"><path d="M13 2.5 5 13.5h5L11 21.5l8-11h-5z"/></svg>' },
+    { name:'اقتصاديات المستقبل', color:'var(--blue)', hex:0x2f7ff0, model:'ico',
+      desc:'الذكاء الاصطناعي والتقنيات العميقة وبناء الاقتصاد المعرفي.',
+      vision:'اقتصاد معرفي تقوده التقنيات العميقة والعقول السعودية.',
+      mission:'البحث والتطوير في الذكاء الاصطناعي وعلوم الفضاء والاتصالات المتقدمة وأشباه الموصلات، وتمكين الشركات الناشئة في التقنيات العميقة.',
+      pillars:[
+        {t:'الذكاء الاصطناعي والحوسبة', d:'نماذج وتطبيقات الذكاء الاصطناعي والحوسبة المتقدمة.'},
+        {t:'الفضاء والاتصالات', d:'التقنيات الفضائية واتصالات الجيل القادم وأشباه الموصلات.'},
+        {t:'ريادة التقنيات العميقة', d:'احتضان وتسريع الشركات الناشئة عبر واحات الابتكار وبرامجها.'}
+      ],
+      outcomes:['تقنيات عميقة سعودية المنشأ','شركات ناشئة من مخرجات البحث','اقتصاد معرفي تنافسي عالميًا'],
+      icon:'<svg viewBox="0 0 24 24"><rect x="7.5" y="7.5" width="9" height="9" rx="2"/><path d="M9.5 4.5v3M14.5 4.5v3M9.5 16.5v3M14.5 16.5v3M4.5 9.5h3M4.5 14.5h3M16.5 9.5h3M16.5 14.5h3"/></svg>' },
+    { name:'رأس المال البشري', color:'var(--purple)', hex:0x8b5cf6, model:'torus',
+      desc:'استقطاب الكفاءات وتنمية العقول التي تقود البحث والتطوير والابتكار.',
+      vision:'كفاءات وطنية عالمية المستوى تقود مستقبل العلوم والتقنية.',
+      mission:'استقطاب أفضل المواهب محليًا وعالميًا، وتطوير الباحثين والمبتكرين عبر برامج التدريب والتأهيل والزمالات، وبناء بيئة عمل محفزة تُمكّن العقول من صناعة الأثر.',
+      pillars:[
+        {t:'استقطاب الكفاءات', d:'جذب أفضل العقول محليًا وعالميًا لمنظومة البحث والتطوير والابتكار.'},
+        {t:'تطوير الباحثين والقيادات', d:'برامج تأهيل وزمالات وتدريب متقدم لصناعة القيادات العلمية.'},
+        {t:'بيئة عمل مُمكِّنة', d:'ثقافة محفزة تستبقي المواهب وتحوّل الأفكار إلى أثر ملموس.'}
+      ],
+      outcomes:['كفاءات وطنية بمعايير عالمية','مسارات مهنية بحثية واضحة','ثقافة ابتكار جاذبة للمواهب'],
+      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="3.2"/><path d="M5.5 20c.7-3.8 3.2-5.8 6.5-5.8s5.8 2 6.5 5.8"/><path d="M12 11v2.5"/><path d="m8.5 4.5 1-1.5M15.5 4.5l-1-1.5"/></svg>' }
+  ]
+};
+
+// Lazy Three.js: loaded once from cdnjs when the landing appears.
+// Every failure path (offline CDN, no WebGL, reduced motion) falls
+// back to the sector's SVG icon — the page never depends on it.
+function initSectorModels(){
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvases = document.querySelectorAll('canvas[data-model]');
+  if (!canvases.length) return;
+  const boot3d = ()=>{
+    try{
+      const THREE = window.THREE;
+      canvases.forEach(cv=>{
+        try{
+          const renderer = new THREE.WebGLRenderer({ canvas: cv, alpha: true, antialias: true });
+          const size = Math.min(360, cv.parentElement.clientWidth || 320);
+          renderer.setSize(size, size, false);
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+          const scene = new THREE.Scene();
+          const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 50);
+          camera.position.z = 4.2;
+          const color = Number(cv.dataset.hex);
+          let geo;
+          switch(cv.dataset.model){
+            case 'knot':   geo = new THREE.TorusKnotGeometry(1.05, 0.3, 96, 12); break;
+            case 'planet': geo = new THREE.SphereGeometry(1.35, 18, 14); break;
+            case 'octa':   geo = new THREE.OctahedronGeometry(1.5, 1); break;
+            case 'torus':  geo = new THREE.TorusGeometry(1.1, 0.42, 14, 28); break;
+            default:       geo = new THREE.IcosahedronGeometry(1.5, 1);
+          }
+          const mesh = new THREE.Mesh(geo,
+            new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.85 }));
+          const glow = new THREE.Mesh(geo.clone(),
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.08 }));
+          scene.add(mesh); scene.add(glow);
+          let visible = true;
+          new IntersectionObserver(es=>{ es.forEach(e=>{ visible = e.isIntersecting; }); }).observe(cv);
+          (function spin(){
+            requestAnimationFrame(spin);
+            if(!visible) return;
+            mesh.rotation.y += 0.004; mesh.rotation.x += 0.0016;
+            glow.rotation.copy(mesh.rotation);
+            renderer.render(scene, camera);
+          })();
+          cv.classList.add('model-live');
+        }catch(e){ /* this canvas falls back to its SVG icon */ }
+      });
+    }catch(e){ /* fall back silently */ }
+  };
+  if (window.THREE) return boot3d();
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  s.onload = boot3d;
+  s.onerror = ()=>{ /* CDN unreachable — SVG fallback stays */ };
+  document.head.appendChild(s);
+}
+
 function showLogin(){
   let ov = document.getElementById('loginOverlay');
-  if(ov){ ov.style.display='flex'; return; }
+  if(ov){ ov.style.display='block'; return; }
+  const brandImg = document.querySelector('.brand img');
   ov = document.createElement('div');
   ov.id = 'loginOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:var(--bg);';
-  const brandImg = document.querySelector('.brand img');
-  ov.innerHTML = `
-    <div class="modal" style="max-width:400px;text-align:center;">
-      ${brandImg ? `<img src="${brandImg.src}" alt="KACST" style="width:92px;height:92px;object-fit:contain;display:block;margin:0 auto 14px;filter:drop-shadow(0 8px 24px rgba(47,127,240,0.4));animation:logoFloat 6s ease-in-out infinite;">` : ''}
-      <div class="display" style="font-size:22px;margin-bottom:4px;background:linear-gradient(115deg,#f2f7fa 20%,#9fd7cf 40%,#7fb2f0 55%,#f2f7fa 75%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 7s ease-in-out infinite;">إدارة استقطاب الكفاءات</div>
-      <div style="font-size:11.5px;color:var(--muted);margin-bottom:22px;">سجّل الدخول للمتابعة</div>
-      <div class="field" style="text-align:right;"><label>اسم المستخدم</label><input type="text" id="loginUser" autocomplete="username" style="direction:ltr;text-align:left;"></div>
-      <div class="field" style="text-align:right;"><label>كلمة المرور</label><input type="password" id="loginPass" autocomplete="current-password" style="direction:ltr;text-align:left;"></div>
-      <div id="loginErr" style="color:var(--rose);font-size:12px;min-height:18px;margin:4px 0 10px;"></div>
-      <button class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;">دخول</button>
-      <div style="margin-top:14px;"><span id="forgotLink" style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;">نسيت كلمة المرور؟</span></div>
+  ov.className = 'landing';
+  const navbar = `
+    <div class="landing-nav">
+      <div class="nb">
+        ${brandImg ? `<img src="${brandImg.src}" alt="KACST">` : ''}
+        <div class="nt">إدارة استقطاب الكفاءات<small>مدينة الملك عبدالعزيز للعلوم والتقنية</small></div>
+      </div>
+      <div class="na">
+        <button class="btn btn-sm btn-primary" id="navApply">قدّم الآن</button>
+        <button class="btn btn-sm btn-ghost" id="navSignIn">تسجيل الدخول</button>
+      </div>
     </div>`;
+  ov.innerHTML = navbar + `
+    <section class="lslide landing-hero">
+      <div>
+        ${brandImg ? `<img src="${brandImg.src}" alt="KACST">` : ''}
+        <h1>إدارة استقطاب الكفاءات</h1>
+        <div class="org">${LANDING.org}</div>
+        <div class="tag">${LANDING.tag}</div>
+        <div class="vm-grid" style="max-width:880px;margin:34px auto 0;text-align:right;">
+          <div class="vm-card"><h2>الرؤية</h2><p>${LANDING.vision}</p></div>
+          <div class="vm-card"><h2>الرسالة</h2><p>${LANDING.mission}</p></div>
+        </div>
+        <div class="scroll-hint" aria-hidden="true">↓ اسحب لاستكشاف قطاعات التركيز</div>
+      </div>
+    </section>
+
+    ${LANDING.sectors.map((s,i)=>`
+    <section class="lslide sector-slide" style="--scolor:${s.color};">
+      <div class="ss-grid ${i%2?'flip':''}">
+        <div class="ss-text">
+          <div class="ss-kicker">قطاع ${'٠١٠٢٠٣٠٤٠٥'.slice(i*2,i*2+2)}</div>
+          <h2>${s.name}</h2>
+          <p class="ss-desc">${s.desc}</p>
+          <div class="ss-block"><span>رؤية القطاع</span><p>${s.vision}</p></div>
+          <div class="ss-block"><span>رسالته</span><p>${s.mission}</p></div>
+          <div class="ss-pillars">
+            ${s.pillars.map(p=>`<div class="ss-pillar"><strong>${p.t}</strong><p>${p.d}</p></div>`).join('')}
+          </div>
+        </div>
+        <div class="ss-visual">
+          <div class="ss-model">
+            <canvas data-model="${s.model}" data-hex="${s.hex}" width="360" height="360" aria-hidden="true"></canvas>
+            <div class="ss-fallback">${s.icon}</div>
+          </div>
+          <div class="ss-outcomes">
+            <span>الأثر المستهدف</span>
+            ${s.outcomes.map(o=>`<div class="ss-outcome">${o}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </section>`).join('')}
+
+    <section class="lslide landing-cta">
+      <div>
+        <h2 class="landing-sec-title" style="font-size:26px;">انضم إلى مسيرة الابتكار</h2>
+        <div style="font-size:14px;color:var(--muted);margin:10px 0 26px;max-width:520px;margin-inline:auto;">
+          قدّم طلبك وسيرتك الذاتية مباشرة إلى فريق استقطاب الكفاءات في كاكست — أو سجّل الدخول إن كنت من فريق العمل.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+          <button class="btn btn-primary" id="landingApply" style="font-size:16px;padding:14px 52px;">قدّم الآن</button>
+          <button class="btn btn-ghost" id="landingSignIn" style="font-size:14.5px;padding:12px 44px;">تسجيل الدخول</button>
+        </div>
+
+        <div class="landing-login" id="landingLogin">
+          <div class="modal" style="max-width:none;text-align:center;">
+            <div class="field" style="text-align:right;"><label>اسم المستخدم</label><input type="text" id="loginUser" autocomplete="username" style="direction:ltr;text-align:left;"></div>
+            <div class="field" style="text-align:right;"><label>كلمة المرور</label><input type="password" id="loginPass" autocomplete="current-password" style="direction:ltr;text-align:left;"></div>
+            <div id="loginErr" style="color:var(--rose);font-size:12px;min-height:18px;margin:4px 0 10px;"></div>
+            <button class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;">دخول</button>
+            <div style="margin-top:14px;"><span id="forgotLink" style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;">نسيت كلمة المرور؟</span></div>
+          </div>
+        </div>
+        <div class="landing-foot">© مدينة الملك عبدالعزيز للعلوم والتقنية — كاكست</div>
+      </div>
+    </section>`;
   document.body.appendChild(ov);
+  initSectorModels();
+
+  document.getElementById('landingApply').onclick = ()=>{ location.href = '/?apply=1'; };
+  document.getElementById('navApply').onclick = ()=>{ location.href = '/?apply=1'; };
+  document.getElementById('navSignIn').onclick = ()=>{ document.getElementById('landingSignIn').click(); };
   const doLogin = async ()=>{
     const btn = document.getElementById('loginBtn');
     btn.disabled = true; btn.textContent = 'جارٍ الدخول…';
@@ -1468,7 +1871,14 @@ function showLogin(){
       btn.disabled = false; btn.textContent = 'دخول';
     }
   };
+  document.getElementById('landingSignIn').onclick = ()=>{
+    const card = document.getElementById('landingLogin');
+    card.classList.add('open');
+    card.scrollIntoView({behavior:'smooth', block:'center'});
+    setTimeout(()=>{ const u=document.getElementById('loginUser'); if(u) u.focus(); }, 250);
+  };
   document.getElementById('loginBtn').onclick = doLogin;
+  ov.querySelectorAll('#landingLogin input').forEach(i=> i.onkeydown = e=>{ if(e.key==='Enter') doLogin(); });
   document.getElementById('forgotLink').onclick = async ()=>{
     const un = (document.getElementById('loginUser').value || '').trim()
       || (prompt('اكتب اسم المستخدم لإرسال رابط إعادة التعيين إلى بريده المسجل:') || '').trim();
@@ -1485,8 +1895,100 @@ function showLogin(){
       errEl.textContent = e.message;
     }
   };
-  ov.querySelectorAll('input').forEach(i=> i.onkeydown = e=>{ if(e.key==='Enter') doLogin(); });
-  setTimeout(()=>{ const u=document.getElementById('loginUser'); if(u) u.focus(); }, 50);
+}
+
+// ---------------------------------------------------------
+// PUBLIC APPLY PAGE — no login; submissions land in the DB.
+// ---------------------------------------------------------
+async function showApplyPage(){
+  let jobs = [];
+  try{ jobs = await apiFetch('/api/public/jobs'); }catch(e){}
+  const ov = document.createElement('div');
+  ov.className = 'landing';
+  const brandImg2 = document.querySelector('.brand img');
+  ov.innerHTML = `
+    <div class="landing-nav">
+      <div class="nb">
+        ${brandImg2 ? `<img src="${brandImg2.src}" alt="KACST">` : ''}
+        <div class="nt">إدارة استقطاب الكفاءات<small>مدينة الملك عبدالعزيز للعلوم والتقنية</small></div>
+      </div>
+      <div class="na"><button class="btn btn-sm btn-ghost" onclick="location.href='/'">الصفحة الرئيسية</button></div>
+    </div>` + `
+    <div class="landing-inner" style="max-width:640px;">
+      <div class="landing-hero" style="padding-bottom:20px;">
+        <h1 style="font-size:30px;">التقديم على الوظائف</h1>
+        <div class="tag">إدارة استقطاب الكفاءات — كاكست</div>
+      </div>
+      <div class="modal" style="max-width:none;" id="applyCard">
+        <div class="field"><label>الاسم الكامل *</label><input type="text" id="apName"></div>
+        <div class="field-row">
+          <div class="field"><label>البريد الإلكتروني *</label><input type="email" id="apEmail" style="direction:ltr;text-align:left;"></div>
+          <div class="field"><label>رقم الجوال</label><input type="tel" id="apPhone" style="direction:ltr;text-align:left;" placeholder="05xxxxxxxx"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>الوظيفة</label>
+            <select id="apJob">
+              <option value="">تقديم عام</option>
+              ${jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.title)}${j.department?' — '+esc(j.department):''}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>سنوات الخبرة</label><input type="number" id="apExp" min="0" max="45" value="0"></div>
+        </div>
+        <div class="field"><label>المسمى الوظيفي الحالي/الأخير</label><input type="text" id="apTitle"></div>
+        <div class="field"><label>السيرة الذاتية (PDF أو DOCX)</label><input type="file" id="apFile" accept=".pdf,.docx,.txt"></div>
+        <div class="field"><label>نبذة مختصرة (اختياري)</label><textarea id="apNotes" placeholder="خبراتك، مهاراتك، وما يميزك…"></textarea></div>
+        <div id="apErr" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="apSubmit" style="flex:1;justify-content:center;">إرسال الطلب</button>
+          <button class="btn btn-ghost" id="apBack">عودة</button>
+        </div>
+      </div>
+      <div class="landing-foot">تُحفظ طلبات التقديم مباشرة لدى فريق استقطاب الكفاءات، ويُتواصل مع المرشحين المناسبين.</div>
+    </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('apBack').onclick = ()=>{ location.href = '/'; };
+  document.getElementById('apSubmit').onclick = async ()=>{
+    const err = document.getElementById('apErr');
+    const btn = document.getElementById('apSubmit');
+    const name = document.getElementById('apName').value.trim();
+    const email = document.getElementById('apEmail').value.trim();
+    if(name.length < 3){ err.textContent = 'الاسم الكامل مطلوب.'; return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = 'بريد إلكتروني صحيح مطلوب.'; return; }
+    btn.disabled = true; btn.textContent = 'جارٍ الإرسال…'; err.textContent = '';
+    const payload = {
+      name, email,
+      phone: document.getElementById('apPhone').value.trim(),
+      jobId: document.getElementById('apJob').value || null,
+      experienceYears: Number(document.getElementById('apExp').value) || 0,
+      currentTitle: document.getElementById('apTitle').value.trim(),
+      resumeText: document.getElementById('apNotes').value.trim()
+    };
+    const f = document.getElementById('apFile').files[0];
+    try{
+      if(f){
+        if(f.size > 10*1024*1024) throw new Error('حجم الملف يتجاوز 10MB');
+        payload.fileBase64 = await fileToBase64(f);
+        payload.resumeFileName = f.name;
+        const ext = f.name.split('.').pop().toLowerCase();
+        payload.resumeFileType = ext;
+        payload.mimeType = MIME_BY_EXT[ext] || 'application/octet-stream';
+        try{
+          const txt = await extractResumeText(f);
+          if(txt && txt.trim()) payload.resumeText = txt;
+        }catch(e){ /* text extraction is best-effort for public uploads */ }
+      }
+      await apiFetch('/api/public/apply', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+      document.getElementById('applyCard').innerHTML = `
+        <div style="text-align:center;padding:26px 6px;">
+          <div class="display" style="font-size:22px;color:var(--green);margin-bottom:10px;">تم استلام طلبك بنجاح ✓</div>
+          <div style="font-size:13.5px;color:var(--muted);line-height:1.9;">شكرًا ${esc(name)} — وصل طلبك لفريق استقطاب الكفاءات في كاكست،<br>وسيتم التواصل معك إن كان ملفك مناسبًا لأحد الشواغر.</div>
+          <div style="margin-top:20px;"><button class="btn btn-primary" onclick="location.href='/'">العودة للصفحة الرئيسية</button></div>
+        </div>`;
+    }catch(e){
+      err.textContent = e.message;
+      btn.disabled = false; btn.textContent = 'إرسال الطلب';
+    }
+  };
 }
 
 function openChangePassword(){
@@ -2160,8 +2662,10 @@ document.addEventListener('click', (e)=>{
 });
 
 async function boot(){
-  const resetToken = new URLSearchParams(location.search).get('reset');
+  const qs = new URLSearchParams(location.search);
+  const resetToken = qs.get('reset');
   if(resetToken){ showResetForm(resetToken); return; }
+  if(qs.get('apply')){ showApplyPage(); return; }
   document.getElementById('main').innerHTML = `<div class="empty" style="margin-top:80px;"><div class="display">جارٍ الاتصال…</div></div>`;
   try{
     CURRENT_USER = await api.me();
