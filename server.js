@@ -82,7 +82,10 @@ const wrapEarly = fn => (req, res) => fn(req, res).catch(e => {
   res.status(500).json({ error: 'server error' });
 });
 const SESSION_COOKIE = 'tad_session';
-const SESSION_DAYS = 7;
+// Sessions are short-lived by design: the cookie is a browser-session
+// cookie (dies when the browser closes) and the server-side session
+// expires after 12 hours regardless.
+const SESSION_HOURS = 12;
 
 function hashPassword(pw){
   const salt = crypto.randomBytes(16).toString('hex');
@@ -106,8 +109,11 @@ function parseCookies(req){
 }
 function setSessionCookie(req, res, token, maxAgeSec){
   const secure = (req.headers['x-forwarded-proto'] === 'https') ? '; Secure' : '';
+  // maxAgeSec === null → a browser-session cookie (no Max-Age): the
+  // browser discards it when it closes, forcing a fresh login.
+  const age = (maxAgeSec === null) ? '' : `; Max-Age=${maxAgeSec}`;
   res.setHeader('Set-Cookie',
-    `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; Max-Age=${maxAgeSec}; SameSite=Lax${secure}`);
+    `${SESSION_COOKIE}=${token}; HttpOnly; Path=/${age}; SameSite=Lax${secure}`);
 }
 
 // Ensure at least one account exists so the first person can log in.
@@ -184,8 +190,8 @@ app.post('/api/login', wrapEarly(async (req, res) => {
   const token = crypto.randomBytes(32).toString('hex');
   await pool.query(
     `INSERT INTO sessions (token, user_id, expires_at)
-     VALUES ($1, $2, NOW() + INTERVAL '${SESSION_DAYS} days')`, [token, u.id]);
-  setSessionCookie(req, res, token, SESSION_DAYS * 86400);
+     VALUES ($1, $2, NOW() + INTERVAL '${SESSION_HOURS} hours')`, [token, u.id]);
+  setSessionCookie(req, res, token, null);
   res.json({ username: u.username, displayName: u.display_name, isAdmin: u.is_admin });
 }));
 

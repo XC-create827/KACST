@@ -1864,6 +1864,7 @@ function showLogin(){
         username: document.getElementById('loginUser').value.trim(),
         password: document.getElementById('loginPass').value
       });
+      try{ sessionStorage.setItem('tad_alive','1'); }catch(e){}
       ov.remove();
       boot();
     }catch(e){
@@ -2037,6 +2038,36 @@ async function showApplyPage(){
       btn.disabled = false; btn.textContent = 'إرسال الطلب';
     }
   };
+}
+
+function openChangePassword(){
+  openModal(`
+    <div class="modal-head"><h2>تغيير كلمة المرور</h2><span class="xbtn" onclick="closeModal()">×</span></div>
+    <div class="field"><label>كلمة المرور الحالية</label><input type="password" id="cpCur" autocomplete="current-password" style="direction:ltr;text-align:left;"></div>
+    <div class="field"><label>كلمة المرور الجديدة (8 أحرف على الأقل)</label><input type="password" id="cpNew" autocomplete="new-password" style="direction:ltr;text-align:left;"></div>
+    <div class="field"><label>تأكيد كلمة المرور الجديدة</label><input type="password" id="cpNew2" autocomplete="new-password" style="direction:ltr;text-align:left;"></div>
+    <div id="cpErr" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
+    <div class="modal-actions"><button class="btn btn-primary" id="cpSave">حفظ</button>
+    <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>`);
+  document.getElementById('cpSave').onclick = async ()=>{
+    const cur = document.getElementById('cpCur').value;
+    const nw = document.getElementById('cpNew').value;
+    const nw2 = document.getElementById('cpNew2').value;
+    const err = document.getElementById('cpErr');
+    if(nw.length < 8){ err.textContent = 'كلمة المرور الجديدة يجب ألا تقل عن 8 أحرف.'; return; }
+    if(nw !== nw2){ err.textContent = 'كلمتا المرور غير متطابقتين.'; return; }
+    try{
+      await api.changePassword({ currentPassword: cur, newPassword: nw });
+      closeModal();
+      alert('تم تغيير كلمة المرور بنجاح.');
+    }catch(e){ err.textContent = e.message; }
+  };
+}
+
+async function doLogout(){
+  try{ sessionStorage.removeItem('tad_alive'); }catch(e){}
+  try{ await api.logout(); }catch(e){}
+  location.reload();
 }
 
 /* ---------------------------------------------------------
@@ -2697,6 +2728,15 @@ async function boot(){
   const resetToken = qs.get('reset');
   if(resetToken){ showResetForm(resetToken); return; }
   if(qs.get('apply')){ showApplyPage(); return; }
+  let alive = false;
+  try{ alive = sessionStorage.getItem('tad_alive') === '1'; }catch(e){}
+  if(!alive){
+    // New tab or reopened browser: destroy any surviving session and
+    // require a fresh login.
+    try{ await api.logout(); }catch(e){}
+    showLogin();
+    return;
+  }
   document.getElementById('main').innerHTML = `<div class="empty" style="margin-top:80px;"><div class="display">جارٍ الاتصال…</div></div>`;
   try{
     CURRENT_USER = await api.me();
