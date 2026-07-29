@@ -74,6 +74,27 @@ CREATE TABLE IF NOT EXISTS resume_files (
   uploaded_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- User accounts. Passwords are scrypt-hashed with a per-user salt —
+-- never stored in plain text.
+CREATE TABLE IF NOT EXISTS users (
+  id            TEXT PRIMARY KEY,
+  username      TEXT NOT NULL UNIQUE,
+  display_name  TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  is_admin      BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Login sessions (cookie token → user), kept in the DB so logins
+-- survive server restarts.
+CREATE TABLE IF NOT EXISTS sessions (
+  token      TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
+
 -- Immutable audit trail: who changed what, when. candidate_id is kept
 -- nullable with SET NULL so the log entry survives candidate deletion;
 -- candidate_name is copied in for the same reason.
