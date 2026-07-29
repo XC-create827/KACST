@@ -46,6 +46,9 @@ async function initSchema() {
   // keep working: "تم الترشيح" merges into "الفرز", and "العرض"
   // becomes "العرض الوظيفي".
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
+  for (const col of ['date_of_birth','specialization','degree','city','address']) {
+    await pool.query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS ${col} TEXT`);
+  }
   const renames = [["تم الترشيح","الفرز"],["العرض","العرض الوظيفي"]];
   for (const [from,to] of renames) {
     await pool.query('UPDATE candidates SET stage=$2 WHERE stage=$1', [from,to]);
@@ -217,6 +220,8 @@ function rowToCandidate(r) {
     previousStage: r.previous_stage, stageChangedAt: r.stage_changed_at,
     hasOriginalFile: r.has_original_file, resumeFileName: r.resume_file_name,
     resumeFileType: r.resume_file_type, notes: r.notes || '',
+    dateOfBirth: r.date_of_birth || '', specialization: r.specialization || '',
+    degree: r.degree || '', city: r.city || '', address: r.address || '',
     createdAt: r.created_at,
     assessCount: r.assess_count !== undefined ? Number(r.assess_count) : undefined,
     assessAvg: r.assess_avg !== null && r.assess_avg !== undefined ? Number(r.assess_avg) : null,
@@ -311,6 +316,73 @@ app.post('/api/reset-password', wrapEarly(async (req, res) => {
 // "قدّم الآن" page on the landing screen; submissions become
 // candidates in the same database the team already works in.
 // ---------------------------------------------------------------
+// ---------------------------------------------------------------
+// JD ↔ CV matching engine. Scores a candidate against a job using
+// required skills (weight 3), nice-to-have skills (1.5), and the
+// significant words of the title/department/description (1 each).
+// Used by: auto-categorizing external applications, and the ranked
+// matches endpoint below.
+// ---------------------------------------------------------------
+const MATCH_STOP = new Set(('في من على إلى عن مع هذا هذه ذلك التي الذي أن إن كان كما لدى بعد قبل عند أو ثم لا ما هو هي نحن خبرة سنوات سنة العمل عمل شركة قسم إدارة and or the of in to with for a an on at is are be we you will can all any'
+).split(' '));
+// Normalize Arabic tokens: strip leading conjunctions (و/ف) and the
+// definite article (ال), unify hamza forms and ta-marbuta — so
+// "والتوظيف" matches "توظيف".
+function normalizeArabic(w){
+  let x = String(w).replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+  if (x.length > 3 && (x[0] === 'و' || x[0] === 'ف')) x = x.slice(1);
+  if (x.length > 4 && x.startsWith('ال')) x = x.slice(2);
+  if (x.length > 4 && x.startsWith('لل')) x = x.slice(2);
+  return x;
+}
+function significantWords(text){
+  return [...new Set(String(text || '').toLowerCase()
+    .replace(/[^\u0600-\u06FFa-z0-9+#\s]/g, ' ')
+    .split(/\s+/)
+    .map(normalizeArabic)
+    .filter(w => w.length > 2 && !MATCH_STOP.has(w)))];
+}
+function jobKeywords(jobRow){
+  return {
+    req:  (jobRow.required_skills || []).map(s => String(s).toLowerCase()).filter(Boolean),
+    nice: (jobRow.nice_skills || []).map(s => String(s).toLowerCase()).filter(Boolean),
+    text: significantWords(jobRow.title + ' ' + (jobRow.department || '') + ' ' + (jobRow.description || '')).slice(0, 30)
+  };
+}
+function scoreCandidateForJob(jk, cand){
+  const raw = ((cand.skills || []).join(' ') + ' ' + (cand.current_title || '') + ' ' +
+    (cand.specialization || '') + ' ' + (cand.degree || '') + ' ' + (cand.resume_text || ''))
+    .toLowerCase();
+  if (!raw.trim()) return 0;
+  const tokens = new Set(significantWords(raw));
+  let score = 0, max = 0;
+  // skills: substring match on raw text (handles multi-word / English)
+  jk.req.forEach(s => { max += 3;   if (raw.includes(s)) score += 3; });
+  jk.nice.forEach(s => { max += 1.5; if (raw.includes(s)) score += 1.5; });
+  // JD words: normalized-token match (handles Arabic prefixes)
+  jk.text.forEach(w => { max += 1;   if (tokens.has(w) || raw.includes(w)) score += 1; });
+  return max ? Math.round(100 * score / max) : 0;
+}
+
+// Ranked matches: every CV in the database scored against one job's
+// JD, highest first — no need to attach CVs to the job manually.
+app.get('/api/jobs/:id/matches', wrap(async (req, res) => {
+  const jr = await pool.query('SELECT * FROM jobs WHERE id = $1', [req.params.id]);
+  if (!jr.rows.length) return res.status(404).json({ error: 'job not found' });
+  const jk = jobKeywords(jr.rows[0]);
+  const { rows } = await pool.query(`
+    SELECT id, name, email, phone, current_title, source, experience_years, applied_for,
+           skills, stage, specialization, degree, city, resume_text
+    FROM candidates`);
+  const scored = rows.map(r => {
+    const pct = scoreCandidateForJob(jk, r);
+    const c = rowToCandidate({ ...r, resume_text: null });
+    c.matchPercent = pct;
+    return c;
+  }).sort((a, b) => b.matchPercent - a.matchPercent).slice(0, 200);
+  res.json({ jobTitle: jr.rows[0].title, matches: scored });
+}));
+
 // Blunt per-IP throttle so the open endpoint can't be flooded.
 const applyHits = new Map();
 function applyAllowed(ip){
@@ -337,35 +409,51 @@ app.post('/api/public/apply', wrapEarly(async (req, res) => {
   const b = req.body || {};
   const name = String(b.name || '').trim().slice(0, 120);
   const email = String(b.email || '').trim().toLowerCase().slice(0, 160);
-  const phone = String(b.phone || '').trim().slice(0, 40);
   if (!name || name.length < 3) return res.status(400).json({ error: 'الاسم الكامل مطلوب' });
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'بريد إلكتروني صحيح مطلوب' });
   }
-  // Job must be real and approved; otherwise file as a general application.
-  let jobId = null, jobTitle = null;
-  if (b.jobId) {
-    const j = await pool.query('SELECT id, title FROM jobs WHERE id = $1 AND approved = TRUE', [String(b.jobId)]);
-    if (j.rows.length) { jobId = j.rows[0].id; jobTitle = j.rows[0].title; }
+  const clean = (x, n) => String(x || '').trim().slice(0, n) || null;
+  const cand = {
+    phone: clean(b.phone, 40),
+    date_of_birth: clean(b.dateOfBirth, 20),
+    specialization: clean(b.specialization, 120),
+    degree: clean(b.degree, 60),
+    city: clean(b.city, 80),
+    address: clean(b.address, 240),
+    current_title: clean(b.currentTitle, 120),
+    experience_years: Math.max(0, Math.min(45, Number(b.experienceYears) || 0)),
+    skills: Array.isArray(b.skills) ? b.skills.slice(0, 40).map(s => String(s).slice(0, 40)) : [],
+    resume_text: String(b.resumeText || '').slice(0, 200000) || null
+  };
+
+  // Auto-categorize: score this application against every approved
+  // job's JD. A strong match (≥45%) files it under that job; anything
+  // weaker stays in the general external pool.
+  let matchedJob = null, matchedPct = 0;
+  const jobsRes = await pool.query('SELECT * FROM jobs WHERE approved = TRUE');
+  for (const j of jobsRes.rows) {
+    const pct = scoreCandidateForJob(jobKeywords(j), cand);
+    if (pct > matchedPct) { matchedPct = pct; matchedJob = j; }
   }
+  const appliedFor = (matchedJob && matchedPct >= 45) ? matchedJob.id : null;
+
   const id = uid('cand');
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     await client.query(
       `INSERT INTO candidates (id,name,email,phone,current_title,source,experience_years,
-        applied_for,skills,resume_text,stage,has_original_file,resume_file_name,resume_file_type)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-      [id, name, email, phone || null,
-       String(b.currentTitle || '').trim().slice(0, 120) || null,
-       'التقديم المباشر',
-       Math.max(0, Math.min(45, Number(b.experienceYears) || 0)),
-       jobId, [],
-       String(b.resumeText || '').slice(0, 200000) || null,
-       'الفرز',
-       !!b.fileBase64,
+        applied_for,skills,resume_text,stage,has_original_file,resume_file_name,resume_file_type,
+        date_of_birth,specialization,degree,city,address)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+      [id, name, email, cand.phone, cand.current_title,
+       'تقديم خارجي',
+       cand.experience_years, appliedFor, cand.skills, cand.resume_text,
+       'الفرز', !!b.fileBase64,
        b.resumeFileName ? String(b.resumeFileName).slice(0, 200) : null,
-       b.resumeFileType ? String(b.resumeFileType).slice(0, 10) : null]);
+       b.resumeFileType ? String(b.resumeFileType).slice(0, 10) : null,
+       cand.date_of_birth, cand.specialization, cand.degree, cand.city, cand.address]);
     await client.query('INSERT INTO stage_history (candidate_id,stage) VALUES ($1,$2)', [id, 'الفرز']);
     if (b.fileBase64) {
       const bytes = Buffer.from(String(b.fileBase64), 'base64');
@@ -375,7 +463,7 @@ app.post('/api/public/apply', wrapEarly(async (req, res) => {
         [id, b.resumeFileName || null, b.mimeType || 'application/octet-stream', bytes]);
     }
     await audit(client, 'نظام التقديم الخارجي', 'تقديم طلب توظيف', id, name,
-      jobTitle ? ('على وظيفة: ' + jobTitle) : 'تقديم عام');
+      appliedFor ? `مطابقة تلقائية مع وظيفة: ${matchedJob.title} (${matchedPct}%)` : 'تقديم عام — لم تتجاوز المطابقة حد الإسناد التلقائي');
     await client.query('COMMIT');
     res.json({ ok: true });
   } catch (e) {

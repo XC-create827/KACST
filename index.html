@@ -516,10 +516,11 @@
   .ss-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
   .ss-visual{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:460px;}
   .ss-model{position:relative;width:min(340px,76vw);aspect-ratio:1;display:flex;align-items:center;justify-content:center;}
-  .ss-model canvas{position:absolute;inset:0;width:100% !important;height:100% !important;filter:drop-shadow(0 0 34px color-mix(in srgb, var(--scolor) 35%, transparent));}
-  .ss-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
-  .ss-fallback svg{width:120px;height:120px;stroke:var(--scolor);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.9;filter:drop-shadow(0 0 26px color-mix(in srgb, var(--scolor) 40%, transparent));}
-  .ss-model canvas.model-live + .ss-fallback{display:none;}
+  .sector-art{width:88%;height:88%;stroke:var(--scolor);animation:artFloat 7s ease-in-out infinite;
+    filter:drop-shadow(0 10px 26px color-mix(in srgb, var(--scolor) 24%, transparent));}
+  .sector-art circle{fill:var(--scolor);stroke:none;}
+  .sector-art circle[stroke-width]{fill:none;stroke:var(--scolor);}
+  @keyframes artFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
   .ss-pillars{display:flex;flex-direction:column;gap:8px;margin-top:14px;}
   .ss-pillar{
     background:rgba(8,26,44,0.45);border:1px solid var(--line);
@@ -547,6 +548,21 @@
     color:var(--scolor);font-weight:800;
   }
   .landing-cta{text-align:center;}
+  .ap-progress{height:6px;background:#e6edf4;border-radius:99px;overflow:hidden;margin-bottom:10px;}
+  .ap-bar{height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#149a8b,#2f7ff0 55%,#6d3fd6);
+    transition:width .5s var(--spring);}
+  .ap-steps{display:flex;gap:14px;margin-bottom:14px;font-size:12px;font-weight:800;}
+  .ap-step{color:#8aa1b5;transition:color .3s;}
+  .ap-step.active{color:#122b42;}
+  .ap-check{
+    width:74px;height:74px;border-radius:50%;margin:0 auto;
+    display:flex;align-items:center;justify-content:center;
+    font-size:38px;color:#fff;font-weight:800;
+    background:linear-gradient(120deg,#149a8b,#2f7ff0);
+    box-shadow:0 12px 34px rgba(25,184,166,0.35);
+    animation:pop .5s var(--spring) both;
+  }
   /* ---- Official-site light theme (public landing + apply only;
           the internal workspace keeps its dark identity) ---- */
   .landing{
@@ -620,7 +636,6 @@
   .landing .btn-primary:hover{box-shadow:0 10px 30px rgba(109,63,214,0.35);}
   .landing .modal .display{color:var(--l-ink);}
   .landing #loginErr{}
-  .landing .ss-model canvas{filter:drop-shadow(0 0 26px color-mix(in srgb, var(--scolor) 22%, transparent));}
   .landing .landing-foot{
     color:#c7d6e4;background:#0d2b47;border-top:none;
     margin:60px -28px -80px;padding:26px 28px;
@@ -771,6 +786,7 @@ const api = {
   forgotPassword: (b)        => apiFetch('/api/forgot-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
   resetPassword:  (b)        => apiFetch('/api/reset-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
   adminResetPassword: (id,b) => apiFetch('/api/users/'+encodeURIComponent(id)+'/reset-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
+  jobMatches:  (jobId)       => apiFetch('/api/jobs/'+encodeURIComponent(jobId)+'/matches'),
   kpis:        (params={})   => apiFetch('/api/kpis?' + new URLSearchParams(params)),
   pipeline:    (params={})   => apiFetch('/api/pipeline?' + new URLSearchParams(params)),
   settings:    ()            => apiFetch('/api/settings'),
@@ -1228,7 +1244,7 @@ async function render(){
   try{
     let html = '';
     if(currentView==='dashboard')       html = await viewDashboard();
-    else if(currentView==='candidates') html = await viewCandidates();
+    else if(currentView==='candidates') html = (candFilterJob!=='الكل') ? await viewCandidatesMatches() : await viewCandidates();
     else if(currentView==='pipeline')   html = await viewPipeline();
     else if(currentView==='assessments')html = await viewAssessments();
     else if(currentView==='jobs')       html = await viewJobs();
@@ -1373,6 +1389,47 @@ async function viewCandidates(){
   ${page.candidates.length ? `<div class="card-grid">${page.candidates.map(cardHTML).join('')}</div>`
     : emptyState('لا يوجد مرشحون مطابقون', 'جرّب مسح الفلاتر أو أضف مرشحًا جديدًا.')}
   `;
+}
+
+// Ranked match mode: a job is selected — every CV in the database
+// scored against its JD, highest first, no manual attachment needed.
+async function viewCandidatesMatches(){
+  const data = await api.jobMatches(candFilterJob);
+  return `
+  <div class="page-head">
+    <div><h1>قاعدة السير الذاتية</h1>
+    <div class="sub">مطابقة ذكية: كل السير الذاتية مرتبة حسب توافقها مع وصف وظيفة «${esc(data.jobTitle)}» — من الأعلى إلى الأدنى.</div></div>
+    <button class="btn btn-ghost" id="btnClearMatch">إلغاء المطابقة</button>
+  </div>
+  <div class="toolbar">
+    <select id="candJobFilter">
+      <option value="الكل">كل الوظائف</option>
+      ${DB.jobs.map(j=>`<option value="${j.id}" ${candFilterJob===j.id?'selected':''}>${esc(j.title)}</option>`).join('')}
+    </select>
+  </div>
+  ${data.matches.length ? `<div class="card-grid">${data.matches.map((c,i)=>matchCardHTML(c,i)).join('')}</div>`
+    : emptyState('قاعدة السير الذاتية فارغة', 'أضف مرشحين أو انتظر طلبات التقديم الخارجية.')}
+  `;
+}
+
+function matchCardHTML(c, i){
+  const pct = c.matchPercent||0;
+  return `<div class="idxcard" style="--stage-color:${STAGE_COLOR[c.stage]||'#8b93a1'}" data-cand="${c.id}">
+    <div class="top-row">
+      <div>
+        <div style="font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;">#${i+1}</div>
+        <div class="name">${esc(c.name)}</div>
+        ${c.currentTitle ? `<div class="role">${esc(c.currentTitle)}</div>` : ''}
+        ${c.specialization ? `<div class="role" style="opacity:.75;">${esc(c.specialization)}${c.degree?' · '+esc(c.degree):''}</div>` : ''}
+      </div>
+      <div class="seal" style="background:${scoreColor(pct)}">${pct}%</div>
+    </div>
+    <div class="skills">${(c.skills||[]).slice(0,4).map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>
+    <div class="meta-row">
+      <span>${c.experienceYears||0} سنة خبرة · ${esc(c.source||'—')}</span>
+      <span class="stagepill" style="background:${STAGE_COLOR[c.stage]||'#8b93a1'}">${c.stage}</span>
+    </div>
+  </div>`;
 }
 
 function cardHTML(c, i){
@@ -1713,60 +1770,7 @@ const LANDING = {
   ]
 };
 
-// Lazy Three.js: loaded once from cdnjs when the landing appears.
-// Every failure path (offline CDN, no WebGL, reduced motion) falls
-// back to the sector's SVG icon — the page never depends on it.
-function initSectorModels(){
-  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const canvases = document.querySelectorAll('canvas[data-model]');
-  if (!canvases.length) return;
-  const boot3d = ()=>{
-    try{
-      const THREE = window.THREE;
-      canvases.forEach(cv=>{
-        try{
-          const renderer = new THREE.WebGLRenderer({ canvas: cv, alpha: true, antialias: true });
-          const size = Math.min(360, cv.parentElement.clientWidth || 320);
-          renderer.setSize(size, size, false);
-          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-          const scene = new THREE.Scene();
-          const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 50);
-          camera.position.z = 4.2;
-          const color = Number(cv.dataset.hex);
-          let geo;
-          switch(cv.dataset.model){
-            case 'knot':   geo = new THREE.TorusKnotGeometry(1.05, 0.3, 96, 12); break;
-            case 'planet': geo = new THREE.SphereGeometry(1.35, 18, 14); break;
-            case 'octa':   geo = new THREE.OctahedronGeometry(1.5, 1); break;
-            case 'torus':  geo = new THREE.TorusGeometry(1.1, 0.42, 14, 28); break;
-            default:       geo = new THREE.IcosahedronGeometry(1.5, 1);
-          }
-          const mesh = new THREE.Mesh(geo,
-            new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.85 }));
-          const glow = new THREE.Mesh(geo.clone(),
-            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.08 }));
-          scene.add(mesh); scene.add(glow);
-          let visible = true;
-          new IntersectionObserver(es=>{ es.forEach(e=>{ visible = e.isIntersecting; }); }).observe(cv);
-          (function spin(){
-            requestAnimationFrame(spin);
-            if(!visible) return;
-            mesh.rotation.y += 0.004; mesh.rotation.x += 0.0016;
-            glow.rotation.copy(mesh.rotation);
-            renderer.render(scene, camera);
-          })();
-          cv.classList.add('model-live');
-        }catch(e){ /* this canvas falls back to its SVG icon */ }
-      });
-    }catch(e){ /* fall back silently */ }
-  };
-  if (window.THREE) return boot3d();
-  const s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-  s.onload = boot3d;
-  s.onerror = ()=>{ /* CDN unreachable — SVG fallback stays */ };
-  document.head.appendChild(s);
-}
+const SECTOR_ART = {"knot": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <path d=\"M40 15c22 12 22 26 0 38s-22 26 0 38\" stroke-width=\"3\"/>\n  <path d=\"M80 15c-22 12-22 26 0 38s22 26 0 38\" stroke-width=\"3\"/>\n  <path d=\"M44 24h32M44 40h32M44 56h32M44 72h32M44 88h32\" stroke-width=\"2\" opacity=\".65\"/>\n  <circle cx=\"40\" cy=\"15\" r=\"3.4\"/><circle cx=\"80\" cy=\"15\" r=\"3.4\"/>\n  <circle cx=\"40\" cy=\"91\" r=\"3.4\"/><circle cx=\"80\" cy=\"91\" r=\"3.4\"/>\n  <path d=\"M14 104h14l5-9 7 16 6-12 4 5h16\" stroke-width=\"2.6\" opacity=\".9\"/>\n</g></svg>", "planet": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <path d=\"M60 14C42 34 30 48 30 66a30 30 0 0 0 60 0c0-18-12-32-30-52z\" stroke-width=\"3\"/>\n  <path d=\"M45 68c1.5 9 7 14.5 15 16.5\" stroke-width=\"2.4\" opacity=\".8\"/>\n  <path d=\"M18 100c10-5 20-5 30 0s20 5 30 0 16-4 24 0\" stroke-width=\"2.4\" opacity=\".7\"/>\n  <path d=\"M18 109c10-5 20-5 30 0s20 5 30 0 16-4 24 0\" stroke-width=\"2\" opacity=\".45\"/>\n  <path d=\"M78 26c6-6 14-9 22-8-1 8-4 16-10 22\" stroke-width=\"2.2\" opacity=\".85\"/>\n  <path d=\"M90 40c-3 3-7 5-11 5\" stroke-width=\"2\" opacity=\".6\"/>\n</g></svg>", "octa": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <circle cx=\"60\" cy=\"46\" r=\"17\" stroke-width=\"3\"/>\n  <path d=\"M60 18v-8M60 82v-8M32 46h-8M96 46h-8M40 26l-6-6M86 72l-6-6M80 26l6-6M40 66l-6 6\" stroke-width=\"2.6\"/>\n  <path d=\"M22 112V96l12-10v26M50 112V88l12-8v32M78 112V80l12-6v38\" stroke-width=\"2.6\" opacity=\".9\"/>\n  <path d=\"M104 112H14\" stroke-width=\"2.8\"/>\n  <path d=\"M67 36 57 50h7l-8 12\" stroke-width=\"2.4\"/>\n</g></svg>", "ico": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <rect x=\"38\" y=\"38\" width=\"44\" height=\"44\" rx=\"7\" stroke-width=\"3\"/>\n  <rect x=\"50\" y=\"50\" width=\"20\" height=\"20\" rx=\"4\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <path d=\"M48 38V24M60 38V20M72 38V24M48 82v14M60 82v18M72 82v14M38 48H24M38 60H20M38 72H24M82 48h14M82 60h18M82 72h14\" stroke-width=\"2.4\"/>\n  <circle cx=\"48\" cy=\"20\" r=\"3\"/><circle cx=\"72\" cy=\"20\" r=\"3\"/>\n  <circle cx=\"100\" cy=\"60\" r=\"3\"/><circle cx=\"20\" cy=\"60\" r=\"3\"/>\n  <circle cx=\"48\" cy=\"100\" r=\"3\"/><circle cx=\"72\" cy=\"100\" r=\"3\"/>\n</g></svg>", "torus": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <circle cx=\"60\" cy=\"34\" r=\"11\" stroke-width=\"3\"/>\n  <path d=\"M40 78c2-13 9-20 20-20s18 7 20 20\" stroke-width=\"3\"/>\n  <circle cx=\"26\" cy=\"46\" r=\"8\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <path d=\"M12 76c1.5-9 6.5-14 14-14 3.4 0 6.3 1 8.6 3\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <circle cx=\"94\" cy=\"46\" r=\"8\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <path d=\"M108 76c-1.5-9-6.5-14-14-14-3.4 0-6.3 1-8.6 3\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <path d=\"M60 88v14M60 102l-8-7M60 102l8-7\" stroke-width=\"2.4\" opacity=\".9\"/>\n  <path d=\"M37 96h46\" stroke-width=\"2.6\" opacity=\".7\"/>\n</g></svg>"};
 
 function showLogin(){
   let ov = document.getElementById('loginOverlay');
@@ -1815,10 +1819,7 @@ function showLogin(){
           </div>
         </div>
         <div class="ss-visual">
-          <div class="ss-model">
-            <canvas data-model="${s.model}" data-hex="${s.hex}" width="360" height="360" aria-hidden="true"></canvas>
-            <div class="ss-fallback">${s.icon}</div>
-          </div>
+          <div class="ss-model">${SECTOR_ART[s.model]||s.icon}</div>
           <div class="ss-outcomes">
             <span>الأثر المستهدف</span>
             ${s.outcomes.map(o=>`<div class="ss-outcome">${o}</div>`).join('')}
@@ -1851,7 +1852,6 @@ function showLogin(){
       </div>
     </section>`;
   document.body.appendChild(ov);
-  initSectorModels();
 
   document.getElementById('landingApply').onclick = ()=>{ location.href = '/?apply=1'; };
   document.getElementById('navApply').onclick = ()=>{ location.href = '/?apply=1'; };
@@ -1901,11 +1901,9 @@ function showLogin(){
 // PUBLIC APPLY PAGE — no login; submissions land in the DB.
 // ---------------------------------------------------------
 async function showApplyPage(){
-  let jobs = [];
-  try{ jobs = await apiFetch('/api/public/jobs'); }catch(e){}
+  const brandImg2 = document.querySelector('.brand img');
   const ov = document.createElement('div');
   ov.className = 'landing';
-  const brandImg2 = document.querySelector('.brand img');
   ov.innerHTML = `
     <div class="landing-nav">
       <div class="nb">
@@ -1913,111 +1911,132 @@ async function showApplyPage(){
         <div class="nt">إدارة استقطاب الكفاءات<small>مدينة الملك عبدالعزيز للعلوم والتقنية</small></div>
       </div>
       <div class="na"><button class="btn btn-sm btn-ghost" onclick="location.href='/'">الصفحة الرئيسية</button></div>
-    </div>` + `
-    <div class="landing-inner" style="max-width:640px;">
-      <div class="landing-hero" style="padding-bottom:20px;">
-        <h1 style="font-size:30px;">التقديم على الوظائف</h1>
-        <div class="tag">إدارة استقطاب الكفاءات — كاكست</div>
+    </div>
+    <div class="landing-inner" style="max-width:620px;">
+      <div class="landing-hero" style="padding:10px 0 18px;">
+        <h1 style="font-size:28px;">انضم إلى كاكست</h1>
+        <div class="tag">عرّفنا بنفسك وأرفق سيرتك الذاتية — يصل ملفك مباشرة لفريق استقطاب الكفاءات.</div>
       </div>
+
+      <div class="ap-progress"><div class="ap-bar" id="apBar"></div></div>
+      <div class="ap-steps">
+        <span class="ap-step active" id="apDot1">١ · البيانات الشخصية</span>
+        <span class="ap-step" id="apDot2">٢ · التعليم والسيرة الذاتية</span>
+      </div>
+
       <div class="modal" style="max-width:none;" id="applyCard">
-        <div class="field"><label>الاسم الكامل *</label><input type="text" id="apName"></div>
-        <div class="field-row">
-          <div class="field"><label>البريد الإلكتروني *</label><input type="email" id="apEmail" style="direction:ltr;text-align:left;"></div>
-          <div class="field"><label>رقم الجوال</label><input type="tel" id="apPhone" style="direction:ltr;text-align:left;" placeholder="05xxxxxxxx"></div>
-        </div>
-        <div class="field-row">
-          <div class="field"><label>الوظيفة</label>
-            <select id="apJob">
-              <option value="">تقديم عام</option>
-              ${jobs.map(j=>`<option value="${esc(j.id)}">${esc(j.title)}${j.department?' — '+esc(j.department):''}</option>`).join('')}
-            </select>
+        <div id="apStep1">
+          <div class="field"><label>الاسم الكامل *</label><input type="text" id="apName"></div>
+          <div class="field-row">
+            <div class="field"><label>تاريخ الميلاد</label><input type="date" id="apDob" style="direction:ltr;text-align:right;"></div>
+            <div class="field"><label>المدينة</label><input type="text" id="apCity" placeholder="الرياض"></div>
           </div>
-          <div class="field"><label>سنوات الخبرة</label><input type="number" id="apExp" min="0" max="45" value="0"></div>
+          <div class="field"><label>العنوان</label><input type="text" id="apAddress" placeholder="الحي، الشارع…"></div>
+          <div class="field-row">
+            <div class="field"><label>البريد الإلكتروني *</label><input type="email" id="apEmail" style="direction:ltr;text-align:left;"></div>
+            <div class="field"><label>رقم الجوال</label><input type="tel" id="apPhone" style="direction:ltr;text-align:left;" placeholder="05xxxxxxxx"></div>
+          </div>
+          <div id="apErr1" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
+          <div class="modal-actions" style="border-top:none;padding-top:4px;">
+            <button class="btn btn-primary" id="apNext" style="flex:1;justify-content:center;">التالي ←</button>
+          </div>
         </div>
-        <div class="field"><label>المسمى الوظيفي الحالي/الأخير</label><input type="text" id="apTitle"></div>
-        <div class="field"><label>السيرة الذاتية (PDF أو DOCX)</label><input type="file" id="apFile" accept=".pdf,.docx,.txt"></div>
-        <div class="field"><label>نبذة مختصرة (اختياري)</label><textarea id="apNotes" placeholder="خبراتك، مهاراتك، وما يميزك…"></textarea></div>
-        <div id="apErr" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
-        <div class="modal-actions">
-          <button class="btn btn-primary" id="apSubmit" style="flex:1;justify-content:center;">إرسال الطلب</button>
-          <button class="btn btn-ghost" id="apBack">عودة</button>
+
+        <div id="apStep2" style="display:none;">
+          <div class="field-row">
+            <div class="field"><label>التخصص</label><input type="text" id="apSpec" placeholder="مثال: علوم حاسب، هندسة صناعية…"></div>
+            <div class="field"><label>الدرجة العلمية</label>
+              <select id="apDegree">
+                <option value="">— اختر —</option>
+                <option>ثانوية عامة</option><option>دبلوم</option><option>بكالوريوس</option>
+                <option>ماجستير</option><option>دكتوراه</option><option>أخرى</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label>السيرة الذاتية (PDF أو DOCX) *</label><input type="file" id="apFile" accept=".pdf,.docx,.txt"></div>
+          <div style="font-size:11.5px;color:var(--l-muted);margin:-6px 0 12px;">يقرأ النظام سيرتك آليًا لاستخراج مهاراتك وخبراتك — احرص أن تكون بصيغة نصية لا صورة ممسوحة.</div>
+          <div id="apErr2" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
+          <div class="modal-actions" style="border-top:none;padding-top:4px;">
+            <button class="btn btn-primary" id="apSubmit" style="flex:1;justify-content:center;">إرسال الطلب</button>
+            <button class="btn btn-ghost" id="apPrev">→ السابق</button>
+          </div>
         </div>
       </div>
       <div class="landing-foot">تُحفظ طلبات التقديم مباشرة لدى فريق استقطاب الكفاءات، ويُتواصل مع المرشحين المناسبين.</div>
     </div>`;
   document.body.appendChild(ov);
-  document.getElementById('apBack').onclick = ()=>{ location.href = '/'; };
-  document.getElementById('apSubmit').onclick = async ()=>{
-    const err = document.getElementById('apErr');
-    const btn = document.getElementById('apSubmit');
+
+  const bar = document.getElementById('apBar');
+  const goStep = (n)=>{
+    document.getElementById('apStep1').style.display = n===1?'':'none';
+    document.getElementById('apStep2').style.display = n===2?'':'none';
+    document.getElementById('apDot1').classList.toggle('active', n===1);
+    document.getElementById('apDot2').classList.toggle('active', n===2);
+    bar.style.width = n===1 ? '50%' : '100%';
+    const card = document.getElementById('applyCard');
+    card.style.animation='none'; void card.offsetWidth; card.style.animation='';
+  };
+  bar.style.width='50%';
+
+  document.getElementById('apNext').onclick = ()=>{
+    const err = document.getElementById('apErr1');
     const name = document.getElementById('apName').value.trim();
     const email = document.getElementById('apEmail').value.trim();
     if(name.length < 3){ err.textContent = 'الاسم الكامل مطلوب.'; return; }
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = 'بريد إلكتروني صحيح مطلوب.'; return; }
+    err.textContent=''; goStep(2);
+  };
+  document.getElementById('apPrev').onclick = ()=>goStep(1);
+
+  document.getElementById('apSubmit').onclick = async ()=>{
+    const err = document.getElementById('apErr2');
+    const btn = document.getElementById('apSubmit');
+    const f = document.getElementById('apFile').files[0];
+    if(!f){ err.textContent = 'إرفاق السيرة الذاتية مطلوب.'; return; }
+    if(f.size > 10*1024*1024){ err.textContent = 'حجم الملف يتجاوز 10MB.'; return; }
     btn.disabled = true; btn.textContent = 'جارٍ الإرسال…'; err.textContent = '';
     const payload = {
-      name, email,
+      name: document.getElementById('apName').value.trim(),
+      email: document.getElementById('apEmail').value.trim(),
       phone: document.getElementById('apPhone').value.trim(),
-      jobId: document.getElementById('apJob').value || null,
-      experienceYears: Number(document.getElementById('apExp').value) || 0,
-      currentTitle: document.getElementById('apTitle').value.trim(),
-      resumeText: document.getElementById('apNotes').value.trim()
+      dateOfBirth: document.getElementById('apDob').value,
+      city: document.getElementById('apCity').value.trim(),
+      address: document.getElementById('apAddress').value.trim(),
+      specialization: document.getElementById('apSpec').value.trim(),
+      degree: document.getElementById('apDegree').value
     };
-    const f = document.getElementById('apFile').files[0];
     try{
-      if(f){
-        if(f.size > 10*1024*1024) throw new Error('حجم الملف يتجاوز 10MB');
-        payload.fileBase64 = await fileToBase64(f);
-        payload.resumeFileName = f.name;
-        const ext = f.name.split('.').pop().toLowerCase();
-        payload.resumeFileType = ext;
-        payload.mimeType = MIME_BY_EXT[ext] || 'application/octet-stream';
-        try{
-          const txt = await extractResumeText(f);
-          if(txt && txt.trim()) payload.resumeText = txt;
-        }catch(e){ /* text extraction is best-effort for public uploads */ }
-      }
+      payload.fileBase64 = await fileToBase64(f);
+      payload.resumeFileName = f.name;
+      const ext = f.name.split('.').pop().toLowerCase();
+      payload.resumeFileType = ext;
+      payload.mimeType = MIME_BY_EXT[ext] || 'application/octet-stream';
+      // ATS reads the résumé right here: extract text, then harvest
+      // skills / experience / current title with the same parser the
+      // internal bulk-import uses.
+      try{
+        const txt = await extractResumeText(f);
+        if(txt && txt.trim()){
+          payload.resumeText = txt;
+          payload.skills = guessSkillsFromText(txt);
+          payload.experienceYears = guessExperienceYears(txt);
+          payload.currentTitle = guessJobTitleFromText(txt);
+        }
+      }catch(e){ /* text extraction is best-effort */ }
       await apiFetch('/api/public/apply', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
       document.getElementById('applyCard').innerHTML = `
-        <div style="text-align:center;padding:26px 6px;">
-          <div class="display" style="font-size:22px;color:var(--green);margin-bottom:10px;">تم استلام طلبك بنجاح ✓</div>
-          <div style="font-size:13.5px;color:var(--muted);line-height:1.9;">شكرًا ${esc(name)} — وصل طلبك لفريق استقطاب الكفاءات في كاكست،<br>وسيتم التواصل معك إن كان ملفك مناسبًا لأحد الشواغر.</div>
+        <div style="text-align:center;padding:30px 6px;">
+          <div class="ap-check">✓</div>
+          <div class="display" style="font-size:22px;color:var(--l-ink);margin:14px 0 8px;">تم استلام طلبك بنجاح</div>
+          <div style="font-size:13.5px;color:var(--l-muted);line-height:1.9;">شكرًا ${esc(payload.name)} — قرأ النظام سيرتك الذاتية وأضافها لقاعدة الكفاءات،<br>وسيتواصل معك الفريق إن كان ملفك مناسبًا.</div>
           <div style="margin-top:20px;"><button class="btn btn-primary" onclick="location.href='/'">العودة للصفحة الرئيسية</button></div>
         </div>`;
+      document.getElementById('apBar').style.width='100%';
     }catch(e){
       err.textContent = e.message;
       btn.disabled = false; btn.textContent = 'إرسال الطلب';
     }
   };
-}
-
-function openChangePassword(){
-  openModal(`
-    <div class="modal-head"><h2>تغيير كلمة المرور</h2><span class="xbtn" onclick="closeModal()">×</span></div>
-    <div class="field"><label>كلمة المرور الحالية</label><input type="password" id="cpCur" autocomplete="current-password" style="direction:ltr;text-align:left;"></div>
-    <div class="field"><label>كلمة المرور الجديدة (8 أحرف على الأقل)</label><input type="password" id="cpNew" autocomplete="new-password" style="direction:ltr;text-align:left;"></div>
-    <div class="field"><label>تأكيد كلمة المرور الجديدة</label><input type="password" id="cpNew2" autocomplete="new-password" style="direction:ltr;text-align:left;"></div>
-    <div id="cpErr" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
-    <div class="modal-actions"><button class="btn btn-primary" id="cpSave">حفظ</button>
-    <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button></div>`);
-  document.getElementById('cpSave').onclick = async ()=>{
-    const cur = document.getElementById('cpCur').value;
-    const nw = document.getElementById('cpNew').value;
-    const nw2 = document.getElementById('cpNew2').value;
-    const err = document.getElementById('cpErr');
-    if(nw.length < 8){ err.textContent = 'كلمة المرور الجديدة يجب ألا تقل عن 8 أحرف.'; return; }
-    if(nw !== nw2){ err.textContent = 'كلمتا المرور غير متطابقتين.'; return; }
-    try{
-      await api.changePassword({ currentPassword: cur, newPassword: nw });
-      closeModal();
-      alert('تم تغيير كلمة المرور بنجاح.');
-    }catch(e){ err.textContent = e.message; }
-  };
-}
-
-async function doLogout(){
-  try{ await api.logout(); }catch(e){}
-  location.reload();
 }
 
 /* ---------------------------------------------------------
@@ -2434,6 +2453,16 @@ async function openDetail(candId){
       </select>
     </div>
 
+    <div class="detail-section" style="${(c.dateOfBirth||c.specialization||c.degree||c.city||c.address)?'':'display:none;'}">
+      <h3>بيانات المتقدم</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:13px;">
+        ${c.dateOfBirth?`<div><span style="color:var(--muted);font-size:11px;display:block;">تاريخ الميلاد</span>${esc(c.dateOfBirth)}</div>`:''}
+        ${c.specialization?`<div><span style="color:var(--muted);font-size:11px;display:block;">التخصص</span>${esc(c.specialization)}</div>`:''}
+        ${c.degree?`<div><span style="color:var(--muted);font-size:11px;display:block;">الدرجة العلمية</span>${esc(c.degree)}</div>`:''}
+        ${c.city?`<div><span style="color:var(--muted);font-size:11px;display:block;">المدينة</span>${esc(c.city)}</div>`:''}
+        ${c.address?`<div><span style="color:var(--muted);font-size:11px;display:block;">العنوان</span>${esc(c.address)}</div>`:''}
+      </div>
+    </div>
     <div class="detail-section">
       <h3>ملخص المرشح الذكي</h3>
       <div class="resume-box" style="font-family:'Tajawal',sans-serif;font-size:13px;line-height:1.9;direction:rtl;text-align:right;white-space:pre-wrap;">${esc(c.aiSummary && c.aiSummary.trim() ? c.aiSummary : summarize(c))}</div>
@@ -2574,6 +2603,8 @@ function attachViewHandlers(){
   if(stageFilter) stageFilter.onchange = ()=>{ candFilterStage = stageFilter.value; candOffset = 0; renderCandidatesOnly(); };
   const jobFilter = document.getElementById('candJobFilter');
   if(jobFilter) jobFilter.onchange = ()=>{ candFilterJob = jobFilter.value; candOffset = 0; renderCandidatesOnly(); };
+  const clearMatch = document.getElementById('btnClearMatch');
+  if(clearMatch) clearMatch.onclick = ()=>{ candFilterJob = 'الكل'; renderCandidatesOnly(); };
   const prevBtn = document.getElementById('candPrev');
   if(prevBtn) prevBtn.onclick = ()=>{ if(candOffset>0){ candOffset -= CAND_PAGE_SIZE; renderCandidatesOnly(); } };
   const nextBtn = document.getElementById('candNext');
@@ -2609,7 +2640,7 @@ function attachViewHandlers(){
 async function renderCandidatesOnly(){
   const main = document.getElementById('main');
   const focusWasSearch = document.activeElement && document.activeElement.id==='candSearchInput';
-  main.innerHTML = await viewCandidates();
+  main.innerHTML = (candFilterJob!=='الكل') ? await viewCandidatesMatches() : await viewCandidates();
   renderNav();
   attachViewHandlers();
   if(focusWasSearch){
