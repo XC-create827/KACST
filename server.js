@@ -52,6 +52,8 @@ async function initSchema() {
   await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS file_name TEXT');
   await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS mime_type TEXT');
   await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS file_bytes BYTEA');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE');
   const renames = [["تم الترشيح","الفرز"],["العرض","العرض الوظيفي"]];
   for (const [from,to] of renames) {
     await pool.query('UPDATE candidates SET stage=$2 WHERE stage=$1', [from,to]);
@@ -102,6 +104,46 @@ function verifyPassword(pw, stored){
   const ref = Buffer.from(hash, 'hex');
   return calc.length === ref.length && crypto.timingSafeEqual(calc, ref);
 }
+// ---------------------------------------------------------------
+// Two-factor authentication — standard TOTP (RFC 6238), compatible
+// with Google/Microsoft Authenticator and similar apps. Implemented
+// with Node's built-in crypto; no external service or dependency.
+// ---------------------------------------------------------------
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function base32Encode(buf){
+  let bits = 0, val = 0, out = '';
+  for (const b of buf){ val = (val << 8) | b; bits += 8;
+    while (bits >= 5){ out += B32[(val >>> (bits - 5)) & 31]; bits -= 5; } }
+  if (bits > 0) out += B32[(val << (5 - bits)) & 31];
+  return out;
+}
+function base32Decode(s){
+  let bits = 0, val = 0; const out = [];
+  for (const ch of String(s).replace(/=+$/, '').toUpperCase()){
+    const idx = B32.indexOf(ch); if (idx < 0) continue;
+    val = (val << 5) | idx; bits += 5;
+    if (bits >= 8){ out.push((val >>> (bits - 8)) & 255); bits -= 8; } }
+  return Buffer.from(out);
+}
+function hotp(secretBuf, counter){
+  const b = Buffer.alloc(8);
+  b.writeBigUInt64BE(BigInt(counter));
+  const h = crypto.createHmac('sha1', secretBuf).update(b).digest();
+  const o = h[h.length - 1] & 0xf;
+  const code = (((h[o] & 0x7f) << 24) | (h[o + 1] << 16) | (h[o + 2] << 8) | h[o + 3]) % 1000000;
+  return String(code).padStart(6, '0');
+}
+function verifyTotp(secretB32, code){
+  const s = base32Decode(secretB32);
+  if (!s.length) return false;
+  const t = Math.floor(Date.now() / 30000);
+  const c = String(code || '').replace(/\D/g, '');
+  if (c.length !== 6) return false;
+  // Accept the previous/next 30s window for clock drift.
+  for (const d of [-1, 0, 1]) if (c === hotp(s, t + d)) return true;
+  return false;
+}
+
 function parseCookies(req){
   const out = {};
   (req.headers.cookie || '').split(';').forEach(p => {
@@ -188,6 +230,14 @@ app.post('/api/login', wrapEarly(async (req, res) => {
   if (!u || !verifyPassword(String(password || ''), u.password_hash)) {
     await new Promise(r => setTimeout(r, 400)); // blunt brute-force damper
     return res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+  }
+  if (u.totp_enabled) {
+    const code = String((req.body || {}).totpCode || '').trim();
+    if (!code) return res.json({ twoFactorRequired: true });
+    if (!verifyTotp(u.totp_secret, code)) {
+      await new Promise(r => setTimeout(r, 400));
+      return res.status(401).json({ error: 'رمز التحقق غير صحيح — تأكد من الرمز الحالي في تطبيق المصادقة' });
+    }
   }
   await pool.query('DELETE FROM sessions WHERE expires_at < NOW()');
   const token = crypto.randomBytes(32).toString('hex');
@@ -467,7 +517,9 @@ app.get('/api/public/jobs', wrapEarly(async (req, res) => {
 }));
 
 app.post('/api/public/apply', wrapEarly(async (req, res) => {
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || '?';
+  const ip = req.headers['cf-connecting-ip']
+    || req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.socket.remoteAddress || '?';
   if (!applyAllowed(ip)) {
     return res.status(429).json({ error: 'تم استلام عدة طلبات من جهازك — حاول مجددًا بعد ساعة.' });
   }
@@ -543,7 +595,9 @@ app.post('/api/public/apply', wrapEarly(async (req, res) => {
 // Session + account endpoints
 // ---------------------------------------------------------------
 app.get('/api/me', wrap(async (req, res) => {
-  res.json({ username: req.user.username, displayName: req.user.displayName, isAdmin: req.user.isAdmin });
+  const { rows } = await pool.query('SELECT totp_enabled FROM users WHERE id = $1', [req.user.id]);
+  res.json({ username: req.user.username, displayName: req.user.displayName,
+    isAdmin: req.user.isAdmin, totpEnabled: !!(rows[0] && rows[0].totp_enabled) });
 }));
 
 app.post('/api/logout', wrap(async (req, res) => {
@@ -565,6 +619,40 @@ app.post('/api/change-password', wrap(async (req, res) => {
   await pool.query('UPDATE users SET password_hash = $2 WHERE id = $1',
     [req.user.id, hashPassword(String(newPassword))]);
   await audit(pool, req.user.displayName, 'تغيير كلمة المرور', null, null, null);
+  res.json({ ok: true });
+}));
+
+// ---- Two-factor authentication (per-account) ----
+// Setup: generate a fresh secret (pending until verified).
+app.post('/api/2fa/setup', wrap(async (req, res) => {
+  const secret = base32Encode(crypto.randomBytes(20));
+  await pool.query('UPDATE users SET totp_secret = $2, totp_enabled = FALSE WHERE id = $1',
+    [req.user.id, secret]);
+  const label = encodeURIComponent('إدارة استقطاب الكفاءات:' + req.user.username);
+  res.json({ secret,
+    otpauth: `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent('KACST-TAD')}&digits=6&period=30` });
+}));
+
+// Confirm with a live code from the authenticator app → 2FA is ON.
+app.post('/api/2fa/verify', wrap(async (req, res) => {
+  const { rows } = await pool.query('SELECT totp_secret FROM users WHERE id = $1', [req.user.id]);
+  if (!rows.length || !rows[0].totp_secret) return res.status(400).json({ error: 'ابدأ الإعداد أولًا' });
+  if (!verifyTotp(rows[0].totp_secret, (req.body || {}).code)) {
+    return res.status(401).json({ error: 'الرمز غير صحيح — جرّب الرمز الحالي في التطبيق' });
+  }
+  await pool.query('UPDATE users SET totp_enabled = TRUE WHERE id = $1', [req.user.id]);
+  await audit(pool, req.user.displayName, 'تفعيل المصادقة الثنائية', null, null, null);
+  res.json({ ok: true });
+}));
+
+// Disable requires the account password.
+app.post('/api/2fa/disable', wrap(async (req, res) => {
+  const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+  if (!rows.length || !verifyPassword(String((req.body || {}).password || ''), rows[0].password_hash)) {
+    return res.status(401).json({ error: 'كلمة المرور غير صحيحة' });
+  }
+  await pool.query('UPDATE users SET totp_secret = NULL, totp_enabled = FALSE WHERE id = $1', [req.user.id]);
+  await audit(pool, req.user.displayName, 'تعطيل المصادقة الثنائية', null, null, null);
   res.json({ ok: true });
 }));
 
@@ -599,23 +687,6 @@ app.post('/api/users', wrap(async (req, res) => {
     [id, un, String(displayName || un).trim().slice(0, 60), email, hashPassword(String(password)), !!isAdmin]);
   await audit(pool, req.user.displayName, 'إضافة مستخدم', null, null, un + (isAdmin ? ' (مشرف)' : ''));
   res.json({ id });
-}));
-
-// Admin fallback: reset any user's password directly — works even
-// with no email system configured.
-app.post('/api/users/:id/reset-password', wrap(async (req, res) => {
-  if (!req.user.isAdmin) return res.status(403).json({ error: 'admin only' });
-  const { newPassword } = req.body || {};
-  if (!newPassword || String(newPassword).length < 8) {
-    return res.status(400).json({ error: 'كلمة المرور يجب ألا تقل عن 8 أحرف' });
-  }
-  const nm = await pool.query('SELECT username FROM users WHERE id = $1', [req.params.id]);
-  if (!nm.rows.length) return res.status(404).json({ error: 'not found' });
-  await pool.query('UPDATE users SET password_hash = $2 WHERE id = $1',
-    [req.params.id, hashPassword(String(newPassword))]);
-  await pool.query('DELETE FROM sessions WHERE user_id = $1', [req.params.id]);
-  await audit(pool, req.user.displayName, 'إعادة تعيين كلمة مرور مستخدم', null, null, nm.rows[0].username);
-  res.json({ ok: true });
 }));
 
 app.delete('/api/users/:id', wrap(async (req, res) => {

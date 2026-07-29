@@ -94,3 +94,42 @@ wiring.
 instance — none was available in the build environment. Run it once
 against a real database and click through each screen before trusting
 it. Expect the possibility of a minor dialect fix.
+
+
+---
+
+## التشغيل على خوادم الجهة خلف Cloudflare (دليل فريق التقنية)
+
+المنصة تطبيق Node.js قياسي + قاعدة PostgreSQL — تعمل على أي خادم افتراضي أو حاوية، وCloudflare أمامها مدعوم من الكود مباشرة (قراءة `CF-Connecting-IP` لعدّادات الحماية، و`X-Forwarded-Proto` للكوكيز الآمنة).
+
+### المتطلبات
+- Node.js 18 أو أحدث
+- PostgreSQL 13 أو أحدث (قاعدة فارغة تكفي — الجداول تُنشأ تلقائيًا عند أول تشغيل)
+- ذاكرة 512MB فأكثر
+
+### خطوات التشغيل
+```bash
+npm install
+export DATABASE_URL="postgres://USER:PASS@HOST:5432/DBNAME"
+export ADMIN_USER="اسم_مستخدم_المشرف_الأول"
+export ADMIN_PASSWORD="كلمة_مرور_قوية"
+# اختياري — لاستعادة كلمة المرور بالبريد:
+# export SMTP_HOST=... SMTP_PORT=587 SMTP_USER=... SMTP_PASS=... SMTP_FROM=...
+node server.js        # أو عبر pm2 / systemd للتشغيل الدائم
+```
+سيطبع السجل `Database schema is ready` ثم يستمع على المنفذ 3000 (قابل للتغيير عبر `PORT`).
+
+### إعداد Cloudflare أمام الخادم
+- سجل DNS من نوع Proxied (السحابة البرتقالية) موجهًا للخادم
+- وضع التشفير: **Full (strict)** مع شهادة على الخادم الأصلي (أو Cloudflare Origin Certificate)
+- لا حاجة لأي تعديل في الكود — الترويسات مقروءة أصلًا
+- إن وُجد Nginx وسيطًا بين Cloudflare والتطبيق، مرِّر الترويسات:
+  `proxy_set_header X-Forwarded-Proto $scheme;` و `proxy_set_header CF-Connecting-IP $http_cf_connecting_ip;`
+
+### حدود معروفة خلف Cloudflare (كلها ضمن الأمان)
+- رفع الملفات عبر الخطة المجانية محدود بـ 100MB للطلب — سقف المنصة 10MB للملف، فلا تعارض
+- الاستجابة يجب أن تبدأ خلال ~100 ثانية — تصديرا الإكسل والـ ZIP يبدآن البث فورًا، فلا تعارض
+- المنصة لا تستخدم WebSockets — لا شيء يحتاج إعدادًا خاصًا
+
+### ملاحظة تصنيفية مهمة
+المنصة **لا** تعمل على Cloudflare Workers/Pages (بيئة دوال لحظية لا تناسب خادم Express دائمًا باتصال PostgreSQL ومكتبات توليد الملفات). المطلوب: أي خادم Node عادي — **خلف** Cloudflare.

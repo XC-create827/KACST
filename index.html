@@ -785,8 +785,10 @@ const api = {
   deleteUser:  (id)          => apiFetch('/api/users/'+encodeURIComponent(id), {method:'DELETE'}),
   forgotPassword: (b)        => apiFetch('/api/forgot-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
   resetPassword:  (b)        => apiFetch('/api/reset-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
-  adminResetPassword: (id,b) => apiFetch('/api/users/'+encodeURIComponent(id)+'/reset-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
   jobMatches:  (jobId)       => apiFetch('/api/jobs/'+encodeURIComponent(jobId)+'/matches'),
+  tfaSetup:    ()            => apiFetch('/api/2fa/setup', {method:'POST'}),
+  tfaVerify:   (b)           => apiFetch('/api/2fa/verify', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
+  tfaDisable:  (b)           => apiFetch('/api/2fa/disable', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
   kpis:        (params={})   => apiFetch('/api/kpis?' + new URLSearchParams(params)),
   pipeline:    (params={})   => apiFetch('/api/pipeline?' + new URLSearchParams(params)),
   settings:    ()            => apiFetch('/api/settings'),
@@ -959,7 +961,17 @@ function guessNameFromFilename(filename){
     .replace(/\b\w/g, c=>c.toUpperCase()) || 'مرشح بدون اسم';
 }
 function guessEmailFromText(text){
-  const m = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  const strict = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+  let m = text.match(strict);
+  if(m) return m[0];
+  // PDF extraction often injects spaces inside the address
+  // ("ahmed . otaibi @ gmail . com") — re-glue around @ and the dots,
+  // then retry the strict pattern on the repaired copy.
+  const glued = text
+    .replace(/\s*@\s*/g, '@')
+    .replace(/([a-zA-Z0-9])\s*([_-])\s*(?=[a-zA-Z0-9])/g, '$1$2')
+    .replace(/([a-zA-Z0-9_%+-])\s*\.\s*(?=[a-zA-Z0-9])/g, '$1.');
+  m = glued.match(strict);
   return m ? m[0] : '';
 }
 function guessPhoneFromText(text){
@@ -1684,7 +1696,7 @@ async function viewUsers(){
   const users = await api.users();
   return `
   <div class="page-head">
-    <div><h1>المستخدمون</h1><div class="sub">حسابات الدخول للمنصة. كل تغيير يسجَّل في سجل التدقيق باسم صاحبه.</div></div>
+    <div><h1>المستخدمون</h1><div class="sub">حسابات الدخول للمنصة. كل مستخدم يغيّر كلمة مروره بنفسه من حسابه — ولا يملك أحد تغييرها عنه. كل تغيير يسجَّل في سجل التدقيق.</div></div>
     <button class="btn btn-primary" id="btnAddUser">+ إضافة مستخدم</button>
   </div>
   <table><thead><tr><th>اسم المستخدم</th><th>الاسم الظاهر</th><th>الصلاحية</th><th>تاريخ الإنشاء</th><th>البريد الإلكتروني</th><th></th></tr></thead><tbody>
@@ -1694,7 +1706,7 @@ async function viewUsers(){
       <td>${u.isAdmin ? '<span class="chip ar" style="background:rgba(232,185,62,0.15);color:#e8b93e;border-color:rgba(232,185,62,0.4);">مشرف</span>' : '<span class="chip ar">مستخدم</span>'}</td>
       <td class="mono" style="font-size:11px;color:var(--muted)">${new Date(u.createdAt).toLocaleDateString('ar-EG')}</td>
       <td class="mono" style="font-size:11px;direction:ltr;text-align:right;color:var(--muted)">${esc(u.email||'—')}</td>
-      <td style="white-space:nowrap;">${CURRENT_USER && u.username===CURRENT_USER.username ? '<span style="font-size:11px;color:var(--muted)">أنت</span>' : `<span class="btn btn-sm btn-ghost" data-resetuser="${u.id}" data-resetname="${esc(u.username)}">إعادة تعيين كلمة المرور</span> <span class="btn btn-sm btn-danger" data-deluser="${u.id}">حذف</span>`}</td>
+      <td style="white-space:nowrap;">${CURRENT_USER && u.username===CURRENT_USER.username ? '<span style="font-size:11px;color:var(--muted)">أنت</span>' : `<span class="btn btn-sm btn-danger" data-deluser="${u.id}">حذف</span>`}</td>
     </tr>`).join('')}
   </tbody></table>`;
 }
@@ -1871,6 +1883,10 @@ function showLogin(){
           <div class="modal" style="max-width:none;text-align:center;">
             <div class="field" style="text-align:right;"><label>اسم المستخدم</label><input type="text" id="loginUser" autocomplete="username" style="direction:ltr;text-align:left;"></div>
             <div class="field" style="text-align:right;"><label>كلمة المرور</label><input type="password" id="loginPass" autocomplete="current-password" style="direction:ltr;text-align:left;"></div>
+            <div class="field" id="tfaField" style="display:none;text-align:right;">
+              <label>رمز المصادقة الثنائية (من تطبيق Authenticator)</label>
+              <input type="text" id="loginTotp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:18px;">
+            </div>
             <div id="loginErr" style="color:var(--rose);font-size:12px;min-height:18px;margin:4px 0 10px;"></div>
             <button class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;">دخول</button>
             <div style="margin-top:14px;"><span id="forgotLink" style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;">نسيت كلمة المرور؟</span></div>
@@ -1888,15 +1904,29 @@ function showLogin(){
     const btn = document.getElementById('loginBtn');
     btn.disabled = true; btn.textContent = 'جارٍ الدخول…';
     try{
-      CURRENT_USER = await api.login({
+      const r = await api.login({
         username: document.getElementById('loginUser').value.trim(),
-        password: document.getElementById('loginPass').value
+        password: document.getElementById('loginPass').value,
+        totpCode: (document.getElementById('loginTotp')?.value || '').trim()
       });
+      if(r && r.twoFactorRequired){
+        // Password accepted — now the authenticator code.
+        document.getElementById('tfaField').style.display = '';
+        const errEl = document.getElementById('loginErr');
+        errEl.style.color = 'var(--muted)';
+        errEl.textContent = 'أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة.';
+        btn.disabled = false; btn.textContent = 'تأكيد الرمز';
+        setTimeout(()=>{ const t=document.getElementById('loginTotp'); if(t) t.focus(); }, 50);
+        return;
+      }
+      CURRENT_USER = r;
       try{ sessionStorage.setItem('tad_alive','1'); }catch(e){}
       ov.remove();
       boot();
     }catch(e){
-      document.getElementById('loginErr').textContent = e.message;
+      const errEl = document.getElementById('loginErr');
+      errEl.style.color = 'var(--rose)';
+      errEl.textContent = e.message;
       btn.disabled = false; btn.textContent = 'دخول';
     }
   };
@@ -2142,6 +2172,55 @@ function openChangePassword(){
       closeModal();
       alert('تم تغيير كلمة المرور بنجاح.');
     }catch(e){ err.textContent = e.message; }
+  };
+}
+
+async function openEnable2FA(){
+  let setup;
+  try{ setup = await api.tfaSetup(); }
+  catch(e){ alert(e.message); return; }
+  openModal(`
+    <div class="modal-head"><h2>تفعيل المصادقة الثنائية</h2><span class="xbtn" onclick="closeModal()">×</span></div>
+    <div style="font-size:13px;line-height:2;margin-bottom:14px;">
+      ١ — افتح تطبيق مصادقة على جوالك (Google Authenticator أو Microsoft Authenticator)<br>
+      ٢ — اختر «إضافة حساب» ثم «إدخال مفتاح الإعداد يدويًا» والصق المفتاح التالي:
+    </div>
+    <div class="mono" style="background:rgba(8,26,44,0.5);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;text-align:center;font-size:16px;letter-spacing:2px;user-select:all;direction:ltr;">${esc(setup.secret)}</div>
+    <div style="font-size:11.5px;color:var(--muted);margin:8px 0 16px;">أو من الجوال افتح هذا الرابط مباشرة: <a href="${esc(setup.otpauth)}" style="color:var(--teal);">إضافة إلى تطبيق المصادقة</a></div>
+    <div class="field"><label>٣ — أدخل الرمز الظاهر في التطبيق الآن للتأكيد</label>
+      <input type="text" id="tfaCode" inputmode="numeric" maxlength="6" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:18px;"></div>
+    <div id="tfaErr" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="tfaConfirm">تأكيد وتفعيل</button>
+      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+    </div>`);
+  document.getElementById('tfaConfirm').onclick = async ()=>{
+    try{
+      await api.tfaVerify({ code: document.getElementById('tfaCode').value.trim() });
+      CURRENT_USER.totpEnabled = true;
+      closeModal();
+      alert('تم تفعيل المصادقة الثنائية — من الآن سيُطلب رمز التطبيق مع كل تسجيل دخول.');
+    }catch(e){ document.getElementById('tfaErr').textContent = e.message; }
+  };
+}
+
+async function openDisable2FA(){
+  openModal(`
+    <div class="modal-head"><h2>تعطيل المصادقة الثنائية</h2><span class="xbtn" onclick="closeModal()">×</span></div>
+    <div class="field"><label>أدخل كلمة مرورك للتأكيد</label>
+      <input type="password" id="tfaPw" autocomplete="current-password" style="direction:ltr;text-align:left;"></div>
+    <div id="tfaErr" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="tfaOff">تعطيل</button>
+      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+    </div>`);
+  document.getElementById('tfaOff').onclick = async ()=>{
+    try{
+      await api.tfaDisable({ password: document.getElementById('tfaPw').value });
+      CURRENT_USER.totpEnabled = false;
+      closeModal();
+      alert('تم تعطيل المصادقة الثنائية.');
+    }catch(e){ document.getElementById('tfaErr').textContent = e.message; }
   };
 }
 
@@ -2673,17 +2752,6 @@ function attachViewHandlers(){
   if(lg) lg.onclick = doLogout;
   const addUser = document.getElementById('btnAddUser');
   if(addUser) addUser.onclick = openAddUser;
-  document.querySelectorAll('[data-resetuser]').forEach(el=>{
-    el.onclick = async ()=>{
-      const pw = prompt('كلمة المرور الجديدة للمستخدم "' + el.dataset.resetname + '" (8 أحرف على الأقل):');
-      if(!pw) return;
-      if(pw.length < 8){ alert('كلمة المرور يجب ألا تقل عن 8 أحرف.'); return; }
-      try{
-        await mutate(()=>api.adminResetPassword(el.dataset.resetuser, { newPassword: pw }));
-        alert('تم — أبلغ المستخدم بكلمة المرور الجديدة وسيُنصح بتغييرها بعد الدخول.');
-      }catch(e){}
-    };
-  });
   document.querySelectorAll('[data-deluser]').forEach(el=>{
     el.onclick = async ()=>{
       if(!confirm('حذف هذا المستخدم؟ لن يتمكن من الدخول بعدها.')) return;
@@ -2805,8 +2873,17 @@ document.addEventListener('click', (e)=>{
     openModal(`
       <div class="modal-head"><h2>${esc(CURRENT_USER.displayName)}</h2><span class="xbtn" onclick="closeModal()">×</span></div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">اسم المستخدم: <span class="mono">${esc(CURRENT_USER.username)}</span></div>
+      <div style="font-size:12.5px;margin-bottom:16px;">
+        المصادقة الثنائية:
+        ${CURRENT_USER.totpEnabled
+          ? '<span style="color:var(--green);font-weight:800;">مفعّلة ✓</span>'
+          : '<span style="color:var(--muted);">غير مفعّلة</span>'}
+      </div>
       <div class="modal-actions" style="border-top:none;padding-top:0;">
         <button class="btn btn-primary" onclick="closeModal();openChangePassword()">تغيير كلمة المرور</button>
+        ${CURRENT_USER.totpEnabled
+          ? '<button class="btn btn-ghost" onclick="closeModal();openDisable2FA()">تعطيل المصادقة الثنائية</button>'
+          : '<button class="btn btn-ghost" onclick="closeModal();openEnable2FA()">تفعيل المصادقة الثنائية</button>'}
         <button class="btn btn-danger" onclick="doLogout()">تسجيل الخروج</button>
       </div>`);
   }
