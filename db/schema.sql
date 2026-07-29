@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS candidates (
   degree             TEXT,
   city               TEXT,
   address            TEXT,
+  current_salary     TEXT,
   notes              TEXT,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -66,6 +67,9 @@ CREATE TABLE IF NOT EXISTS assessments (
   score        NUMERIC(5,2) NOT NULL DEFAULT 0,
   signature    TEXT,
   notes        TEXT,
+  file_name    TEXT,
+  mime_type    TEXT,
+  file_bytes   BYTEA,
   assessed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -88,6 +92,8 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT,
   password_hash TEXT NOT NULL,
   is_admin      BOOLEAN NOT NULL DEFAULT FALSE,
+  totp_secret   TEXT,
+  totp_enabled  BOOLEAN NOT NULL DEFAULT FALSE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
