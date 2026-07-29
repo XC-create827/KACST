@@ -46,9 +46,12 @@ async function initSchema() {
   // keep working: "تم الترشيح" merges into "الفرز", and "العرض"
   // becomes "العرض الوظيفي".
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
-  for (const col of ['date_of_birth','specialization','degree','city','address']) {
+  for (const col of ['date_of_birth','specialization','degree','city','address','current_salary']) {
     await pool.query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS ${col} TEXT`);
   }
+  await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS file_name TEXT');
+  await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS mime_type TEXT');
+  await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS file_bytes BYTEA');
   const renames = [["تم الترشيح","الفرز"],["العرض","العرض الوظيفي"]];
   for (const [from,to] of renames) {
     await pool.query('UPDATE candidates SET stage=$2 WHERE stage=$1', [from,to]);
@@ -228,6 +231,7 @@ function rowToCandidate(r) {
     resumeFileType: r.resume_file_type, notes: r.notes || '',
     dateOfBirth: r.date_of_birth || '', specialization: r.specialization || '',
     degree: r.degree || '', city: r.city || '', address: r.address || '',
+    currentSalary: r.current_salary || '',
     createdAt: r.created_at,
     assessCount: r.assess_count !== undefined ? Number(r.assess_count) : undefined,
     assessAvg: r.assess_avg !== null && r.assess_avg !== undefined ? Number(r.assess_avg) : null,
@@ -322,6 +326,61 @@ app.post('/api/reset-password', wrapEarly(async (req, res) => {
 // "قدّم الآن" page on the landing screen; submissions become
 // candidates in the same database the team already works in.
 // ---------------------------------------------------------------
+// ---------------------------------------------------------------
+// CV-derived fields for exports: LinkedIn URL, experience estimate,
+// and a heuristic summary of previous employers. All read straight
+// from the stored résumé text at export time — no migration needed.
+// ---------------------------------------------------------------
+function arabicDigitsToLatin(s){
+  return String(s || '').replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660));
+}
+function extractLinkedIn(text){
+  const m = String(text || '').match(/(?:https?:\/\/)?(?:[a-z]{2,3}\.)?linkedin\.com\/(?:in|pub|company)\/[A-Za-z0-9\-_%.]+/i);
+  if (!m) return '';
+  return m[0].startsWith('http') ? m[0] : 'https://' + m[0];
+}
+function estimateExperienceYears(text){
+  const t = arabicDigitsToLatin(text);
+  let best = 0;
+  const pats = [
+    /(\d{1,2})\s*\+?\s*(?:years?|yrs?)\s+(?:of\s+)?experience/gi,
+    /experience\s*[:\-]?\s*(\d{1,2})\s*\+?\s*(?:years?|yrs?)/gi,
+    /خبرة\s*(?:عملية\s*)?(?:لا تقل عن|أكثر من|تزيد عن|تفوق)?\s*(\d{1,2})\s*(?:سنة|سنوات|عام|أعوام)/g,
+    /(\d{1,2})\s*(?:سنة|سنوات|عام|أعوام)\s*(?:من\s*)?(?:الخبرة|خبرة)/g
+  ];
+  for (const p of pats) { let m; while ((m = p.exec(t))) best = Math.max(best, Number(m[1]) || 0); }
+  return Math.min(best, 45);
+}
+function extractEmployers(text){
+  const t = String(text || '');
+  const found = [];
+  const seen = new Set();
+  const push = (name) => {
+    const clean = name.trim().replace(/\s+/g, ' ').replace(/[.،,;:]+$/, '');
+    if (clean.length < 3 || clean.length > 60) return;
+    const key = clean.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key); found.push(clean);
+  };
+  // Education context is detected just BEHIND the mention (e.g.
+  // "بكالوريوس من جامعة X") — looking far ahead would wrongly swallow
+  // employers that merely precede an education line.
+  const eduNear = (idx) => {
+    const behind = t.slice(Math.max(0, idx - 45), idx + 10);
+    return /بكالوريوس|ماجستير|دكتوراه|دبلوم|درجة|تخرج|Bachelor|Master|PhD|Degree|GPA|المعدل/i.test(behind);
+  };
+  let m;
+  const ar = /(?:شركة|مؤسسة|مجموعة|بنك|مستشفى|هيئة|وزارة|مصنع|مركز|مدينة)\s+([^\n،,.؛:()\-]{2,45})/g;
+  while ((m = ar.exec(t))) { if (!eduNear(m.index)) push(m[0]); }
+  const arUni = /جامعة\s+([^\n،,.؛:()\-]{2,40})/g;
+  while ((m = arUni.exec(t))) { if (!eduNear(m.index)) push(m[0]); }
+  const enAt = /\b(?:at|with)\s+([A-Z][A-Za-z0-9&.'\-]*(?:\s+[A-Z][A-Za-z0-9&.'\-]*){0,4})/g;
+  while ((m = enAt.exec(t))) { if (!eduNear(m.index)) push(m[1]); }
+  const enSuffix = /^\s*([A-Z][A-Za-z0-9&.'\- ]{2,50}?\s(?:Inc|LLC|Ltd|Co|Corp|Company|Group|Bank|Hospital|Solutions|Technologies)\.?)\s*$/gm;
+  while ((m = enSuffix.exec(t))) push(m[1]);
+  return found.slice(0, 6).join('، ');
+}
+
 // ---------------------------------------------------------------
 // JD ↔ CV matching engine. Scores a candidate against a job using
 // required skills (weight 3), nice-to-have skills (1.5), and the
@@ -427,6 +486,7 @@ app.post('/api/public/apply', wrapEarly(async (req, res) => {
     degree: clean(b.degree, 60),
     city: clean(b.city, 80),
     address: clean(b.address, 240),
+    current_salary: clean(b.currentSalary, 40),
     current_title: clean(b.currentTitle, 120),
     experience_years: Math.max(0, Math.min(45, Number(b.experienceYears) || 0)),
     skills: Array.isArray(b.skills) ? b.skills.slice(0, 40).map(s => String(s).slice(0, 40)) : [],
@@ -451,15 +511,15 @@ app.post('/api/public/apply', wrapEarly(async (req, res) => {
     await client.query(
       `INSERT INTO candidates (id,name,email,phone,current_title,source,experience_years,
         applied_for,skills,resume_text,stage,has_original_file,resume_file_name,resume_file_type,
-        date_of_birth,specialization,degree,city,address)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+        date_of_birth,specialization,degree,city,address,current_salary)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
       [id, name, email, cand.phone, cand.current_title,
        'تقديم خارجي',
        cand.experience_years, appliedFor, cand.skills, cand.resume_text,
        'الفرز', !!b.fileBase64,
        b.resumeFileName ? String(b.resumeFileName).slice(0, 200) : null,
        b.resumeFileType ? String(b.resumeFileType).slice(0, 10) : null,
-       cand.date_of_birth, cand.specialization, cand.degree, cand.city, cand.address]);
+       cand.date_of_birth, cand.specialization, cand.degree, cand.city, cand.address, cand.current_salary]);
     await client.query('INSERT INTO stage_history (candidate_id,stage) VALUES ($1,$2)', [id, 'الفرز']);
     if (b.fileBase64) {
       const bytes = Buffer.from(String(b.fileBase64), 'base64');
@@ -656,10 +716,13 @@ app.get('/api/candidates/:id', wrap(async (req, res) => {
     'SELECT stage, changed_at FROM stage_history WHERE candidate_id=$1 ORDER BY changed_at', [req.params.id]);
   cand.stageHistory = hist.rows.map(h => ({ stage: h.stage, at: new Date(h.changed_at).getTime() }));
   const asmts = await pool.query(
-    'SELECT * FROM assessments WHERE candidate_id=$1 ORDER BY assessed_at DESC', [req.params.id]);
+    `SELECT id, type, score, signature, notes, assessed_at, file_name,
+            (file_bytes IS NOT NULL) AS has_file
+     FROM assessments WHERE candidate_id=$1 ORDER BY assessed_at DESC`, [req.params.id]);
   cand.assessments = asmts.rows.map(a => ({
     id: a.id, type: a.type, score: Number(a.score), signature: a.signature || '',
-    notes: a.notes || '', date: new Date(a.assessed_at).getTime()
+    notes: a.notes || '', date: new Date(a.assessed_at).getTime(),
+    hasFile: a.has_file, fileName: a.file_name || ''
   }));
   res.json(cand);
 }));
@@ -783,30 +846,61 @@ app.get('/api/assessments', wrap(async (req, res) => {
   const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
   params.push(limit);
   const { rows } = await pool.query(`
-    SELECT a.*, c.name AS candidate_name
+    SELECT a.id, a.candidate_id, a.type, a.score, a.signature, a.notes, a.assessed_at,
+           a.file_name, (a.file_bytes IS NOT NULL) AS has_file,
+           c.name AS candidate_name
     FROM assessments a JOIN candidates c ON c.id = a.candidate_id
     ${where} ORDER BY a.assessed_at DESC LIMIT $${params.length}`, params);
   res.json(rows.map(a => ({
     id: a.id, candidateId: a.candidate_id, candidateName: a.candidate_name,
     type: a.type, score: Number(a.score), signature: a.signature || '',
-    notes: a.notes || '', date: new Date(a.assessed_at).getTime()
+    notes: a.notes || '', date: new Date(a.assessed_at).getTime(),
+    hasFile: a.has_file, fileName: a.file_name || ''
   })));
 }));
 
 app.post('/api/assessments', wrap(async (req, res) => {
   const b = req.body || {};
   if (!b.candidateId) return res.status(400).json({ error: 'candidateId is required' });
+  // The assessment file is stored exactly as uploaded — no text
+  // extraction; the score is entered manually.
+  let fileBytes = null;
+  if (b.fileBase64) {
+    fileBytes = Buffer.from(String(b.fileBase64), 'base64');
+    if (fileBytes.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ error: 'حجم ملف التقييم يتجاوز 10MB' });
+    }
+  }
   const id = uid('as');
   await pool.query(
-    `INSERT INTO assessments (id,candidate_id,type,score,signature,notes)
-     VALUES ($1,$2,$3,$4,$5,$6)`,
+    `INSERT INTO assessments (id,candidate_id,type,score,signature,notes,file_name,mime_type,file_bytes)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
     [id, b.candidateId, b.type || 'تقييم',
-     Math.max(0, Math.min(30, Number(b.score) || 0)), b.signature || null, b.notes || null]);
+     Math.max(0, Math.min(30, Number(b.score) || 0)), b.signature || null, b.notes || null,
+     fileBytes ? (b.fileName ? String(b.fileName).slice(0, 200) : null) : null,
+     fileBytes ? (b.mimeType || 'application/octet-stream') : null,
+     fileBytes]);
   const nm = await pool.query('SELECT name FROM candidates WHERE id=$1', [b.candidateId]);
   await audit(pool, getActor(req), 'إضافة تقييم', b.candidateId,
     nm.rows[0] ? nm.rows[0].name : null,
     'الدرجة ' + Math.max(0, Math.min(30, Number(b.score) || 0)) + '/30');
   res.json({ id });
+}));
+
+// Download an assessment file exactly as it was uploaded.
+app.get('/api/assessments/:id/file', wrap(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT a.file_name, a.mime_type, a.file_bytes, c.name
+     FROM assessments a JOIN candidates c ON c.id = a.candidate_id
+     WHERE a.id = $1`, [req.params.id]);
+  if (!rows.length || !rows[0].file_bytes) {
+    return res.status(404).json({ error: 'لا يوجد ملف مرفق لهذا التقييم' });
+  }
+  const r = rows[0];
+  const fname = r.file_name || ('تقييم - ' + (r.name || 'مرشح'));
+  res.setHeader('Content-Type', r.mime_type || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''` + encodeURIComponent(fname));
+  res.send(r.file_bytes);
 }));
 
 app.delete('/api/assessments/:id', wrap(async (req, res) => {
@@ -1050,6 +1144,174 @@ app.put('/api/settings', wrap(async (req, res) => {
 }));
 
 // CSV export — streamed from the DB so it works at any table size.
+// Excel export — a real .xlsx workbook: RTL sheet, styled header,
+// every stored field plus CV-derived columns (LinkedIn, employers
+// summary, experience estimate when the stored value is empty).
+// Bulk résumé-file export: every stored CV (PDF/DOCX/TXT) exactly as
+// uploaded, zipped and named after its candidate. Batched reads keep
+// memory flat even with thousands of files.
+app.get('/api/export/resumes.zip', wrap(async (req, res) => {
+  let archiver;
+  try { archiver = require('archiver'); }
+  catch (e) { return res.status(500).json({ error: 'archiver غير مثبت — أعد النشر ليتم تثبيت الاعتماديات' }); }
+
+  // Filters: ?job=<id> limits the export to that job. mode=matches
+  // exports the smart-match set (every CV ranked against the JD, top
+  // 200 with score > 0 — the same list the match view shows); the
+  // default with ?job is candidates actually linked to the job.
+  // ?stage=<المرحلة> narrows either set further.
+  const jobId = String(req.query.job || '').trim();
+  const stage = String(req.query.stage || '').trim();
+  const mode = String(req.query.mode || '').trim();
+  let ids = null;          // null = all candidates
+  let zipName = 'resumes.zip';
+  const safe = s => String(s || '').replace(/[\\/:*?"<>|\n\r]/g, '-').trim().slice(0, 80) || 'candidate';
+
+  if (jobId) {
+    const jr = await pool.query('SELECT * FROM jobs WHERE id = $1', [jobId]);
+    if (!jr.rows.length) return res.status(404).json({ error: 'الوظيفة غير موجودة' });
+    zipName = 'resumes - ' + safe(jr.rows[0].title) + '.zip';
+    if (mode === 'matches') {
+      const jk = jobKeywords(jr.rows[0]);
+      const { rows } = await pool.query(`
+        SELECT id, skills, current_title, specialization, degree, resume_text, stage FROM candidates`);
+      ids = rows
+        .map(r => ({ id: r.id, stage: r.stage, pct: scoreCandidateForJob(jk, r) }))
+        .filter(x => x.pct > 0 && (!stage || x.stage === stage))
+        .sort((a, b) => b.pct - a.pct)
+        .slice(0, 200)
+        .map(x => x.id);
+    } else {
+      const { rows } = await pool.query(
+        'SELECT id FROM candidates WHERE applied_for = $1' + (stage ? ' AND stage = $2' : ''),
+        stage ? [jobId, stage] : [jobId]);
+      ids = rows.map(r => r.id);
+    }
+  } else if (stage) {
+    const { rows } = await pool.query('SELECT id FROM candidates WHERE stage = $1', [stage]);
+    ids = rows.map(r => r.id);
+  }
+
+  if (ids && ids.length === 0) {
+    return res.status(404).json({ error: 'لا توجد سير ذاتية ضمن هذا الفلتر' });
+  }
+  const cnt = ids
+    ? await pool.query('SELECT COUNT(*) FROM resume_files WHERE candidate_id = ANY($1)', [ids])
+    : await pool.query('SELECT COUNT(*) FROM resume_files');
+  if (Number(cnt.rows[0].count) === 0) {
+    return res.status(404).json({ error: 'لا توجد ملفات سير ذاتية محفوظة ضمن هذا الفلتر' });
+  }
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''` + encodeURIComponent(zipName));
+  const archive = archiver('zip', { zlib: { level: 6 } });
+  archive.on('error', err => { console.error('resumes.zip failed:', err.message); try { res.end(); } catch (e) {} });
+  archive.pipe(res);
+
+  const used = new Set();
+  const EXT_BY_MIME = { 'application/pdf': 'pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    'text/plain': 'txt' };
+  const appendRows = (rows) => {
+    for (const r of rows) {
+      const orig = r.file_name || '';
+      let ext = (orig.includes('.') ? orig.split('.').pop() : '') || EXT_BY_MIME[r.mime_type] || 'bin';
+      ext = safe(ext).slice(0, 6).toLowerCase();
+      const base = safe(r.name);
+      let fname = base + '.' + ext, i = 2;
+      while (used.has(fname)) { fname = base + ' (' + (i++) + ').' + ext; }
+      used.add(fname);
+      archive.append(r.bytes, { name: fname });
+    }
+  };
+
+  const BATCH = 25;
+  if (ids) {
+    for (let i = 0; i < ids.length; i += BATCH) {
+      const chunk = ids.slice(i, i + BATCH);
+      const { rows } = await pool.query(`
+        SELECT rf.file_name, rf.mime_type, rf.bytes, c.name
+        FROM resume_files rf JOIN candidates c ON c.id = rf.candidate_id
+        WHERE rf.candidate_id = ANY($1)`, [chunk]);
+      appendRows(rows);
+    }
+  } else {
+    let offset = 0;
+    for (;;) {
+      const { rows } = await pool.query(`
+        SELECT rf.file_name, rf.mime_type, rf.bytes, c.name
+        FROM resume_files rf JOIN candidates c ON c.id = rf.candidate_id
+        ORDER BY rf.candidate_id LIMIT $1 OFFSET $2`, [BATCH, offset]);
+      if (!rows.length) break;
+      appendRows(rows);
+      offset += BATCH;
+    }
+  }
+  await archive.finalize();
+}));
+
+app.get('/api/export/candidates.xlsx', wrap(async (req, res) => {
+  let ExcelJS;
+  try { ExcelJS = require('exceljs'); }
+  catch (e) { return res.status(500).json({ error: 'exceljs غير مثبت — أعد النشر ليتم تثبيت الاعتماديات' }); }
+  const jobs = (await pool.query('SELECT id, title FROM jobs')).rows;
+  const jobTitle = Object.fromEntries(jobs.map(j => [j.id, j.title]));
+  const { rows } = await pool.query('SELECT * FROM candidates ORDER BY created_at DESC');
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('المرشحون', { views: [{ rightToLeft: true, state: 'frozen', ySplit: 1 }] });
+  ws.columns = [
+    { header: 'الاسم', key: 'name', width: 24 },
+    { header: 'البريد الإلكتروني', key: 'email', width: 26 },
+    { header: 'الجوال', key: 'phone', width: 15 },
+    { header: 'رابط لينكدإن', key: 'linkedin', width: 34 },
+    { header: 'تاريخ الميلاد', key: 'dob', width: 13 },
+    { header: 'المدينة', key: 'city', width: 13 },
+    { header: 'العنوان', key: 'address', width: 22 },
+    { header: 'التخصص', key: 'spec', width: 18 },
+    { header: 'الدرجة العلمية', key: 'degree', width: 13 },
+    { header: 'الراتب الحالي', key: 'salary', width: 13 },
+    { header: 'المسمى الوظيفي', key: 'title', width: 22 },
+    { header: 'سنوات الخبرة', key: 'exp', width: 12 },
+    { header: 'المهارات', key: 'skills', width: 30 },
+    { header: 'الجهات السابقة', key: 'employers', width: 40 },
+    { header: 'الوظيفة المرتبطة', key: 'job', width: 20 },
+    { header: 'المرحلة', key: 'stage', width: 14 },
+    { header: 'المصدر', key: 'source', width: 14 },
+    { header: 'تاريخ الإضافة', key: 'created', width: 13 }
+  ];
+  const head = ws.getRow(1);
+  head.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+  head.alignment = { horizontal: 'center', vertical: 'middle' };
+  head.height = 22;
+  head.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D2B47' } }; });
+
+  rows.forEach(r => {
+    const exp = (r.experience_years && r.experience_years > 0)
+      ? r.experience_years
+      : estimateExperienceYears(r.resume_text);
+    ws.addRow({
+      name: r.name, email: r.email || '', phone: r.phone || '',
+      linkedin: extractLinkedIn(r.resume_text),
+      dob: r.date_of_birth || '', city: r.city || '', address: r.address || '',
+      spec: r.specialization || '', degree: r.degree || '',
+      salary: r.current_salary || '',
+      title: r.current_title || '', exp: exp || 0,
+      skills: (r.skills || []).join('، '),
+      employers: extractEmployers(r.resume_text),
+      job: r.applied_for ? (jobTitle[r.applied_for] || '') : '',
+      stage: r.stage, source: r.source || '',
+      created: r.created_at ? new Date(r.created_at).toISOString().slice(0, 10) : ''
+    });
+  });
+  ws.eachRow((row, n) => { if (n > 1) row.alignment = { vertical: 'middle', wrapText: false }; });
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="candidates.xlsx"');
+  await wb.xlsx.write(res);
+  res.end();
+}));
+
 app.get('/api/export/candidates.csv', wrap(async (req, res) => {
   const { rows } = await pool.query(`
     SELECT c.*, j.title AS job_title FROM candidates c
@@ -1058,11 +1320,13 @@ app.get('/api/export/candidates.csv', wrap(async (req, res) => {
     const s = String(v == null ? '' : v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
+  // Resume text is intentionally NOT exported — full CV bodies wreck
+  // the spreadsheet layout; the file stays clean, structured data only.
   const head = ['الاسم','البريد الإلكتروني','الهاتف','المسمى الوظيفي الحالي/الأخير','المصدر',
-    'سنوات الخبرة','الوظيفة المتقدم لها','المهارات','المرحلة','تاريخ الإضافة','نص السيرة الذاتية'];
+    'سنوات الخبرة','الوظيفة المتقدم لها','المهارات','المرحلة','تاريخ الإضافة'];
   const lines = rows.map(r => [r.name, r.email, r.phone, r.current_title, r.source,
     r.experience_years, r.job_title, (r.skills || []).join('؛ '), r.stage,
-    new Date(r.created_at).toLocaleDateString('ar-EG'), r.resume_text].map(esc).join(','));
+    new Date(r.created_at).toLocaleDateString('ar-EG')].map(esc).join(','));
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="candidates.csv"');
   res.send('\uFEFF' + head.map(esc).join(',') + '\n' + lines.join('\n'));

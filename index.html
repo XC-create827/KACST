@@ -1136,7 +1136,9 @@ const ASSESSMENT_MAX = 30;
 // no need to scan a full in-memory assessments table.
 function compositeRank(candidate){
   const job = DB.jobs.find(j=>j.id===candidate.appliedFor);
-  const m = matchScore(candidate, job) ?? 50;
+  // No linked job = nothing to match against: 0%, shown neutral gray —
+  // the real score appears once a job is selected (smart match mode).
+  const m = matchScore(candidate, job) ?? 0;
   const a = candidate.assessAvg ?? null;
   const aNormalized = a!==null ? (a/ASSESSMENT_MAX)*100 : null;
   const composite = aNormalized!==null ? Math.round(m*0.55 + aNormalized*0.45) : m;
@@ -1145,7 +1147,8 @@ function compositeRank(candidate){
 function scoreColor(score){
   if(score>=80) return '#5fb87a';
   if(score>=60) return '#d4a24c';
-  return '#c1585f';
+  if(score>=30) return '#8fa3b3';
+  return '#b9c4cf';
 }
 function assessmentScoreColor(score){
   const pct = (score/ASSESSMENT_MAX)*100;
@@ -1363,7 +1366,8 @@ async function viewCandidates(){
   <div class="page-head">
     <div><h1>قاعدة السير الذاتية</h1><div class="sub">كل سيرة ذاتية جمعتها، قابلة للبحث ومُقيّمة مقابل وظائفك الشاغرة.</div></div>
     <div style="display:flex;gap:10px;">
-      <a class="btn btn-ghost" href="/api/export/candidates.csv" style="text-decoration:none;">تصدير (CSV)</a>
+      <a class="btn btn-ghost" href="/api/export/candidates.xlsx" style="text-decoration:none;">تصدير إلى إكسل</a>
+      <a class="btn btn-ghost" href="/api/export/resumes.zip" style="text-decoration:none;">تصدير ملفات السير (ZIP)</a>
       <button class="btn btn-ghost" id="btnImportCandidates">استيراد السير الذاتية</button>
       <button class="btn btn-primary" id="btnAddCandidate">+ إضافة مرشح</button>
     </div>
@@ -1395,20 +1399,45 @@ async function viewCandidates(){
 // scored against its JD, highest first, no manual attachment needed.
 async function viewCandidatesMatches(){
   const data = await api.jobMatches(candFilterJob);
+  // Stage filter + search apply on top of the ranked matches, so the
+  // team can e.g. see who best fits the job among "المقابلة الهاتفية" only.
+  const q = candSearch.trim().toLowerCase();
+  let list = data.matches;
+  data.matches.forEach((c,idx)=>{ c._rank = idx+1; });
+  if(candFilterStage !== 'الكل') list = list.filter(c=>c.stage===candFilterStage);
+  if(q) list = list.filter(c=>
+    (c.name||'').toLowerCase().includes(q) ||
+    (c.currentTitle||'').toLowerCase().includes(q) ||
+    (c.specialization||'').toLowerCase().includes(q) ||
+    (c.skills||[]).some(s=>String(s).toLowerCase().includes(q)));
   return `
   <div class="page-head">
     <div><h1>قاعدة السير الذاتية</h1>
-    <div class="sub">مطابقة ذكية: كل السير الذاتية مرتبة حسب توافقها مع وصف وظيفة «${esc(data.jobTitle)}» — من الأعلى إلى الأدنى.</div></div>
-    <button class="btn btn-ghost" id="btnClearMatch">إلغاء المطابقة</button>
+    <div class="sub">مطابقة ذكية مع «${esc(data.jobTitle)}»: كل السير مرتبة من الأعلى توافقًا إلى الأدنى. البحث هنا يشمل الاسم والمسمى والتخصص والمهارات.</div></div>
+    <div style="display:flex;gap:10px;">
+      <a class="btn btn-ghost" href="/api/export/candidates.xlsx" style="text-decoration:none;">تصدير إلى إكسل</a>
+      <a class="btn btn-ghost" href="/api/export/resumes.zip?job=${encodeURIComponent(candFilterJob)}&mode=matches${candFilterStage!=='الكل'?'&stage='+encodeURIComponent(candFilterStage):''}" style="text-decoration:none;">تصدير سير المطابقين (ZIP)</a>
+      <button class="btn btn-ghost" id="btnImportCandidates">استيراد السير الذاتية</button>
+      <button class="btn btn-primary" id="btnAddCandidate">+ إضافة مرشح</button>
+    </div>
   </div>
   <div class="toolbar">
+    <input type="text" class="searchbox" id="candSearchInput" placeholder="ابحث ضمن نتائج المطابقة…" value="${esc(candSearch)}">
+    <select id="candStageFilter">
+      <option value="الكل">كل المراحل</option>
+      ${STAGES.map(s=>`<option value="${s}" ${candFilterStage===s?'selected':''}>${s}</option>`).join('')}
+    </select>
     <select id="candJobFilter">
       <option value="الكل">كل الوظائف</option>
       ${DB.jobs.map(j=>`<option value="${j.id}" ${candFilterJob===j.id?'selected':''}>${esc(j.title)}</option>`).join('')}
     </select>
+    <button class="btn btn-ghost" id="btnClearMatch">إلغاء المطابقة</button>
   </div>
-  ${data.matches.length ? `<div class="card-grid">${data.matches.map((c,i)=>matchCardHTML(c,i)).join('')}</div>`
-    : emptyState('قاعدة السير الذاتية فارغة', 'أضف مرشحين أو انتظر طلبات التقديم الخارجية.')}
+  <div style="margin-bottom:14px;font-size:12.5px;color:var(--muted);">
+    ${list.length} من ${data.matches.length} سيرة${candFilterStage!=='الكل' ? ` · مرحلة: ${candFilterStage}` : ''}
+  </div>
+  ${list.length ? `<div class="card-grid">${list.map((c,i)=>matchCardHTML(c,i)).join('')}</div>`
+    : emptyState('لا نتائج ضمن هذا الفلتر', 'جرّب مرحلة أخرى أو امسح البحث.')}
   `;
 }
 
@@ -1417,7 +1446,7 @@ function matchCardHTML(c, i){
   return `<div class="idxcard" style="--stage-color:${STAGE_COLOR[c.stage]||'#8b93a1'}" data-cand="${c.id}">
     <div class="top-row">
       <div>
-        <div style="font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;">#${i+1}</div>
+        <div style="font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;">#${(c._rank||i+1)}</div>
         <div class="name">${esc(c.name)}</div>
         ${c.currentTitle ? `<div class="role">${esc(c.currentTitle)}</div>` : ''}
         ${c.specialization ? `<div class="role" style="opacity:.75;">${esc(c.specialization)}${c.degree?' · '+esc(c.degree):''}</div>` : ''}
@@ -1549,7 +1578,7 @@ async function viewAssessments(){
 
   return `
   <div class="page-head">
-    <div><h1>التقييمات</h1><div class="sub">ارفع ملف تقييم (PDF) لكل مرشح — الدرجة والملاحظات والتوقيع تُستخرج تلقائيًا من الملف. الدرجة الكاملة ${ASSESSMENT_MAX}.</div></div>
+    <div><h1>التقييمات</h1><div class="sub">ارفع ملف التقييم ويُحفظ كما هو، والدرجة تُدخل يدويًا (من ${ASSESSMENT_MAX}). اختر وظيفة لعرض مرشحيها فقط.</div></div>
     <button class="btn btn-primary" id="btnAddAssessment">+ تسجيل تقييم</button>
   </div>
   <div class="toolbar">
@@ -1594,13 +1623,12 @@ async function viewAssessments(){
 
   <div class="detail-section">
     <h3>سجل التقييمات</h3>
-    ${rows.length ? `<table><thead><tr><th>المرشح</th><th>النوع</th><th>الدرجة</th><th>التوقيع</th><th>ملاحظات</th><th>التاريخ</th><th></th></tr></thead><tbody>
+    ${rows.length ? `<table><thead><tr><th>المرشح</th><th>النوع</th><th>الدرجة</th><th>ملف التقييم</th><th>التاريخ</th><th></th></tr></thead><tbody>
       ${rows.map(a=>`<tr>
           <td><strong>${esc(a.candidateName||'غير معروف')}</strong></td>
           <td>${esc(a.type)}</td>
           <td class="scoreband" style="color:${assessmentScoreColor(a.score)}">${a.score}/${ASSESSMENT_MAX}</td>
-          <td style="font-size:12px;color:var(--muted)">${esc(a.signature||'—')}</td>
-          <td style="max-width:220px;color:var(--muted)">${esc((a.notes||'—').slice(0,80))}${a.notes&&a.notes.length>80?'…':''}</td>
+          <td>${a.hasFile?`<span class="btn btn-sm btn-ghost" data-dlassess="${a.id}">تنزيل</span>`:'<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
           <td class="mono" style="font-size:11px;color:var(--muted)">${new Date(a.date).toLocaleDateString('ar-EG')}</td>
           <td><span class="btn btn-sm btn-danger" data-delassess="${a.id}">حذف</span></td>
         </tr>`).join('')}
@@ -1927,6 +1955,11 @@ async function showApplyPage(){
 
       <div class="modal" style="max-width:none;" id="applyCard">
         <div id="apStep1">
+          <div class="field">
+            <label>السيرة الذاتية (PDF أو DOCX) * — ارفعها أولًا ليقرأها النظام ويعبّئ بياناتك تلقائيًا</label>
+            <input type="file" id="apFile" accept=".pdf,.docx,.txt">
+            <div id="apParseStatus" style="font-size:11.5px;color:var(--l-muted);margin-top:6px;min-height:16px;"></div>
+          </div>
           <div class="field"><label>الاسم الكامل *</label><input type="text" id="apName"></div>
           <div class="field-row">
             <div class="field"><label>تاريخ الميلاد</label><input type="date" id="apDob" style="direction:ltr;text-align:right;"></div>
@@ -1954,8 +1987,19 @@ async function showApplyPage(){
               </select>
             </div>
           </div>
-          <div class="field"><label>السيرة الذاتية (PDF أو DOCX) *</label><input type="file" id="apFile" accept=".pdf,.docx,.txt"></div>
-          <div style="font-size:11.5px;color:var(--l-muted);margin:-6px 0 12px;">يقرأ النظام سيرتك آليًا لاستخراج مهاراتك وخبراتك — احرص أن تكون بصيغة نصية لا صورة ممسوحة.</div>
+          <div class="field"><label>الراتب الحالي (ريال سعودي)</label>
+            <select id="apSalary">
+              <option value="">— اختر —</option>
+              <option>1000 – 5000</option>
+              <option>5000 – 10000</option>
+              <option>10000 – 15000</option>
+              <option>15000 – 20000</option>
+              <option>20000 – 30000</option>
+              <option>أكثر من 30000</option>
+              <option>أفضّل عدم الإفصاح</option>
+            </select>
+          </div>
+
           <div id="apErr2" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
           <div class="modal-actions" style="border-top:none;padding-top:4px;">
             <button class="btn btn-primary" id="apSubmit" style="flex:1;justify-content:center;">إرسال الطلب</button>
@@ -1979,6 +2023,42 @@ async function showApplyPage(){
   };
   bar.style.width='50%';
 
+  // ATS reads the CV the moment it's uploaded and fills the form on
+  // the applicant's behalf — only fields they haven't typed into.
+  document.getElementById('apFile').onchange = async (e)=>{
+    const f = e.target.files[0];
+    const st = document.getElementById('apParseStatus');
+    if(!f) return;
+    st.style.color = 'var(--l-muted)';
+    st.textContent = 'جارٍ قراءة سيرتك…';
+    try{
+      const text = await extractResumeText(f);
+      if(!text || !text.trim()) throw new Error('تعذّرت قراءة نص الملف — املأ الحقول يدويًا');
+      window.__apParsed = text;
+      const fill = (id, val)=>{ const el = document.getElementById(id); if(el && val && !el.value.trim()) el.value = val; };
+      fill('apName', guessNameFromText(text));
+      fill('apEmail', guessEmailFromText(text));
+      fill('apPhone', guessPhoneFromText(text));
+      const degSel = document.getElementById('apDegree');
+      if(degSel && !degSel.value){
+        if(/دكتوراه|Ph\.?D/i.test(text)) degSel.value='دكتوراه';
+        else if(/ماجستير|Master|M\.?Sc/i.test(text)) degSel.value='ماجستير';
+        else if(/بكالوريوس|Bachelor|B\.?Sc/i.test(text)) degSel.value='بكالوريوس';
+        else if(/دبلوم|Diploma/i.test(text)) degSel.value='دبلوم';
+      }
+      const specM = text.match(/(?:بكالوريوس|ماجستير|دكتوراه|دبلوم)\s*(?:في|تخصص)?\s+([^\n،,.؛:()0-9\-—–]{3,40})/)
+        || text.match(/(?:Bachelor(?:'s)?|Master(?:'s)?|B\.?Sc\.?|M\.?Sc\.?|PhD)\s+(?:of|in)\s+([A-Za-z &]{3,40})/i);
+      if(specM) fill('apSpec', specM[1].trim());
+      const cityM = text.match(/الرياض|جدة|مكة المكرمة|مكة|المدينة المنورة|الدمام|الخبر|الظهران|الأحساء|بريدة|القصيم|أبها|خميس مشيط|تبوك|حائل|جازان|نجران|الطائف|Riyadh|Jeddah|Dammam|Khobar|Makkah|Madinah|Tabuk/i);
+      if(cityM) fill('apCity', cityM[0]);
+      st.style.color = 'var(--green)';
+      st.textContent = '✓ قرأ النظام سيرتك وعبّأ ما استطاع من الحقول — راجعها وأكمل الناقص.';
+    }catch(err){
+      st.style.color = 'var(--rose)';
+      st.textContent = '✗ ' + err.message;
+    }
+  };
+
   document.getElementById('apNext').onclick = ()=>{
     const err = document.getElementById('apErr1');
     const name = document.getElementById('apName').value.trim();
@@ -1993,7 +2073,7 @@ async function showApplyPage(){
     const err = document.getElementById('apErr2');
     const btn = document.getElementById('apSubmit');
     const f = document.getElementById('apFile').files[0];
-    if(!f){ err.textContent = 'إرفاق السيرة الذاتية مطلوب.'; return; }
+    if(!f){ err.textContent = 'إرفاق السيرة الذاتية مطلوب — ارجع للخطوة الأولى وارفعها.'; return; }
     if(f.size > 10*1024*1024){ err.textContent = 'حجم الملف يتجاوز 10MB.'; return; }
     btn.disabled = true; btn.textContent = 'جارٍ الإرسال…'; err.textContent = '';
     const payload = {
@@ -2004,7 +2084,8 @@ async function showApplyPage(){
       city: document.getElementById('apCity').value.trim(),
       address: document.getElementById('apAddress').value.trim(),
       specialization: document.getElementById('apSpec').value.trim(),
-      degree: document.getElementById('apDegree').value
+      degree: document.getElementById('apDegree').value,
+      currentSalary: document.getElementById('apSalary').value
     };
     try{
       payload.fileBase64 = await fileToBase64(f);
@@ -2016,7 +2097,7 @@ async function showApplyPage(){
       // skills / experience / current title with the same parser the
       // internal bulk-import uses.
       try{
-        const txt = await extractResumeText(f);
+        const txt = window.__apParsed || await extractResumeText(f);
         if(txt && txt.trim()){
           payload.resumeText = txt;
           payload.skills = guessSkillsFromText(txt);
@@ -2147,7 +2228,7 @@ function openAddCandidate(editId, presetJobId){
     <div class="field"><label>المسمى الوظيفي الحالي/الأخير</label><input type="text" id="fTitle" placeholder="مثال: مهندس برمجيات أول" value="${editing?esc(editing.currentTitle||''):''}"></div>
     <div class="field"><label>الوظيفة المتقدم لها</label><select id="fJob" ${presetJob?'disabled':''}>${jobOptions(editing?editing.appliedFor:(presetJob?presetJob.id:null))}</select></div>
     <div class="field"><label>المهارات (مفصولة بفواصل)</label><input type="text" id="fSkills" placeholder="javascript, react, leadership" value="${editing?esc(editing.skills.join(', ')):''}"></div>
-    <div class="field"><label>نص السيرة الذاتية</label><textarea id="fResume" rows="6" placeholder="الصق نص السيرة الذاتية، أو ارفع ملفًا أعلاه للتعبئة التلقائية…">${editing?esc(editing.resumeText||''):''}</textarea></div>
+    <textarea id="fResume" style="display:none;">${editing?esc(editing.resumeText||''):''}</textarea>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="mCancel">إلغاء</button>
       <button class="btn btn-primary" id="mSave">${editing?'حفظ التغييرات':'حفظ المرشح'}</button>
@@ -2363,23 +2444,42 @@ function openAddJob(){
   };
 }
 
-function openAddAssessment(presetCandId){
+async function openAddAssessment(presetCandId){
+  // Candidate list respects the assessments job filter: with a job
+  // selected, only the candidates YOU assigned to that job appear.
+  let candList = [];
+  if(presetCandId){
+    try{ const c = await api.candidate(presetCandId); candList = [c]; }catch(e){}
+  }else{
+    try{
+      const page = await api.candidates(
+        assessJobFilter!=='الكل' ? { job: assessJobFilter, limit: 200 } : { limit: 200 });
+      candList = page.candidates;
+    }catch(e){}
+  }
+  if(!candList.length){
+    alert(assessJobFilter!=='الكل'
+      ? 'لا يوجد مرشحون مرتبطون بهذه الوظيفة بعد — اربط مرشحين بها أولًا من قاعدة السير الذاتية.'
+      : 'لا يوجد مرشحون بعد.');
+    return;
+  }
+  const jobNote = (!presetCandId && assessJobFilter!=='الكل')
+    ? (DB.jobs.find(j=>j.id===assessJobFilter)||{}).title : null;
   openModal(`
     <div class="modal-head"><h2>تسجيل تقييم</h2><span class="xbtn" id="mClose">&times;</span></div>
-    <div class="field">
-      <label>رفع ملف التقييم (PDF)</label>
-      <input type="file" id="aFile" accept=".pdf,.docx,.txt">
-      <div id="aUploadStatus" class="mono" style="font-size:11px;color:var(--muted);margin-top:6px;direction:rtl;font-family:'Tajawal',sans-serif;"></div>
-    </div>
+    ${jobNote ? `<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;font-size:12.5px;margin-bottom:14px;">القائمة تعرض مرشحي وظيفة: <strong>${esc(jobNote)}</strong> فقط</div>` : ''}
     <div class="field"><label>المرشح</label>
-      <select id="aCand">${DB.candidates.map(c=>`<option value="${c.id}" ${presetCandId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+      <select id="aCand" ${presetCandId?'disabled':''}>${candList.map(c=>`<option value="${c.id}" ${presetCandId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
     </div>
     <div class="field-row">
-      <div class="field"><label>نوع التقييم</label><input type="text" id="aType" placeholder="اختبار تقني، دراسة حالة…"></div>
-      <div class="field"><label>الدرجة (من ${ASSESSMENT_MAX})</label><input type="number" id="aScore" min="0" max="${ASSESSMENT_MAX}" value="0"></div>
+      <div class="field"><label>نوع التقييم</label><input type="text" id="aType" placeholder="اختبار تقني، مقابلة لجنة…"></div>
+      <div class="field"><label>الدرجة (من ${ASSESSMENT_MAX}) — تُدخل يدويًا</label><input type="number" id="aScore" min="0" max="${ASSESSMENT_MAX}" value="0"></div>
     </div>
-    <div class="field"><label>التوقيع (إن وُجد في الملف)</label><input type="text" id="aSignature" placeholder="يُستخرج تلقائيًا من الملف إن وُجد"></div>
-    <div class="field"><label>ملاحظات</label><textarea id="aNotes" rows="4" style="direction:rtl;text-align:right;" placeholder="تُستخرج تلقائيًا من الملف المرفوع، ويمكن تعديلها"></textarea></div>
+    <div class="field">
+      <label>ملف التقييم (PDF أو DOCX) — يُحفظ كما هو</label>
+      <input type="file" id="aFile" accept=".pdf,.docx,.txt,.xlsx">
+    </div>
+    <div id="aErr" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="mCancel">إلغاء</button>
       <button class="btn btn-primary" id="mSave">حفظ التقييم</button>
@@ -2388,40 +2488,23 @@ function openAddAssessment(presetCandId){
   document.getElementById('mClose').onclick = closeModal;
   document.getElementById('mCancel').onclick = closeModal;
 
-  document.getElementById('aFile').onchange = async (e)=>{
-    const file = e.target.files[0];
-    if(!file) return;
-    const status = document.getElementById('aUploadStatus');
-    status.style.color = 'var(--muted)';
-    status.textContent = 'جارٍ قراءة ' + file.name + '…';
-    try{
-      const text = await extractResumeText(file);
-      const notesField = document.getElementById('aNotes');
-      if(!notesField.value.trim()) notesField.value = text;
-      const detectedScore = guessScoreFromAssessmentText(text);
-      if(detectedScore!==null) document.getElementById('aScore').value = detectedScore;
-      const detectedSig = guessSignatureFromAssessmentText(text);
-      const sigField = document.getElementById('aSignature');
-      if(detectedSig && !sigField.value.trim()) sigField.value = detectedSig;
-      status.textContent = detectedScore!==null
-        ? `✓ تم استخراج الدرجة (${detectedScore}/${ASSESSMENT_MAX}) والملاحظات من الملف. راجعها أدناه.`
-        : '✓ تم استخراج نص الملف، لكن لم يتم العثور على درجة صريحة — الرجاء إدخالها يدويًا.';
-    }catch(err){
-      status.textContent = '✗ ' + err.message;
-      status.style.color = 'var(--rose)';
-    }
-  };
-
   document.getElementById('mSave').onclick = async ()=>{
     const candId = document.getElementById('aCand').value;
-    if(!candId){ alert('اختر مرشحًا أولًا.'); return; }
-    await mutate(()=>api.createAssessment({
+    const err = document.getElementById('aErr');
+    if(!candId){ err.textContent = 'اختر مرشحًا أولًا.'; return; }
+    const payload = {
       candidateId: candId,
       type: document.getElementById('aType').value.trim() || 'تقييم',
-      score: Math.max(0, Math.min(ASSESSMENT_MAX, Number(document.getElementById('aScore').value)||0)),
-      signature: document.getElementById('aSignature').value.trim(),
-      notes: document.getElementById('aNotes').value.trim()
-    }));
+      score: Math.max(0, Math.min(ASSESSMENT_MAX, Number(document.getElementById('aScore').value)||0))
+    };
+    const f = document.getElementById('aFile').files[0];
+    if(f){
+      if(f.size > 10*1024*1024){ err.textContent = 'حجم الملف يتجاوز 10MB.'; return; }
+      payload.fileBase64 = await fileToBase64(f);
+      payload.fileName = f.name;
+      payload.mimeType = MIME_BY_EXT[f.name.split('.').pop().toLowerCase()] || 'application/octet-stream';
+    }
+    await mutate(()=>api.createAssessment(payload));
     closeModal(); render();
   };
 }
@@ -2484,7 +2567,7 @@ async function openDetail(candId){
       </select>
     </div>
 
-    <div class="detail-section" style="${(c.dateOfBirth||c.specialization||c.degree||c.city||c.address)?'':'display:none;'}">
+    <div class="detail-section" style="${(c.dateOfBirth||c.specialization||c.degree||c.city||c.address||c.currentSalary)?'':'display:none;'}">
       <h3>بيانات المتقدم</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:13px;">
         ${c.dateOfBirth?`<div><span style="color:var(--muted);font-size:11px;display:block;">تاريخ الميلاد</span>${esc(c.dateOfBirth)}</div>`:''}
@@ -2492,6 +2575,7 @@ async function openDetail(candId){
         ${c.degree?`<div><span style="color:var(--muted);font-size:11px;display:block;">الدرجة العلمية</span>${esc(c.degree)}</div>`:''}
         ${c.city?`<div><span style="color:var(--muted);font-size:11px;display:block;">المدينة</span>${esc(c.city)}</div>`:''}
         ${c.address?`<div><span style="color:var(--muted);font-size:11px;display:block;">العنوان</span>${esc(c.address)}</div>`:''}
+        ${c.currentSalary?`<div><span style="color:var(--muted);font-size:11px;display:block;">الراتب الحالي</span>${esc(c.currentSalary)}</div>`:''}
       </div>
     </div>
     <div class="detail-section">
@@ -2516,8 +2600,11 @@ async function openDetail(candId){
       <h3>سجل التقييمات ${assessments.length?`<span style="color:${assessments.length<3?'var(--rose)':'var(--muted)'};font-weight:400;font-size:12px;">(${assessments.length}${assessments.length<3?' — أقل من 3 موصى بها':''})</span>`:''}</h3>
       ${assessments.length ? assessments.map(a=>`
         <div class="assess-row">
-          <span>${esc(a.type)} — ${new Date(a.date).toLocaleDateString('ar-EG')}${a.signature?' — وقّعه: '+esc(a.signature):''}</span>
-          <span class="scoreband" style="color:${assessmentScoreColor(a.score)}">${a.score}/${ASSESSMENT_MAX}</span>
+          <span>${esc(a.type)} — ${new Date(a.date).toLocaleDateString('ar-EG')}</span>
+          <span style="display:flex;align-items:center;gap:10px;">
+            ${a.hasFile?`<span class="btn btn-sm btn-ghost" data-dlassess="${a.id}">تنزيل التقييم</span>`:''}
+            <span class="scoreband" style="color:${assessmentScoreColor(a.score)}">${a.score}/${ASSESSMENT_MAX}</span>
+          </span>
         </div>`).join('') : '<div style="color:var(--muted);font-size:12.5px;">لا توجد تقييمات مسجلة بعد.</div>'}
     </div>
 
@@ -2711,6 +2798,8 @@ function showResetForm(token){
 }
 
 document.addEventListener('click', (e)=>{
+  const dl = e.target.closest && e.target.closest('[data-dlassess]');
+  if(dl){ window.open('/api/assessments/' + encodeURIComponent(dl.dataset.dlassess) + '/file', '_blank'); return; }
   const foot = e.target.closest && e.target.closest('#sidebarFoot');
   if(foot && CURRENT_USER){
     openModal(`
