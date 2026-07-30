@@ -458,10 +458,16 @@ function significantWords(text){
     .filter(w => w.length > 2 && !MATCH_STOP.has(w)))];
 }
 function jobKeywords(jobRow){
+  // The job TITLE's words are separated out and weighted double:
+  // finding them anywhere in the CV — current role OR past job
+  // history — is the strongest signal after explicit skills.
+  const titleWords = significantWords(jobRow.title);
   return {
     req:  (jobRow.required_skills || []).map(s => String(s).toLowerCase()).filter(Boolean),
     nice: (jobRow.nice_skills || []).map(s => String(s).toLowerCase()).filter(Boolean),
-    text: significantWords(jobRow.title + ' ' + (jobRow.department || '') + ' ' + (jobRow.description || '')).slice(0, 30)
+    titleWords,
+    text: significantWords((jobRow.department || '') + ' ' + (jobRow.description || ''))
+      .filter(w => !titleWords.includes(w)).slice(0, 30)
   };
 }
 function scoreCandidateForJob(jk, cand){
@@ -474,7 +480,10 @@ function scoreCandidateForJob(jk, cand){
   // skills: substring match on raw text (handles multi-word / English)
   jk.req.forEach(s => { max += 3;   if (raw.includes(s)) score += 3; });
   jk.nice.forEach(s => { max += 1.5; if (raw.includes(s)) score += 1.5; });
-  // JD words: normalized-token match (handles Arabic prefixes)
+  // job-title words ×2 — the whole CV counts, so past roles in the
+  // employment history score just like the current title does
+  (jk.titleWords || []).forEach(w => { max += 2; if (tokens.has(w) || raw.includes(w)) score += 2; });
+  // remaining JD words: normalized-token match (handles Arabic prefixes)
   jk.text.forEach(w => { max += 1;   if (tokens.has(w) || raw.includes(w)) score += 1; });
   return max ? Math.round(100 * score / max) : 0;
 }
@@ -489,13 +498,19 @@ app.get('/api/jobs/:id/matches', wrap(async (req, res) => {
     SELECT id, name, email, phone, current_title, source, experience_years, applied_for,
            skills, stage, specialization, degree, city, resume_text
     FROM candidates`);
+  // Quality bar: below 40% the candidate is noise for this JD and is
+  // hidden — UNLESS the recruiter manually linked them to the job,
+  // in which case they always appear (marked as linked).
+  const MATCH_MIN = 40;
   const scored = rows.map(r => {
     const pct = scoreCandidateForJob(jk, r);
     const c = rowToCandidate({ ...r, resume_text: null });
     c.matchPercent = pct;
+    c.linkedToJob = (r.applied_for === req.params.id);
     return c;
-  }).sort((a, b) => b.matchPercent - a.matchPercent).slice(0, 200);
-  res.json({ jobTitle: jr.rows[0].title, matches: scored });
+  }).filter(c => c.matchPercent >= MATCH_MIN || c.linkedToJob)
+    .sort((a, b) => b.matchPercent - a.matchPercent).slice(0, 200);
+  res.json({ jobTitle: jr.rows[0].title, matches: scored, minMatch: MATCH_MIN });
 }));
 
 // Blunt per-IP throttle so the open endpoint can't be flooded.
@@ -754,6 +769,8 @@ app.get('/api/candidates', wrap(async (req, res) => {
   if (req.query.q) {
     params.push('%' + req.query.q + '%');
     where.push(`(c.name ILIKE $${params.length} OR c.resume_text ILIKE $${params.length}
+                 OR c.current_title ILIKE $${params.length}
+                 OR c.specialization ILIKE $${params.length}
                  OR array_to_string(c.skills,' ') ILIKE $${params.length})`);
   }
   const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
@@ -808,12 +825,14 @@ app.post('/api/candidates', wrap(async (req, res) => {
     await client.query('BEGIN');
     await client.query(
       `INSERT INTO candidates (id,name,email,phone,current_title,source,experience_years,
-        applied_for,skills,resume_text,stage,has_original_file,resume_file_name,resume_file_type)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        applied_for,skills,resume_text,stage,has_original_file,resume_file_name,resume_file_type,
+        specialization,degree,city)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
       [id, b.name, b.email || null, b.phone || null, b.currentTitle || null,
        b.source || null, Number(b.experienceYears) || 0, b.appliedFor || null,
        b.skills || [], b.resumeText || null, stage,
-       !!b.fileBase64, b.resumeFileName || null, b.resumeFileType || null]);
+       !!b.fileBase64, b.resumeFileName || null, b.resumeFileType || null,
+       b.specialization || null, b.degree || null, b.city || null]);
     await client.query('INSERT INTO stage_history (candidate_id,stage) VALUES ($1,$2)', [id, stage]);
     await audit(client, getActor(req), 'إضافة مرشح', id, b.name,
       b.fileBase64 ? 'مع ملف سيرة ذاتية' : null);
@@ -833,11 +852,13 @@ app.put('/api/candidates/:id', wrap(async (req, res) => {
   const b = req.body || {};
   await pool.query(
     `UPDATE candidates SET name=COALESCE($2,name), email=$3, phone=$4, current_title=$5,
-       source=$6, experience_years=$7, applied_for=$8, skills=$9, resume_text=$10
+       source=$6, experience_years=$7, applied_for=$8, skills=$9, resume_text=$10,
+       specialization=$11, degree=$12, city=$13
      WHERE id=$1`,
     [req.params.id, b.name || null, b.email || null, b.phone || null, b.currentTitle || null,
      b.source || null, Number(b.experienceYears) || 0, b.appliedFor || null,
-     b.skills || [], b.resumeText || null]);
+     b.skills || [], b.resumeText || null,
+     b.specialization || null, b.degree || null, b.city || null]);
   await audit(pool, getActor(req), 'تعديل بيانات مرشح', req.params.id, b.name || null, null);
   res.json({ updated: true });
 }));
@@ -1245,10 +1266,10 @@ app.get('/api/export/resumes.zip', wrap(async (req, res) => {
     if (mode === 'matches') {
       const jk = jobKeywords(jr.rows[0]);
       const { rows } = await pool.query(`
-        SELECT id, skills, current_title, specialization, degree, resume_text, stage FROM candidates`);
+        SELECT id, skills, current_title, specialization, degree, resume_text, stage, applied_for FROM candidates`);
       ids = rows
-        .map(r => ({ id: r.id, stage: r.stage, pct: scoreCandidateForJob(jk, r) }))
-        .filter(x => x.pct > 0 && (!stage || x.stage === stage))
+        .map(r => ({ id: r.id, stage: r.stage, linked: r.applied_for === jobId, pct: scoreCandidateForJob(jk, r) }))
+        .filter(x => (x.pct >= 40 || x.linked) && (!stage || x.stage === stage))
         .sort((a, b) => b.pct - a.pct)
         .slice(0, 200)
         .map(x => x.id);

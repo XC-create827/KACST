@@ -176,6 +176,16 @@
     background:linear-gradient(115deg,#f5fafd 40%, #a9e2da 75%, #8db9f2);
     -webkit-background-clip:text;background-clip:text;color:transparent;
   }
+  .cand-edu{
+    margin:2px 0 8px;font-size:11.5px;color:var(--muted);
+    border-top:1px dashed var(--line);padding-top:8px;
+  }
+  .headstat{
+    display:inline-flex;align-items:center;gap:6px;margin-top:8px;
+    font-size:12px;font-weight:800;color:var(--teal);
+    background:rgba(25,184,166,0.10);border:1px solid rgba(25,184,166,0.3);
+    border-radius:99px;padding:4px 12px;
+  }
   .page-head .sub{color:var(--muted);font-size:13.5px;margin-top:6px;max-width:640px;}
 
   /* ---- Stat tiles ---- */
@@ -291,6 +301,12 @@
   .kcard.dragging{opacity:.45;transform:scale(.97);cursor:grabbing;}
   .kcard .kn{font-size:13.5px;font-weight:800;color:var(--paper);}
   .kcard .kr{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .kcard .kstage{
+    width:100%;margin-top:8px;padding:6px 8px;font-size:11px;
+    background:rgba(8,26,44,0.6);border:1px solid var(--line);
+    border-radius:8px;color:var(--text);cursor:pointer;
+  }
+  .kcard .kstage:focus{border-color:var(--teal);outline:none;}
   .kcard .kd{font-size:10.5px;color:var(--muted);opacity:.8;margin-top:5px;font-family:'IBM Plex Mono',monospace;direction:ltr;text-align:right;}
 
   /* ---- Tables ---- */
@@ -645,7 +661,17 @@
     main{padding:46px 64px 80px;}
     nav.sidebar{width:268px;}
     .page-head h1{font-size:34px;}
-    .page-head .sub{font-size:14.5px;max-width:720px;}
+    .cand-edu{
+    margin:2px 0 8px;font-size:11.5px;color:var(--muted);
+    border-top:1px dashed var(--line);padding-top:8px;
+  }
+  .headstat{
+    display:inline-flex;align-items:center;gap:6px;margin-top:8px;
+    font-size:12px;font-weight:800;color:var(--teal);
+    background:rgba(25,184,166,0.10);border:1px solid rgba(25,184,166,0.3);
+    border-radius:99px;padding:4px 12px;
+  }
+  .page-head .sub{font-size:14.5px;max-width:720px;}
     .stat .n{font-size:35px;}
     .stat .l{font-size:13px;}
     .navtab{font-size:15px;}
@@ -667,7 +693,17 @@
     nav.sidebar{width:296px;}
     .brand .display{font-size:23px;}
     .page-head h1{font-size:40px;}
-    .page-head .sub{font-size:15.5px;max-width:820px;}
+    .cand-edu{
+    margin:2px 0 8px;font-size:11.5px;color:var(--muted);
+    border-top:1px dashed var(--line);padding-top:8px;
+  }
+  .headstat{
+    display:inline-flex;align-items:center;gap:6px;margin-top:8px;
+    font-size:12px;font-weight:800;color:var(--teal);
+    background:rgba(25,184,166,0.10);border:1px solid rgba(25,184,166,0.3);
+    border-radius:99px;padding:4px 12px;
+  }
+  .page-head .sub{font-size:15.5px;max-width:820px;}
     .stats{gap:18px;}
     .stat{padding:24px 26px 22px;}
     .stat .n{font-size:41px;}
@@ -996,6 +1032,52 @@ function guessPhoneFromText(text){
 // or title — section headers, locations, links. A naive parser (like
 // many real ATS systems) grabs these by mistake.
 const NOT_NAME_PATTERNS = /\b(summary|profile|objective|contact|education|experience|skills|projects|certifications?|languages?|references?|address|linkedin|github|portfolio|riyadh|jeddah|dammam|makkah|madinah|saudi|arabia|ksa)\b|الملخص|نبذة|الهدف|التواصل|التعليم|المؤهلات|الخبرات|الخبرة|المهارات|المشاريع|الشهادات|اللغات|العنوان|الرياض|جدة|الدمام|مكة|المدينة|السعودية/i;
+// ATS extractors for degree / specialization / city — shared by the
+// add-candidate modal, the bulk import, and the public apply page.
+function guessDegreeFromText(text){
+  if(/دكتوراه|Ph\.?D/i.test(text)) return 'دكتوراه';
+  if(/ماجستير|Master|M\.?Sc/i.test(text)) return 'ماجستير';
+  if(/بكالوريوس|Bachelor|B\.?Sc/i.test(text)) return 'بكالوريوس';
+  if(/دبلوم|Diploma/i.test(text)) return 'دبلوم';
+  return '';
+}
+function guessSpecializationFromText(text){
+  const m = text.match(/(?:بكالوريوس|ماجستير|دكتوراه|دبلوم)\s*(?:في|تخصص)?\s+([^\n،,.؛:()0-9\-—–]{3,40})/)
+    || text.match(/(?:Bachelor(?:'s)?|Master(?:'s)?|B\.?Sc\.?|M\.?Sc\.?|PhD)\s+(?:of|in)\s+([A-Za-z &]{3,40})/i);
+  return m ? m[1].trim() : '';
+}
+function guessCityFromText(text){
+  const m = text.match(/الرياض|جدة|مكة المكرمة|مكة|المدينة المنورة|الدمام|الخبر|الظهران|الأحساء|بريدة|القصيم|أبها|خميس مشيط|تبوك|حائل|جازان|نجران|الطائف|Riyadh|Jeddah|Dammam|Khobar|Makkah|Madinah|Tabuk/i);
+  return m ? m[0] : '';
+}
+
+function guessEmployersFromText(text){
+  const t = String(text || '');
+  const found = [];
+  const seen = new Set();
+  const push = (name)=>{
+    const clean = name.trim().replace(/\s+/g,' ').replace(/[.،,;:]+$/,'');
+    if(clean.length < 3 || clean.length > 60) return;
+    const key = clean.toLowerCase();
+    if(seen.has(key)) return;
+    seen.add(key); found.push(clean);
+  };
+  const eduNear = (idx)=>{
+    const behind = t.slice(Math.max(0, idx-45), idx+10);
+    return /بكالوريوس|ماجستير|دكتوراه|دبلوم|درجة|تخرج|Bachelor|Master|PhD|Degree|GPA|المعدل/i.test(behind);
+  };
+  let m;
+  const ar = /(?:شركة|مؤسسة|مجموعة|بنك|مستشفى|هيئة|وزارة|مصنع|مركز|مدينة)\s+([^\n،,.؛:()\-]{2,45})/g;
+  while((m = ar.exec(t))){ if(!eduNear(m.index)) push(m[0]); }
+  const arUni = /جامعة\s+([^\n،,.؛:()\-]{2,40})/g;
+  while((m = arUni.exec(t))){ if(!eduNear(m.index)) push(m[0]); }
+  const enAt = /\b(?:at|with)\s+([A-Z][A-Za-z0-9&.'\-]*(?:\s+[A-Z][A-Za-z0-9&.'\-]*){0,4})/g;
+  while((m = enAt.exec(t))){ if(!eduNear(m.index)) push(m[1]); }
+  const enSuffix = /^\s*([A-Z][A-Za-z0-9&.'\- ]{2,50}?\s(?:Inc|LLC|Ltd|Co|Corp|Company|Group|Bank|Hospital|Solutions|Technologies)\.?)\s*$/gm;
+  while((m = enSuffix.exec(t))) push(m[1]);
+  return found.slice(0, 6);
+}
+
 function guessNameFromText(text){
   const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
   for(let i=0;i<Math.min(lines.length,8);i++){
@@ -1186,19 +1268,67 @@ function genQuestions(job){
   return qs.slice(0,6);
 }
 function summarize(candidate){
+  // A structured, per-candidate report. No match percentages here —
+  // those live in smart-match mode where a job gives them meaning.
   const job = DB.jobs.find(j=>j.id===candidate.appliedFor);
-  const {matchPct, assessAvg, composite} = compositeRank(candidate);
-  const yrs = candidate.experienceYears || 0;
-  const topSkills = candidate.skills.slice(0,3).join('، ') || 'لا توجد مهارات مدرجة';
-  let verdict;
-  if(composite>=80) verdict = 'مرشحًا قويًا يستحق التسريع في العملية';
-  else if(composite>=60) verdict = 'مرشحًا معقولًا يستحق مكالمة فرز';
-  else verdict = 'مرشحًا أضعف من الناحية الورقية لهذه الوظيفة';
-  let line = `لدى ${candidate.name} ${yrs} سنة/سنوات خبرة، وتتركز نقاط قوته في ${topSkills}.`;
-  line += ` بالمقارنة مع ${job? '"'+job.title+'"' : 'الوظيفة المتقدم لها'}، نسبة مطابقة السيرة الذاتية ${matchPct}%`;
-  line += assessAvg!==null ? ` ومتوسط التقييم ${assessAvg}%، ` : '، ولا توجد تقييمات مسجلة بعد، ';
-  line += `مما يجعله ${verdict}.`;
-  return line;
+  const txt = candidate.resumeText || '';
+  const skills = candidate.skills || [];
+  // Experience: the stored number wins; when it's 0, read it from the
+  // CV text with the section-aware parser.
+  const yrs = (candidate.experienceYears && candidate.experienceYears > 0)
+    ? candidate.experienceYears
+    : (txt ? guessExperienceYears(txt) : 0);
+  const lines = [];
+
+  const intro = [];
+  if(candidate.currentTitle) intro.push(candidate.currentTitle);
+  const edu = candidate.degree && candidate.specialization
+    ? candidate.degree + ' في ' + candidate.specialization
+    : (candidate.degree || (candidate.specialization ? 'تخصص ' + candidate.specialization : ''));
+  if(edu) intro.push(edu);
+  if(candidate.city) intro.push('من ' + candidate.city);
+  lines.push('◼ نبذة: ' + candidate.name + (intro.length ? ' — ' + intro.join('، ') : '') + '.');
+
+  let expLine = '◼ الخبرة: ' + (yrs > 0 ? yrs + (yrs >= 3 && yrs <= 10 ? ' سنوات' : ' سنة') : 'غير محددة في السيرة');
+  const employers = txt ? guessEmployersFromText(txt) : [];
+  if(employers.length) expLine += '، لدى جهات منها: ' + employers.join('، ');
+  lines.push(expLine + '.');
+
+  lines.push('◼ المهارات' + (skills.length ? ' (' + skills.length + '): ' + skills.join('، ') : ': لا توجد مهارات مسجلة') + '.');
+
+  lines.push('◼ الحالة: ' + (job ? 'مرتبط بوظيفة "' + job.title + '"' : 'في القاعدة العامة — بلا وظيفة مرتبطة')
+    + ' · المرحلة: ' + candidate.stage
+    + (candidate.source ? ' · المصدر: ' + candidate.source : '') + '.');
+
+  const asmts = candidate.assessments || [];
+  let avg = null;
+  if(asmts.length){
+    avg = Math.round(asmts.reduce((s,a)=>s + (Number(a.score)||0), 0) / asmts.length);
+    lines.push('◼ التقييمات: ' + asmts.length + ' — بمتوسط ' + avg + ' من ' + ASSESSMENT_MAX + '.');
+  } else {
+    lines.push('◼ التقييمات: لا توجد تقييمات مسجلة بعد.');
+  }
+
+  const strengths = [], gaps = [];
+  if(yrs >= 8) strengths.push('خبرة طويلة');
+  else if(yrs >= 3) strengths.push('خبرة جيدة');
+  else if(yrs > 0) gaps.push('خبرة قصيرة');
+  else gaps.push('سنوات الخبرة غير موثقة');
+  if(skills.length >= 6) strengths.push('حصيلة مهارات واسعة (' + skills.length + ')');
+  else if(!skills.length) gaps.push('لا مهارات موثقة');
+  if(candidate.degree === 'دكتوراه' || candidate.degree === 'ماجستير') strengths.push('مؤهل عالٍ (' + candidate.degree + ')');
+  if(avg !== null){
+    if(avg >= ASSESSMENT_MAX * 0.7) strengths.push('أداء تقييمي قوي (' + avg + '/' + ASSESSMENT_MAX + ')');
+    else if(avg < ASSESSMENT_MAX * 0.5) gaps.push('أداء تقييمي متواضع (' + avg + '/' + ASSESSMENT_MAX + ')');
+  }
+  if(!txt) gaps.push('لا نص سيرة مقروء — قد يكون الملف صورة ممسوحة');
+  let verdict = '◼ الخلاصة: ';
+  if(strengths.length) verdict += 'نقاط القوة: ' + strengths.join('، ') + '. ';
+  if(gaps.length) verdict += 'نقاط تستحق التحقق: ' + gaps.join('، ') + '. ';
+  verdict += 'لنسبة المطابقة الدقيقة مع أي وظيفة، اختر الوظيفة من فلتر قاعدة السير الذاتية.';
+  lines.push(verdict);
+
+  return lines.join('\n');
 }
 
 /* ---------------------------------------------------------
@@ -1229,13 +1359,10 @@ function renderNav(){
   const el = document.getElementById('navtabs');
   const visible = NAV.filter(n=>!n.adminOnly || (CURRENT_USER && CURRENT_USER.isAdmin));
   el.innerHTML = visible.map(n=>{
-    // Counts come from the server's totals, not from a fully-loaded
-    // client-side table — only jobs are held in full.
-    const count = n.id==='candidates' ? (DB.candidateTotal ?? null)
-      : n.id==='jobs' ? DB.jobs.length : null;
+    // Counts intentionally NOT shown in the sidebar (too noisy) —
+    // each view carries its own stat in its header instead.
     return `<div class="navtab ${currentView===n.id?'active':''}" data-nav="${n.id}" role="button" tabindex="0" aria-label="${n.label}">
       ${NAV_ICONS[n.id]||''}<span class="tabnum">${n.num}</span><span>${n.label}</span>
-      ${count!==null?`<span class="count">${count}</span>`:''}
     </div>`;
   }).join('');
   el.querySelectorAll('.navtab').forEach(t=>{
@@ -1376,7 +1503,8 @@ async function viewCandidates(){
 
   return `
   <div class="page-head">
-    <div><h1>قاعدة السير الذاتية</h1><div class="sub">كل سيرة ذاتية جمعتها، قابلة للبحث ومُقيّمة مقابل وظائفك الشاغرة.</div></div>
+    <div><h1>قاعدة السير الذاتية</h1><div class="sub">كل سيرة ذاتية جمعتها، قابلة للبحث ومُقيّمة مقابل وظائفك الشاغرة.</div>
+    <div class="headstat">إجمالي السير الذاتية: ${page.total}</div></div>
     <div style="display:flex;gap:10px;">
       <a class="btn btn-ghost" href="/api/export/candidates.xlsx" style="text-decoration:none;">تصدير إلى إكسل</a>
       <a class="btn btn-ghost" href="/api/export/resumes.zip" style="text-decoration:none;">تصدير ملفات السير (ZIP)</a>
@@ -1385,7 +1513,7 @@ async function viewCandidates(){
     </div>
   </div>
   <div class="toolbar">
-    <input type="text" class="searchbox" id="candSearchInput" placeholder="ابحث بالاسم أو المهارة أو نص السيرة الذاتية…" value="${esc(candSearch)}">
+    <input type="text" class="searchbox" id="candSearchInput" placeholder="ابحث بالاسم أو المسمى الوظيفي أو المهارة أو نص السيرة…" value="${esc(candSearch)}">
     <select id="candStageFilter">
       <option value="الكل">كل المراحل</option>
       ${STAGES.map(s=>`<option value="${s}" ${candFilterStage===s?'selected':''}>${s}</option>`).join('')}
@@ -1425,7 +1553,7 @@ async function viewCandidatesMatches(){
   return `
   <div class="page-head">
     <div><h1>قاعدة السير الذاتية</h1>
-    <div class="sub">مطابقة ذكية مع «${esc(data.jobTitle)}»: كل السير مرتبة من الأعلى توافقًا إلى الأدنى. البحث هنا يشمل الاسم والمسمى والتخصص والمهارات.</div></div>
+    <div class="sub">مطابقة ذكية مع «${esc(data.jobTitle)}»: تُعرض السير بنسبة توافق ${data.minMatch||40}% فأعلى — إضافة لمن ربطتهم أنت بالوظيفة مهما كانت نسبتهم — مرتبة من الأعلى للأدنى.</div></div>
     <div style="display:flex;gap:10px;">
       <a class="btn btn-ghost" href="/api/export/candidates.xlsx" style="text-decoration:none;">تصدير إلى إكسل</a>
       <a class="btn btn-ghost" href="/api/export/resumes.zip?job=${encodeURIComponent(candFilterJob)}&mode=matches${candFilterStage!=='الكل'?'&stage='+encodeURIComponent(candFilterStage):''}" style="text-decoration:none;">تصدير سير المطابقين (ZIP)</a>
@@ -1459,9 +1587,9 @@ function matchCardHTML(c, i){
     <div class="top-row">
       <div>
         <div style="font-size:10.5px;color:var(--muted);font-family:'IBM Plex Mono',monospace;">#${(c._rank||i+1)}</div>
-        <div class="name">${esc(c.name)}</div>
+        <div class="name">${esc(c.name)}${c.linkedToJob?' <span style="font-size:10px;background:rgba(25,184,166,0.14);color:var(--teal);border:1px solid rgba(25,184,166,0.35);border-radius:99px;padding:2px 8px;vertical-align:middle;">مرتبط بالوظيفة</span>':''}</div>
         ${c.currentTitle ? `<div class="role">${esc(c.currentTitle)}</div>` : ''}
-        ${c.specialization ? `<div class="role" style="opacity:.75;">${esc(c.specialization)}${c.degree?' · '+esc(c.degree):''}</div>` : ''}
+        ${[c.degree,c.specialization,c.city].filter(Boolean).length ? `<div class="role" style="opacity:.75;">${[c.degree,c.specialization,c.city].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
       </div>
       <div class="seal" style="background:${scoreColor(pct)}">${pct}%</div>
     </div>
@@ -1484,9 +1612,9 @@ function cardHTML(c, i){
         <div class="role">${job?esc(job.title):'لا توجد وظيفة مرتبطة'}</div>
         ${c.currentTitle ? `<div class="role" style="opacity:.75;">${esc(c.currentTitle)}</div>` : ''}
       </div>
-      <div class="seal" style="background:${scoreColor(r.matchPct)}">${r.matchPct}%</div>
     </div>
     <div class="skills">${c.skills.slice(0,4).map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>
+    ${[c.degree,c.specialization,c.city].filter(Boolean).length ? `<div class="cand-edu">${[c.degree,c.specialization,c.city].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
     <div class="meta-row">
       <span>${c.experienceYears||0} سنة خبرة · ${esc(c.source||'—')}</span>
       <span class="stagepill" style="background:${STAGE_COLOR[c.stage]}">${c.stage}</span>
@@ -1520,7 +1648,7 @@ async function viewPipeline(){
 
   return `
   <div class="page-head">
-    <div><h1>مسار الاستقطاب</h1><div class="sub">${filterJob ? `عرض مسار "${esc(filterJob.title)}" فقط.` : 'اسحب المرشحين بين المراحل أثناء تقدمهم في العملية.'}</div></div>
+    <div><h1>مسار الاستقطاب</h1><div class="sub">${filterJob ? `عرض مسار "${esc(filterJob.title)}" فقط.` : 'انقل المرشح من القائمة المنسدلة على بطاقته — ينتقل للمرحلة الجديدة ويُزال من السابقة تلقائيًا. (السحب والإفلات يعمل أيضًا.)'}</div></div>
   </div>
   <div class="toolbar">
     <select id="pipelineJobFilter">
@@ -1541,6 +1669,9 @@ async function viewPipeline(){
               <div class="kn">${esc(c.name)}</div>
               <div class="kr">${c.jobTitle?esc(c.jobTitle):'—'}</div>
               <div class="kd">${stageSinceLabel({stageChangedAt:c.stageChangedAt})}</div>
+              <select class="kstage" data-cand="${c.id}" title="نقل إلى مرحلة">
+                ${STAGES.map(s=>`<option ${s===stage?'selected':''}>${s}</option>`).join('')}
+              </select>
             </div>`).join('')}
         </div>
       </div>`;
@@ -1555,7 +1686,20 @@ function attachDragHandlers(){
       e.dataTransfer.setData('text/plain', card.dataset.cand);
     });
     card.addEventListener('dragend', ()=> card.classList.remove('dragging'));
-    card.addEventListener('click', ()=> openDetail(card.dataset.cand));
+    card.addEventListener('click', (e)=>{
+      if(e.target.closest && e.target.closest('.kstage')) return;
+      openDetail(card.dataset.cand);
+    });
+  });
+  document.querySelectorAll('.kstage').forEach(sel=>{
+    sel.addEventListener('click', e=> e.stopPropagation());
+    sel.addEventListener('change', async (e)=>{
+      e.stopPropagation();
+      // One stage per candidate in the data model: setting the new
+      // stage inherently removes them from the previous column.
+      await mutate(()=>api.setStage(sel.dataset.cand, sel.value));
+      render();
+    });
   });
   document.querySelectorAll('.kcol-body').forEach(col=>{
     col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('dragover'); });
@@ -1656,7 +1800,8 @@ async function viewJobs(){
   await refreshJobs();   // counts come from the server
   return `
   <div class="page-head">
-    <div><h1>الوظائف الشاغرة</h1><div class="sub">حدد معايير النجاح لكل وظيفة — هذا يشغّل نسبة المطابقة وأسئلة المقابلة. ارفع السير الذاتية مباشرة إلى أي وظيفة من هنا لربطها تلقائيًا بها.</div></div>
+    <div><h1>الوظائف الشاغرة</h1><div class="sub">حدد معايير النجاح لكل وظيفة — هذا يشغّل نسبة المطابقة وأسئلة المقابلة. ارفع السير الذاتية مباشرة إلى أي وظيفة من هنا لربطها تلقائيًا بها.</div>
+    <div class="headstat">عدد الوظائف الشاغرة: ${DB.jobs.length}</div></div>
     <button class="btn btn-primary" id="btnAddJob">+ إضافة وظيفة</button>
   </div>
   ${DB.jobs.length ? `<div class="card-grid">${DB.jobs.map(j=>{
@@ -2070,17 +2215,9 @@ async function showApplyPage(){
       fill('apEmail', guessEmailFromText(text));
       fill('apPhone', guessPhoneFromText(text));
       const degSel = document.getElementById('apDegree');
-      if(degSel && !degSel.value){
-        if(/دكتوراه|Ph\.?D/i.test(text)) degSel.value='دكتوراه';
-        else if(/ماجستير|Master|M\.?Sc/i.test(text)) degSel.value='ماجستير';
-        else if(/بكالوريوس|Bachelor|B\.?Sc/i.test(text)) degSel.value='بكالوريوس';
-        else if(/دبلوم|Diploma/i.test(text)) degSel.value='دبلوم';
-      }
-      const specM = text.match(/(?:بكالوريوس|ماجستير|دكتوراه|دبلوم)\s*(?:في|تخصص)?\s+([^\n،,.؛:()0-9\-—–]{3,40})/)
-        || text.match(/(?:Bachelor(?:'s)?|Master(?:'s)?|B\.?Sc\.?|M\.?Sc\.?|PhD)\s+(?:of|in)\s+([A-Za-z &]{3,40})/i);
-      if(specM) fill('apSpec', specM[1].trim());
-      const cityM = text.match(/الرياض|جدة|مكة المكرمة|مكة|المدينة المنورة|الدمام|الخبر|الظهران|الأحساء|بريدة|القصيم|أبها|خميس مشيط|تبوك|حائل|جازان|نجران|الطائف|Riyadh|Jeddah|Dammam|Khobar|Makkah|Madinah|Tabuk/i);
-      if(cityM) fill('apCity', cityM[0]);
+      if(degSel && !degSel.value) degSel.value = guessDegreeFromText(text);
+      fill('apSpec', guessSpecializationFromText(text));
+      fill('apCity', guessCityFromText(text));
       st.style.color = 'var(--green)';
       st.textContent = '✓ قرأ النظام سيرتك وعبّأ ما استطاع من الحقول — راجعها وأكمل الناقص.';
     }catch(err){
@@ -2306,6 +2443,20 @@ function openAddCandidate(editId, presetJobId){
     </div>
     <div class="field"><label>المسمى الوظيفي الحالي/الأخير</label><input type="text" id="fTitle" placeholder="مثال: مهندس برمجيات أول" value="${editing?esc(editing.currentTitle||''):''}"></div>
     <div class="field"><label>الوظيفة المتقدم لها</label><select id="fJob" ${presetJob?'disabled':''}>${jobOptions(editing?editing.appliedFor:(presetJob?presetJob.id:null))}</select></div>
+    <div class="field-row">
+      <div class="field"><label>التخصص</label><input type="text" id="fSpec" value="${editing?esc(editing.specialization||''):''}"></div>
+      <div class="field"><label>الدرجة العلمية</label>
+        <select id="fDegree">
+          ${(()=>{
+            const DEGS=['','ثانوية عامة','دبلوم','بكالوريوس','ماجستير','دكتوراه','أخرى'];
+            const cur = editing ? (editing.degree||'') : '';
+            const opts = DEGS.includes(cur) ? DEGS : DEGS.concat([cur]);
+            return opts.map(d=>`<option value="${esc(d)}" ${cur===d?'selected':''}>${d===''?'— اختر —':esc(d)}</option>`).join('');
+          })()}
+        </select>
+      </div>
+      <div class="field"><label>المدينة</label><input type="text" id="fCity" value="${editing?esc(editing.city||''):''}"></div>
+    </div>
     <div class="field"><label>المهارات (مفصولة بفواصل)</label><input type="text" id="fSkills" placeholder="javascript, react, leadership" value="${editing?esc(editing.skills.join(', ')):''}"></div>
     <textarea id="fResume" style="display:none;">${editing?esc(editing.resumeText||''):''}</textarea>
     <div class="modal-actions">
@@ -2338,6 +2489,12 @@ function openAddCandidate(editId, presetJobId){
       if(!phoneField.value.trim()){
         phoneField.value = guessPhoneFromText(text);
       }
+      const specField = document.getElementById('fSpec');
+      if(specField && !specField.value.trim()) specField.value = guessSpecializationFromText(text);
+      const degField = document.getElementById('fDegree');
+      if(degField && !degField.value) degField.value = guessDegreeFromText(text);
+      const cityField = document.getElementById('fCity');
+      if(cityField && !cityField.value.trim()) cityField.value = guessCityFromText(text);
       const titleField = document.getElementById('fTitle');
       if(!titleField.value.trim()){
         titleField.value = guessJobTitleFromText(text);
@@ -2370,6 +2527,9 @@ function openAddCandidate(editId, presetJobId){
       appliedFor: presetJob ? presetJob.id : (document.getElementById('fJob').value || null),
       skills: document.getElementById('fSkills').value.split(',').map(s=>s.trim()).filter(Boolean),
       resumeText: document.getElementById('fResume').value.trim(),
+      specialization: document.getElementById('fSpec').value.trim(),
+      degree: document.getElementById('fDegree').value,
+      city: document.getElementById('fCity').value.trim(),
     };
     // Attach the original file (base64) so the server can store it
     // alongside the record in a single transaction.
@@ -2426,6 +2586,9 @@ async function openBulkImport(presetJobId){
           email: guessEmailFromText(text),
           phone: guessPhoneFromText(text),
           currentTitle: guessJobTitleFromText(text),
+          specialization: guessSpecializationFromText(text),
+          degree: guessDegreeFromText(text),
+          city: guessCityFromText(text),
           source: presetJob ? ('استيراد لوظيفة: ' + presetJob.title) : 'استيراد سيرة ذاتية',
           experienceYears: guessExperienceYears(text),
           appliedFor: presetJob ? presetJob.id : null,
@@ -2609,7 +2772,6 @@ async function openDetail(candId){
   openModal(`
     <div class="modal-head">
       <div class="detail-header" style="margin-bottom:0;">
-        <div class="seal" style="background:${scoreColor(r.matchPct)}">${r.matchPct}%</div>
         <div>
           <h2>${esc(c.name)}</h2>
           ${c.currentTitle ? `<div class="role" style="margin-top:2px;">${esc(c.currentTitle)}</div>` : ''}
