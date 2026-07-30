@@ -1210,16 +1210,40 @@ app.get('/api/insights', wrap(async (req, res) => {
 // Pipeline board counts + cards, per stage.
 app.get('/api/pipeline', wrap(async (req, res) => {
   const job = req.query.job && req.query.job !== 'الكل' ? req.query.job : null;
-  const params = job ? [job] : [];
+  if (!job) {
+    const { rows } = await pool.query(`
+      SELECT c.id, c.name, c.stage, c.stage_changed_at, j.title AS job_title
+      FROM candidates c LEFT JOIN jobs j ON j.id=c.applied_for
+      ORDER BY c.stage_changed_at DESC`);
+    return res.json(rows.map(r => ({
+      id: r.id, name: r.name, stage: r.stage, jobTitle: r.job_title,
+      stageChangedAt: new Date(r.stage_changed_at).getTime()
+    })));
+  }
+  // Job filter mirrors the smart-match rule: linked candidates PLUS
+  // anyone whose CV matches the JD at 40% or more.
+  const jr = await pool.query('SELECT * FROM jobs WHERE id = $1', [job]);
+  if (!jr.rows.length) return res.json([]);
+  const jk = jobKeywords(jr.rows[0]);
   const { rows } = await pool.query(`
-    SELECT c.id, c.name, c.stage, c.stage_changed_at, j.title AS job_title
+    SELECT c.id, c.name, c.stage, c.stage_changed_at, c.applied_for,
+           c.skills, c.current_title, c.specialization, c.degree, c.resume_text,
+           j.title AS job_title
     FROM candidates c LEFT JOIN jobs j ON j.id=c.applied_for
-    ${job ? 'WHERE c.applied_for = $1' : ''}
-    ORDER BY c.stage_changed_at DESC`, params);
-  res.json(rows.map(r => ({
-    id: r.id, name: r.name, stage: r.stage, jobTitle: r.job_title,
-    stageChangedAt: new Date(r.stage_changed_at).getTime()
-  })));
+    ORDER BY c.stage_changed_at DESC`);
+  const out = [];
+  for (const r of rows) {
+    const linked = r.applied_for === job;
+    const pct = linked ? null : scoreCandidateForJob(jk, r);
+    if (linked || pct >= 40) {
+      out.push({
+        id: r.id, name: r.name, stage: r.stage, jobTitle: r.job_title,
+        stageChangedAt: new Date(r.stage_changed_at).getTime(),
+        matchPct: linked ? null : pct
+      });
+    }
+  }
+  res.json(out);
 }));
 
 // ---------------------------------------------------------------
