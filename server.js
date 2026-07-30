@@ -488,6 +488,21 @@ function scoreCandidateForJob(jk, cand){
   return max ? Math.round(100 * score / max) : 0;
 }
 
+// The canonical candidate set for a job everywhere in the platform:
+// manually linked (applied_for) PLUS anyone matching the JD at ≥40%.
+// Used by the pipeline, the assessments tab, and the rankings.
+async function candidateIdsForJob(jobId){
+  const jr = await pool.query('SELECT * FROM jobs WHERE id = $1', [jobId]);
+  if (!jr.rows.length) return [];
+  const jk = jobKeywords(jr.rows[0]);
+  const { rows } = await pool.query(`
+    SELECT id, applied_for, skills, current_title, specialization, degree, resume_text
+    FROM candidates`);
+  return rows
+    .filter(r => r.applied_for === jobId || scoreCandidateForJob(jk, r) >= 40)
+    .map(r => r.id);
+}
+
 // Ranked matches: every CV in the database scored against one job's
 // JD, highest first — no need to attach CVs to the job manually.
 app.get('/api/jobs/:id/matches', wrap(async (req, res) => {
@@ -933,7 +948,8 @@ app.get('/api/assessments', wrap(async (req, res) => {
   const params = [];
   let where = '';
   if (req.query.job && req.query.job !== 'الكل') {
-    params.push(req.query.job); where = `WHERE c.applied_for = $${params.length}`;
+    params.push(await candidateIdsForJob(req.query.job));
+    where = `WHERE c.id = ANY($${params.length})`;
   }
   const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
   params.push(limit);
@@ -1011,7 +1027,8 @@ app.get('/api/rankings', wrap(async (req, res) => {
   const params = [];
   let where = 'WHERE EXISTS (SELECT 1 FROM assessments a WHERE a.candidate_id=c.id)';
   if (req.query.job && req.query.job !== 'الكل') {
-    params.push(req.query.job); where += ` AND c.applied_for = $${params.length}`;
+    params.push(await candidateIdsForJob(req.query.job));
+    where += ` AND c.id = ANY($${params.length})`;
   }
   const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
   params.push(limit);

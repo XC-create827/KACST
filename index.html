@@ -2734,16 +2734,22 @@ async function openAddAssessment(presetCandId){
   let candList = [];
   if(presetCandId){
     try{ const c = await api.candidate(presetCandId); candList = [c]; }catch(e){}
+  }else if(assessJobFilter!=='الكل'){
+    // Same canonical set as the pipeline and smart match: candidates
+    // linked to the job PLUS anyone matching its JD at 40% or more.
+    try{
+      const data = await api.jobMatches(assessJobFilter);
+      candList = data.matches;
+    }catch(e){}
   }else{
     try{
-      const page = await api.candidates(
-        assessJobFilter!=='الكل' ? { job: assessJobFilter, limit: 200 } : { limit: 200 });
+      const page = await api.candidates({ limit: 200 });
       candList = page.candidates;
     }catch(e){}
   }
   if(!candList.length){
     alert(assessJobFilter!=='الكل'
-      ? 'لا يوجد مرشحون مرتبطون بهذه الوظيفة بعد — اربط مرشحين بها أولًا من قاعدة السير الذاتية.'
+      ? 'لا يوجد مرشحون لهذه الوظيفة بعد — لا مرتبطون بها ولا مطابقون معها بنسبة 40% فأعلى.'
       : 'لا يوجد مرشحون بعد.');
     return;
   }
@@ -2751,7 +2757,7 @@ async function openAddAssessment(presetCandId){
     ? (DB.jobs.find(j=>j.id===assessJobFilter)||{}).title : null;
   openModal(`
     <div class="modal-head"><h2>تسجيل تقييم</h2><span class="xbtn" id="mClose">&times;</span></div>
-    ${jobNote ? `<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;font-size:12.5px;margin-bottom:14px;">القائمة تعرض مرشحي وظيفة: <strong>${esc(jobNote)}</strong> فقط</div>` : ''}
+    ${jobNote ? `<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 14px;font-size:12.5px;margin-bottom:14px;">القائمة تعرض مرشحي وظيفة <strong>${esc(jobNote)}</strong>: المرتبطين بها والمطابقين معها (40%+)</div>` : ''}
     <div class="field"><label>المرشح</label>
       <select id="aCand" ${presetCandId?'disabled':''}>${candList.map(c=>`<option value="${c.id}" ${presetCandId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
     </div>
