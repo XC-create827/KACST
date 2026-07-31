@@ -766,99 +766,6 @@
     .ss-visual{min-height:auto;}
     .ss-model{width:min(280px,74vw);}
   }
-
-  /* ============================================================
-     INTERACTION LAYER — layered on top of v3, not replacing it.
-     Every selector here is either .ix-* namespaced or scoped to a
-     state class this file adds, so nothing above changes meaning.
-     ============================================================ */
-
-  /* -- match seal becomes a measured ring -- */
-  .seal.ix-seal{
-    background:transparent;box-shadow:none;
-    position:relative;min-width:54px;width:54px;height:54px;
-    display:grid;place-items:center;color:var(--text);
-  }
-  .seal.ix-seal svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);}
-  .seal.ix-seal .ix-tr{fill:none;stroke:rgba(226,240,248,0.13);stroke-width:4;}
-  .seal.ix-seal .ix-va{
-    fill:none;stroke:var(--sc,var(--teal));stroke-width:4;stroke-linecap:round;
-    stroke-dasharray:100;stroke-dashoffset:100;
-    transition:stroke-dashoffset 1.05s cubic-bezier(.22,.9,.24,1);
-    filter:drop-shadow(0 0 6px color-mix(in srgb, var(--sc,var(--teal)) 45%, transparent));
-  }
-  .seal.ix-seal b{
-    font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;
-    color:var(--sc,var(--teal));line-height:1;direction:ltr;
-  }
-  .seal.ix-seal b i{font-style:normal;font-size:9px;opacity:.75;}
-  .idxcard:hover .seal.ix-seal .ix-va{filter:drop-shadow(0 0 10px color-mix(in srgb, var(--sc,var(--teal)) 65%, transparent));}
-
-  /* -- pipeline feedback -- */
-  .kcard.ix-moved{animation:ixLand .7s cubic-bezier(.22,.9,.24,1) both;border-color:var(--teal);}
-  @keyframes ixLand{
-    0%{transform:scale(.9);background:rgba(25,184,166,0.22);box-shadow:0 0 0 3px rgba(25,184,166,.3);}
-    100%{transform:none;box-shadow:var(--shadow-1);}
-  }
-  .kcol.ix-pulse .kcol-head .t{animation:ixPulse .8s ease both;}
-  @keyframes ixPulse{0%,100%{opacity:1;}45%{opacity:.35;}}
-  .kcard{cursor:grab;}
-  .kcard:active{cursor:grabbing;}
-
-  /* -- view change -- */
-  #main.ix-swap{animation:ixSwap .34s cubic-bezier(.22,.9,.24,1) both;}
-  @keyframes ixSwap{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
-
-  /* -- landing: reading progress -- */
-  .ix-prog{position:fixed;top:0;inset-inline:0;height:3px;z-index:60;pointer-events:none;}
-  .ix-prog i{
-    display:block;height:100%;width:0;
-    background:linear-gradient(90deg,#149a8b,#2f7ff0 55%,#8b5cf6);
-    transition:width .12s linear;
-  }
-
-  /* -- landing: sector rail -- */
-  .ix-rail{
-    position:fixed;inset-inline-start:20px;top:50%;transform:translateY(-50%);
-    z-index:30;display:flex;flex-direction:column;gap:13px;
-  }
-  .ix-rail button{
-    display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;padding:4px;
-    color:#7f93a6;font-family:'IBM Plex Mono',monospace;font-size:10px;
-    transition:color .25s;min-height:0;
-  }
-  .ix-rail .d{
-    width:9px;height:9px;border-radius:50%;border:1.5px solid currentColor;flex:none;
-    transition:transform .3s var(--spring), background .3s, box-shadow .3s;
-  }
-  .ix-rail .lb{
-    max-width:0;overflow:hidden;white-space:nowrap;opacity:0;
-    font-family:'Tajawal',sans-serif;font-size:12.5px;font-weight:700;
-    transition:max-width .38s var(--spring), opacity .25s;
-  }
-  .ix-rail button:hover{color:var(--rc,#19b8a6);}
-  .ix-rail button:hover .lb,.ix-rail button.on .lb{max-width:210px;opacity:1;}
-  .ix-rail button.on{color:var(--rc,#19b8a6);}
-  .ix-rail button.on .d{background:currentColor;transform:scale(1.35);box-shadow:0 0 0 4px color-mix(in srgb, currentColor 18%, transparent);}
-
-  /* -- landing: scroll reveal (only after JS marks the page ready,
-        so the content is never hidden if the script fails) -- */
-  .landing.ix-ready .ix-r{
-    opacity:0;transform:translateY(24px);
-    transition:opacity .55s ease, transform .55s cubic-bezier(.22,.9,.24,1);
-  }
-  .landing.ix-ready .ix-r.ix-in{opacity:1;transform:none;}
-  .landing.ix-ready .ss-model{transition:transform .5s cubic-bezier(.22,.9,.24,1);}
-
-  /* -- toolbar controls sat one per row because selects inherit
-        width:100% from the form rule; keep them on one line -- */
-  .toolbar select{width:auto;min-width:170px;flex:0 1 250px;}
-  .toolbar .searchbox{flex:1 1 240px;}
-
-  @media (max-width:980px){ .ix-rail{display:none;} }
-  @media (prefers-reduced-motion: reduce){
-    .landing.ix-ready .ix-r{opacity:1;transform:none;}
-  }
 </style>
 </head>
 <body>
@@ -1529,7 +1436,6 @@ async function render(){
     main.innerHTML = html;
     renderNav();
     attachViewHandlers();
-    ixEnhanceView();
   }catch(e){
     console.error('Failed to render view:', e);
     main.innerHTML = `<div class="empty" style="margin-top:60px;">
@@ -1726,7 +1632,7 @@ function matchCardHTML(c, i){
         ${c.currentTitle ? `<div class="role">${esc(c.currentTitle)}</div>` : ''}
         ${[c.degree,c.specialization,c.city].filter(Boolean).length ? `<div class="role" style="opacity:.75;">${[c.degree,c.specialization,c.city].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
       </div>
-      ${ixDial(pct, scoreColor(pct))}
+      <div class="seal" style="background:${scoreColor(pct)}">${pct}%</div>
     </div>
     <div class="skills">${(c.skills||[]).slice(0,4).map(s=>`<span class="chip">${esc(s)}</span>`).join('')}</div>
     <div class="meta-row">
@@ -1833,7 +1739,6 @@ function attachDragHandlers(){
       e.stopPropagation();
       // One stage per candidate in the data model: setting the new
       // stage inherently removes them from the previous column.
-      IX_MOVED = sel.dataset.kcand;
       await mutate(()=>api.setStage(sel.dataset.kcand, sel.value));
       render();
     });
@@ -1848,7 +1753,6 @@ function attachDragHandlers(){
       if(id){
         // The server records the stage change and its history row, and
         // remembers the previous stage when entering the alt pool.
-        IX_MOVED = id;
         mutate(()=>api.setStage(id, col.dataset.stage)).then(()=>render());
       }
     });
@@ -2179,7 +2083,6 @@ function showLogin(){
       </div>
     </section>`;
   document.body.appendChild(ov);
-  ixEnhanceLanding(ov);
 
   document.getElementById('landingApply').onclick = ()=>{ location.href = '/?apply=1'; };
   document.getElementById('navApply').onclick = ()=>{ location.href = '/?apply=1'; };
@@ -2301,17 +2204,32 @@ async function showApplyPage(){
               </select>
             </div>
           </div>
-          <div class="field"><label>الراتب الحالي (ريال سعودي)</label>
-            <select id="apSalary">
-              <option value="">— اختر —</option>
-              <option>1000 – 5000</option>
-              <option>5000 – 10000</option>
-              <option>10000 – 15000</option>
-              <option>15000 – 20000</option>
-              <option>20000 – 30000</option>
-              <option>أكثر من 30000</option>
-              <option>أفضّل عدم الإفصاح</option>
-            </select>
+          <div class="field-row">
+            <div class="field"><label>الراتب الحالي (ريال سعودي)</label>
+              <select id="apSalary">
+                <option value="">— اختر —</option>
+                <option>1000 – 5000</option>
+                <option>5000 – 10000</option>
+                <option>10000 – 15000</option>
+                <option>15000 – 20000</option>
+                <option>20000 – 30000</option>
+                <option>30000 – 45000</option>
+                <option>45000 – 60000</option>
+                <option>أكثر من 60000</option>
+                <option>أفضّل عدم الإفصاح</option>
+              </select>
+            </div>
+            <div class="field"><label>فترة الإشعار (مدة التسليم في عملك الحالي)</label>
+              <select id="apNotice">
+                <option value="">— اختر —</option>
+                <option>متاح فورًا</option>
+                <option>أسبوعان</option>
+                <option>شهر</option>
+                <option>شهران</option>
+                <option>ثلاثة أشهر</option>
+                <option>أكثر من ثلاثة أشهر</option>
+              </select>
+            </div>
           </div>
 
           <div id="apErr2" style="color:var(--rose);font-size:12px;min-height:18px;"></div>
@@ -2391,7 +2309,8 @@ async function showApplyPage(){
       address: document.getElementById('apAddress').value.trim(),
       specialization: document.getElementById('apSpec').value.trim(),
       degree: document.getElementById('apDegree').value,
-      currentSalary: document.getElementById('apSalary').value
+      currentSalary: document.getElementById('apSalary').value,
+      noticePeriod: document.getElementById('apNotice').value
     };
     try{
       payload.fileBase64 = await fileToBase64(f);
@@ -2953,7 +2872,7 @@ async function openDetail(candId){
       </select>
     </div>
 
-    <div class="detail-section" style="${(c.dateOfBirth||c.specialization||c.degree||c.city||c.address||c.currentSalary)?'':'display:none;'}">
+    <div class="detail-section" style="${(c.dateOfBirth||c.specialization||c.degree||c.city||c.address||c.currentSalary||c.noticePeriod)?'':'display:none;'}">
       <h3>بيانات المتقدم</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:13px;">
         ${c.dateOfBirth?`<div><span style="color:var(--muted);font-size:11px;display:block;">تاريخ الميلاد</span>${esc(c.dateOfBirth)}</div>`:''}
@@ -2962,6 +2881,7 @@ async function openDetail(candId){
         ${c.city?`<div><span style="color:var(--muted);font-size:11px;display:block;">المدينة</span>${esc(c.city)}</div>`:''}
         ${c.address?`<div><span style="color:var(--muted);font-size:11px;display:block;">العنوان</span>${esc(c.address)}</div>`:''}
         ${c.currentSalary?`<div><span style="color:var(--muted);font-size:11px;display:block;">الراتب الحالي</span>${esc(c.currentSalary)}</div>`:''}
+        ${c.noticePeriod?`<div><span style="color:var(--muted);font-size:11px;display:block;">فترة الإشعار</span>${esc(c.noticePeriod)}</div>`:''}
       </div>
     </div>
     <div class="detail-section">
@@ -3136,7 +3056,6 @@ async function renderCandidatesOnly(){
   main.innerHTML = (candFilterJob!=='الكل') ? await viewCandidatesMatches() : await viewCandidates();
   renderNav();
   attachViewHandlers();
-  ixEnhanceView();
   if(focusWasSearch){
     const inp = document.getElementById('candSearchInput');
     if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
@@ -3234,178 +3153,6 @@ async function boot(){
   }
   render();
 }
-
-/* ---------------------------------------------------------
-   INTERACTION LAYER
-   Motion and feedback added on top of the existing views. All
-   entry points are ix* and are called from render() and
-   showLogin(); no existing behaviour is replaced.
---------------------------------------------------------- */
-const IX_STILL = window.matchMedia('(prefers-reduced-motion: reduce)');
-let IX_MOVED = null;   // candidate id that just changed stage
-
-// The match percentage, drawn as a ring instead of a flat disc.
-function ixDial(pct, color){
-  const p = Math.max(0, Math.min(100, Math.round(pct||0)));
-  return `<div class="seal ix-seal" style="--sc:${color}" data-pct="${p}" role="img" aria-label="نسبة المطابقة ${p} بالمئة">
-    <svg viewBox="0 0 54 54" aria-hidden="true">
-      <circle class="ix-tr" cx="27" cy="27" r="22"></circle>
-      <circle class="ix-va" cx="27" cy="27" r="22" pathLength="100"></circle>
-    </svg><b>${p}<i>%</i></b>
-  </div>`;
-}
-
-function ixArmDials(scope){
-  (scope||document).querySelectorAll('.ix-seal').forEach((seal,i)=>{
-    const arc = seal.querySelector('.ix-va');
-    if(!arc) return;
-    const p = +seal.dataset.pct || 0;
-    arc.style.transitionDelay = Math.min(i*45, 700) + 'ms';
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{ arc.style.strokeDashoffset = 100 - p; }));
-  });
-}
-
-// Stat tiles count up so a changed number is visible, not just different.
-function ixCountUp(el){
-  const m = (el.textContent||'').trim().match(/^(\d+)(%?)$/);
-  if(!m) return;
-  const end = +m[1], suffix = m[2];
-  if(!end || IX_STILL.matches) return;
-  const dur = 700, t0 = performance.now();
-  const step = (t)=>{
-    const k = Math.min(1, (t-t0)/dur);
-    el.textContent = Math.round(end * (1 - Math.pow(1-k,3))) + suffix;
-    if(k < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-
-// Called at the end of render(), after the view HTML is in place.
-function ixEnhanceView(){
-  const main = document.getElementById('main');
-  if(!main) return;
-  // Typing in the search box refreshes the list in place; re-running the
-  // whole-view transition on every keystroke would be noise, not feedback.
-  const typing = document.activeElement && document.activeElement.id === 'candSearchInput';
-  if(!typing){
-    main.classList.remove('ix-swap');
-    void main.offsetWidth;
-    main.classList.add('ix-swap');
-  }
-
-  main.querySelectorAll('.idxcard').forEach((c,i)=>{ c.style.animationDelay = Math.min(i*35,560)+'ms'; });
-  main.querySelectorAll('.kcol').forEach((c,i)=>{ c.style.animationDelay = Math.min(i*45,320)+'ms'; });
-  main.querySelectorAll('.insight').forEach((c,i)=>{ c.style.animationDelay = Math.min(i*50,400)+'ms'; });
-  main.querySelectorAll('.stat .n').forEach(ixCountUp);
-  ixArmDials(main);
-
-  if(IX_MOVED){
-    const id = String(IX_MOVED); IX_MOVED = null;
-    const sel = (window.CSS && CSS.escape) ? CSS.escape(id) : id.replace(/"/g,'\\"');
-    const card = main.querySelector('.kcard[data-cand="'+sel+'"]');
-    if(card){
-      card.classList.add('ix-moved');
-      const col = card.closest('.kcol');
-      if(col) col.classList.add('ix-pulse');
-      card.scrollIntoView({block:'nearest', inline:'nearest', behavior: IX_STILL.matches?'auto':'smooth'});
-    }
-  }
-}
-
-// Called once, right after the landing overlay is added to the page.
-function ixEnhanceLanding(ov){
-  if(!ov || ov.dataset.ixDone) return;
-  ov.dataset.ixDone = '1';
-  const slides = Array.from(ov.querySelectorAll('.lslide'));
-  if(!slides.length) return;
-  const smooth = IX_STILL.matches ? 'auto' : 'smooth';
-
-  // Reading progress across the whole story.
-  const prog = document.createElement('div');
-  prog.className = 'ix-prog';
-  prog.innerHTML = '<i></i>';
-  ov.appendChild(prog);
-  const bar = prog.firstElementChild;
-  const onScroll = ()=>{
-    const max = ov.scrollHeight - ov.clientHeight;
-    bar.style.width = (max > 0 ? (ov.scrollTop / max * 100) : 0) + '%';
-  };
-  ov.addEventListener('scroll', onScroll, {passive:true});
-  onScroll();
-
-  // Sector rail: jump to any sector, and see where you are.
-  const marks = slides.map((s,i)=>{
-    if(s.classList.contains('landing-hero')) return { t:'البداية', c:'#2f7ff0' };
-    if(s.classList.contains('landing-cta'))  return { t:'التقديم وتسجيل الدخول', c:'#8b5cf6' };
-    const sec = (typeof LANDING!=='undefined' && LANDING.sectors) ? LANDING.sectors[i-1] : null;
-    return { t: sec ? sec.name : '—', c: sec ? sec.color : '#19b8a6' };
-  });
-  const rail = document.createElement('nav');
-  rail.className = 'ix-rail';
-  rail.setAttribute('aria-label','أقسام الصفحة');
-  rail.innerHTML = slides.map((s,i)=>
-    `<button type="button" data-i="${i}" style="--rc:${marks[i].c}" aria-label="${marks[i].t}">
-       <span class="d" aria-hidden="true"></span><span class="lb">${marks[i].t}</span>
-     </button>`).join('');
-  ov.appendChild(rail);
-  rail.querySelectorAll('button').forEach(b=>{
-    b.onclick = ()=> slides[+b.dataset.i].scrollIntoView({behavior:smooth, block:'start'});
-  });
-
-  // Reveal each slide's content as it comes into view.
-  ov.classList.add('ix-ready');
-  const PARTS = '.vm-card, .ss-kicker, .ss-text h2, .ss-desc, .ss-block, .ss-pillar, .ss-model, .ss-outcomes, .landing-sec-title, .scroll-hint';
-  slides.forEach(s=>{
-    s.querySelectorAll(PARTS).forEach((p,i)=>{
-      p.classList.add('ix-r');
-      p.style.transitionDelay = Math.min(i*45, 300) + 'ms';
-    });
-  });
-  const reveal = (s)=> s.querySelectorAll('.ix-r').forEach(p=>p.classList.add('ix-in'));
-  if('IntersectionObserver' in window){
-    const io = new IntersectionObserver(entries=>{
-      entries.forEach(en=>{
-        if(!en.isIntersecting) return;
-        reveal(en.target);
-        const i = slides.indexOf(en.target);
-        rail.querySelectorAll('button').forEach(b=> b.classList.toggle('on', +b.dataset.i === i));
-      });
-    }, { root: ov, threshold: 0.2 });
-    slides.forEach(s=>io.observe(s));
-  } else {
-    slides.forEach(reveal);
-  }
-  // Safety net: the first slide always shows, observer or not.
-  setTimeout(()=>{ reveal(slides[0]); const b0 = rail.querySelector('button'); if(b0 && !rail.querySelector('button.on')) b0.classList.add('on'); }, 800);
-
-  // The sector artwork follows the pointer — depth without a 3D engine.
-  if(!IX_STILL.matches){
-    ov.querySelectorAll('.sector-slide').forEach(sl=>{
-      const art = sl.querySelector('.ss-model');
-      if(!art) return;
-      sl.addEventListener('pointermove', e=>{
-        const r = sl.getBoundingClientRect();
-        const x = (e.clientX - r.left)/r.width - .5;
-        const y = (e.clientY - r.top)/r.height - .5;
-        art.style.transform = `translate3d(${(-x*20).toFixed(1)}px, ${(-y*15).toFixed(1)}px, 0) rotate(${(x*3).toFixed(2)}deg)`;
-      });
-      sl.addEventListener('pointerleave', ()=>{ art.style.transform = ''; });
-    });
-  }
-
-  // Arrow keys walk the story.
-  ov.addEventListener('keydown', e=>{
-    if(e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-    if(e.target.closest && e.target.closest('input,textarea,select')) return;
-    const mid = ov.clientHeight / 2;
-    let cur = 0;
-    slides.forEach((s,i)=>{ if(s.getBoundingClientRect().top <= mid) cur = i; });
-    const next = Math.max(0, Math.min(slides.length-1, cur + (e.key==='ArrowDown' ? 1 : -1)));
-    e.preventDefault();
-    slides[next].scrollIntoView({behavior:smooth, block:'start'});
-  });
-}
-
 boot();
 </script>
 </body>

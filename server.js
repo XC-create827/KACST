@@ -46,7 +46,7 @@ async function initSchema() {
   // keep working: "تم الترشيح" merges into "الفرز", and "العرض"
   // becomes "العرض الوظيفي".
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
-  for (const col of ['date_of_birth','specialization','degree','city','address','current_salary']) {
+  for (const col of ['date_of_birth','specialization','degree','city','address','current_salary','notice_period']) {
     await pool.query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS ${col} TEXT`);
   }
   await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS file_name TEXT');
@@ -281,7 +281,7 @@ function rowToCandidate(r) {
     resumeFileType: r.resume_file_type, notes: r.notes || '',
     dateOfBirth: r.date_of_birth || '', specialization: r.specialization || '',
     degree: r.degree || '', city: r.city || '', address: r.address || '',
-    currentSalary: r.current_salary || '',
+    currentSalary: r.current_salary || '', noticePeriod: r.notice_period || '',
     createdAt: r.created_at,
     assessCount: r.assess_count !== undefined ? Number(r.assess_count) : undefined,
     assessAvg: r.assess_avg !== null && r.assess_avg !== undefined ? Number(r.assess_avg) : null,
@@ -401,6 +401,34 @@ function estimateExperienceYears(text){
   for (const p of pats) { let m; while ((m = p.exec(t))) best = Math.max(best, Number(m[1]) || 0); }
   return Math.min(best, 45);
 }
+function guessDegreeFromText(text){
+  const t = String(text || '');
+  if (/دكتوراه|Ph\.?D/i.test(t)) return 'دكتوراه';
+  if (/ماجستير|Master|M\.?Sc/i.test(t)) return 'ماجستير';
+  if (/بكالوريوس|Bachelor|B\.?Sc/i.test(t)) return 'بكالوريوس';
+  if (/دبلوم|Diploma/i.test(t)) return 'دبلوم';
+  return '';
+}
+function guessSpecializationFromText(text){
+  const t = String(text || '');
+  const m = t.match(/(?:بكالوريوس|ماجستير|دكتوراه|دبلوم)\s*(?:في|تخصص)?\s+([^\n،,.؛:()0-9\-—–]{3,40})/)
+    || t.match(/(?:Bachelor(?:'s)?|Master(?:'s)?|B\.?Sc\.?|M\.?Sc\.?|PhD)\s+(?:of|in)\s+([A-Za-z &]{3,40})/i);
+  return m ? m[1].trim() : '';
+}
+function guessCityFromText(text){
+  const m = String(text || '').match(/الرياض|جدة|مكة المكرمة|مكة|المدينة المنورة|الدمام|الخبر|الظهران|الأحساء|بريدة|القصيم|أبها|خميس مشيط|تبوك|حائل|جازان|نجران|الطائف|Riyadh|Jeddah|Dammam|Khobar|Makkah|Madinah|Tabuk/i);
+  return m ? m[0] : '';
+}
+function extractDOB(text){
+  const t = arabicDigitsToLatin(text);
+  const m = t.match(/(?:تاريخ الميلاد|الميلاد|Date of Birth|Birth Date|DOB|D\.O\.B\.?)\s*[:\-]?\s*([0-9]{1,4}[\/\-.][0-9]{1,2}[\/\-.][0-9]{2,4})/i);
+  return m ? m[1] : '';
+}
+function extractAddress(text){
+  const m = String(text || '').match(/(?:العنوان|Address)\s*[:\-]\s*([^\n]{5,80})/i);
+  return m ? m[1].trim() : '';
+}
+
 function extractEmployers(text){
   const t = String(text || '');
   const found = [];
@@ -569,6 +597,7 @@ app.post('/api/public/apply', wrapEarly(async (req, res) => {
     city: clean(b.city, 80),
     address: clean(b.address, 240),
     current_salary: clean(b.currentSalary, 40),
+    notice_period: clean(b.noticePeriod, 60),
     current_title: clean(b.currentTitle, 120),
     experience_years: Math.max(0, Math.min(45, Number(b.experienceYears) || 0)),
     skills: Array.isArray(b.skills) ? b.skills.slice(0, 40).map(s => String(s).slice(0, 40)) : [],
@@ -593,15 +622,15 @@ app.post('/api/public/apply', wrapEarly(async (req, res) => {
     await client.query(
       `INSERT INTO candidates (id,name,email,phone,current_title,source,experience_years,
         applied_for,skills,resume_text,stage,has_original_file,resume_file_name,resume_file_type,
-        date_of_birth,specialization,degree,city,address,current_salary)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+        date_of_birth,specialization,degree,city,address,current_salary,notice_period)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
       [id, name, email, cand.phone, cand.current_title,
        'تقديم خارجي',
        cand.experience_years, appliedFor, cand.skills, cand.resume_text,
        'الفرز', !!b.fileBase64,
        b.resumeFileName ? String(b.resumeFileName).slice(0, 200) : null,
        b.resumeFileType ? String(b.resumeFileType).slice(0, 10) : null,
-       cand.date_of_birth, cand.specialization, cand.degree, cand.city, cand.address, cand.current_salary]);
+       cand.date_of_birth, cand.specialization, cand.degree, cand.city, cand.address, cand.current_salary, cand.notice_period]);
     await client.query('INSERT INTO stage_history (candidate_id,stage) VALUES ($1,$2)', [id, 'الفرز']);
     if (b.fileBase64) {
       const bytes = Buffer.from(String(b.fileBase64), 'base64');
@@ -1404,6 +1433,7 @@ app.get('/api/export/candidates.xlsx', wrap(async (req, res) => {
     { header: 'التخصص', key: 'spec', width: 18 },
     { header: 'الدرجة العلمية', key: 'degree', width: 13 },
     { header: 'الراتب الحالي', key: 'salary', width: 13 },
+    { header: 'فترة الإشعار', key: 'notice', width: 13 },
     { header: 'المسمى الوظيفي', key: 'title', width: 22 },
     { header: 'سنوات الخبرة', key: 'exp', width: 12 },
     { header: 'المهارات', key: 'skills', width: 30 },
@@ -1426,9 +1456,15 @@ app.get('/api/export/candidates.xlsx', wrap(async (req, res) => {
     ws.addRow({
       name: r.name, email: r.email || '', phone: r.phone || '',
       linkedin: extractLinkedIn(r.resume_text),
-      dob: r.date_of_birth || '', city: r.city || '', address: r.address || '',
-      spec: r.specialization || '', degree: r.degree || '',
+      // Stored values win; empty ones are read from the CV text at
+      // export time, so old records fill themselves in.
+      dob: r.date_of_birth || extractDOB(r.resume_text),
+      city: r.city || guessCityFromText(r.resume_text),
+      address: r.address || extractAddress(r.resume_text),
+      spec: r.specialization || guessSpecializationFromText(r.resume_text),
+      degree: r.degree || guessDegreeFromText(r.resume_text),
       salary: r.current_salary || '',
+      notice: r.notice_period || '',
       title: r.current_title || '', exp: exp || 0,
       skills: (r.skills || []).join('، '),
       employers: extractEmployers(r.resume_text),
