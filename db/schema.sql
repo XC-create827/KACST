@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS candidates (
   city               TEXT,
   address            TEXT,
   current_salary     TEXT,
+  notice_period      TEXT,
   notes              TEXT,
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
