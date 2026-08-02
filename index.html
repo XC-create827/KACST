@@ -625,7 +625,32 @@
      ========================================================= */
   html[data-theme="dark"] body::before,
   html[data-theme="dark"] body::after{display:none;}
-  html[data-theme="dark"] body{background:#0b1c2e;}
+  html[data-theme="dark"]{
+    --bg:#000000;
+    --panel:#0c0e10;
+    --panel-2:#131619;
+    --line:rgba(255,255,255,0.09);
+    --shadow-1:0 4px 18px rgba(0,0,0,0.55);
+  }
+  html[data-theme="dark"] body{background:#000000;}
+  html[data-theme="dark"] .sidebar{background:#050607;border-left-color:var(--line);}
+  html[data-theme="dark"] .modal{
+    background:#0c0e10;backdrop-filter:none;
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  html[data-theme="dark"] .idxcard, html[data-theme="dark"] .kcard,
+  html[data-theme="dark"] .detail-section, html[data-theme="dark"] table,
+  html[data-theme="dark"] .toolbar, html[data-theme="dark"] .stat-tile{
+    background:#0c0e10;border-color:var(--line);
+  }
+  html[data-theme="dark"] .kcol{background:#08090a;border-color:var(--line);}
+  html[data-theme="dark"] .skillbank, html[data-theme="dark"] .kcard .kstage,
+  html[data-theme="dark"] .qm-bar, html[data-theme="dark"] .resume-box,
+  html[data-theme="dark"] input, html[data-theme="dark"] select,
+  html[data-theme="dark"] textarea, html[data-theme="dark"] .searchbox{
+    background:#08090b;border-color:rgba(255,255,255,0.1);color:var(--text);
+  }
+  html[data-theme="dark"] tbody tr:nth-child(even){background:#0a0c0e;}
 
   html[data-theme="light"] body::before,
   html[data-theme="light"] body::after{display:none;}
@@ -667,6 +692,14 @@
     background:rgba(25,184,166,0.12);border-color:var(--teal);color:#0f8577;
   }
   html[data-theme="light"] tbody tr:nth-child(even){background:#f7fafc;}
+  /* Fix: chosen values in dropdowns were inheriting the dark theme's
+     light text — invisible on white. Force dark text everywhere. */
+  html[data-theme="light"] select, html[data-theme="light"] select option,
+  html[data-theme="light"] .toolbar select, html[data-theme="light"] .kcard .kstage{
+    color:#16324a !important;background:#fbfdfe;
+  }
+  html[data-theme="light"] select option{background:#ffffff;}
+  html[data-theme="light"] th{color:#3d5a73;}
   html[data-theme="light"] .brand-title, html[data-theme="light"] h1,
   html[data-theme="light"] h2, html[data-theme="light"] h3{color:var(--text);}
 
@@ -1565,6 +1598,7 @@ function genCandidateQuestions(candidate){
 }
 
 const SKILL_LIBRARY = {
+  'المهارات الشخصية (Soft Skills)': ['التواصل الفعال','العمل الجماعي','إدارة الوقت','حل المشكلات','التفكير النقدي','الذكاء العاطفي','المرونة والتكيف','الإقناع والتفاوض','العرض والإلقاء','الاستماع الفعال','العمل تحت الضغط','الانضباط والالتزام','التفكير الإبداعي','تحمل المسؤولية','الاحترافية في التعامل','إدارة الخلافات'],
   'تقنية المعلومات والبرمجة': ['python','javascript','typescript','java','c#','sql','html/css','react','node.js','apis','git','linux','docker','أمن المعلومات','الحوسبة السحابية','إدارة قواعد البيانات'],
   'البيانات والذكاء الاصطناعي': ['تحليل البيانات','power bi','tableau','excel متقدم','الإحصاء','تعلم الآلة','التعلم العميق','معالجة اللغة الطبيعية','تنظيف البيانات','التنبؤ والنمذجة','لوحات المعلومات','big data','التقارير التحليلية'],
   'الموارد البشرية': ['استقطاب المواهب','إجراء المقابلات','تخطيط القوى العاملة','إدارة الأداء','التعويضات والمزايا','التدريب والتطوير','علاقات الموظفين','التوطين وسعودة الوظائف','أنظمة العمل السعودية','التهيئة الوظيفية','بناء الثقافة المؤسسية','تحليلات الموارد البشرية'],
@@ -1674,16 +1708,72 @@ const NAV_ICONS = {
   jobs: '<svg viewBox="0 0 24 24"><rect x="3.5" y="8" width="17" height="12" rx="2"/><path d="M9 8V6.5A2.5 2.5 0 0 1 11.5 4h1A2.5 2.5 0 0 1 15 6.5V8"/><path d="M3.5 13h17"/></svg>',
   candidates: '<svg viewBox="0 0 24 24"><circle cx="9.5" cy="8.5" r="3.2"/><path d="M3.5 20c.6-3.4 3-5.3 6-5.3s5.4 1.9 6 5.3"/><circle cx="17" cy="9.5" r="2.4"/><path d="M16.5 14.6c2.4.3 3.8 1.8 4.2 4.4"/></svg>',
   audit: '<svg viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.2-2.9 6.9-7 8.5-4.1-1.6-7-4.3-7-8.5V6z"/><path d="m9 11.8 2.1 2.1 4-4"/></svg>',
-  users: '<svg viewBox="0 0 24 24"><circle cx="10" cy="8.5" r="3.2"/><path d="M4 20c.6-3.4 3-5.3 6-5.3 1.4 0 2.7.4 3.7 1.2"/><path d="M18 14.5v6"/><path d="M15 17.5h6"/></svg>'
+  users: '<svg viewBox="0 0 24 24"><circle cx="10" cy="8.5" r="3.2"/><path d="M4 20c.6-3.4 3-5.3 6-5.3 1.4 0 2.7.4 3.7 1.2"/><path d="M18 14.5v6"/><path d="M15 17.5h6"/></svg>',
+  settings: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6"/></svg>'
 };
+let settingsTab = 'appearance';
+async function viewSettings(){
+  const isAdmin = CURRENT_USER && CURRENT_USER.isAdmin;
+  const tabs = [
+    ['appearance','مظهر المنصة'],
+    ['security','الأمان'],
+    ...(isAdmin ? [['users','المستخدمون'], ['audit','سجل التدقيق']] : [])
+  ];
+  const chipbar = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px;">
+    ${tabs.map(([id,label])=>`<span class="chip sb-cat ${settingsTab===id?'on':''}" data-settab="${id}" style="cursor:pointer;padding:8px 16px;font-size:13px;">${label}</span>`).join('')}
+  </div>`;
+  const head = `<div class="page-head"><div><h1>الإعدادات</h1>
+    <div class="sub">مظهر المنصة وأمان حسابك${isAdmin ? ' وإدارة المستخدمين وسجل التدقيق' : ''} — في مكان واحد.</div></div></div>`;
+
+  if(settingsTab === 'users' && isAdmin)  return head + chipbar + await viewUsers();
+  if(settingsTab === 'audit' && isAdmin)  return head + chipbar + await viewAudit();
+
+  if(settingsTab === 'security'){
+    return head + chipbar + `
+      <div class="detail-section" style="max-width:640px;">
+        <h3>المصادقة الثنائية (2FA)</h3>
+        <div style="font-size:13px;line-height:1.9;margin-bottom:14px;">
+          الحالة: ${CURRENT_USER.totpEnabled
+            ? '<strong style="color:var(--green);">مفعّلة ✓</strong>'
+            : '<strong style="color:var(--muted);">غير مفعّلة</strong> — ننصح بتفعيلها لحماية حسابك برمز متجدد من جوالك.'}
+        </div>
+        ${CURRENT_USER.totpEnabled
+          ? '<button class="btn btn-ghost" onclick="openDisable2FA()">تعطيل المصادقة الثنائية</button>'
+          : '<button class="btn btn-primary" onclick="openEnable2FA()">تفعيل المصادقة الثنائية</button>'}
+      </div>
+      <div class="detail-section" style="max-width:640px;">
+        <h3>كلمة المرور</h3>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">غيّر كلمة مرورك دوريًا ولا تشاركها مع أحد.</div>
+        <button class="btn btn-ghost" onclick="openChangePassword()">تغيير كلمة المرور</button>
+      </div>`;
+  }
+
+  // appearance (default)
+  return head + chipbar + `
+    <div class="detail-section" style="max-width:640px;">
+      <h3>مظهر المنصة</h3>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+        اختيارك يُحفظ في هذا المتصفح ويبقى بعد الخروج والدخول — ولكل مستخدم وجهاز تفضيله المستقل.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        ${[['aurora','أورورا','الهوية الأصلية بشفقها المتحرك'],
+           ['dark','أسود','أسود هادئ بلا حركة'],
+           ['light','فاتح','لوحات بيضاء ونص داكن']].map(([v,label,desc])=>`
+          <div style="text-align:center;">
+            <button class="btn ${currentTheme()===v?'btn-primary':'btn-ghost'}" data-settheme="${v}" style="min-width:110px;">${label}</button>
+            <div style="font-size:10.5px;color:var(--muted);margin-top:5px;">${desc}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
 const NAV = [
   {id:'dashboard', label:'لوحة التحكم', num:'٠٠'},
   {id:'pipeline', label:'مسار الاستقطاب', num:'٠١'},
   {id:'assessments', label:'التقييمات', num:'٠٢'},
   {id:'jobs', label:'الوظائف الشاغرة', num:'٠٣'},
   {id:'candidates', label:'قاعدة السير الذاتية', num:'٠٤'},
-  {id:'audit', label:'سجل التدقيق', num:'٠٥'},
-  {id:'users', label:'المستخدمون', num:'٠٦', adminOnly:true},
+  {id:'settings', label:'الإعدادات', num:'٠٥'},
 ];
 let currentView = 'dashboard';
 
@@ -1738,6 +1828,7 @@ async function render(){
     else if(currentView==='jobs')       html = await viewJobs();
     else if(currentView==='audit')      html = await viewAudit();
     else if(currentView==='users')      html = await viewUsers();
+    else if(currentView==='settings')   html = await viewSettings();
     main.innerHTML = html;
     renderNav();
     attachViewHandlers();
@@ -3493,6 +3584,9 @@ function attachViewHandlers(){
   });
   document.querySelectorAll('[data-addonejob]').forEach(el=>{
     el.onclick = ()=> openAddCandidate(null, el.dataset.addonejob);
+  });
+  document.querySelectorAll('[data-settab]').forEach(el=>{
+    el.onclick = ()=>{ settingsTab = el.dataset.settab; render(); };
   });
   document.querySelectorAll('[data-clonejob]').forEach(el=>{
     el.onclick = ()=>{
