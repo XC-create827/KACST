@@ -20,6 +20,12 @@ CREATE TABLE IF NOT EXISTS jobs (
   required_skills TEXT[] NOT NULL DEFAULT '{}',
   nice_skills     TEXT[] NOT NULL DEFAULT '{}',
   description     TEXT,
+  required_degree TEXT,
+  min_experience  INTEGER,
+  max_experience  INTEGER,
+  city            TEXT,
+  salary_range    TEXT,
+  closing_date    DATE,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
