@@ -189,6 +189,31 @@
     margin:2px 0 8px;font-size:11.5px;color:var(--muted);
     border-top:1px dashed var(--line);padding-top:8px;
   }
+  .skillbank{
+    background:rgba(8,26,44,0.35);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;
+  }
+  .skillbank .sb-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;}
+  .skillbank .sb-target{font-size:11.5px;color:var(--muted);display:flex;gap:12px;align-items:center;}
+  .skillbank .sb-target label{display:flex;gap:4px;align-items:center;cursor:pointer;}
+  .sb-cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line);}
+  .chip.sb-cat{cursor:pointer;opacity:.75;}
+  .chip.sb-cat.on{opacity:1;border-color:var(--teal);color:var(--teal);background:rgba(25,184,166,0.1);}
+  .sb-skills,.sb-suggested #sbSuggestedChips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip.sb-skill{cursor:pointer;transition:all .15s;}
+  .chip.sb-skill:hover{border-color:var(--teal);}
+  .chip.sb-skill.on{background:rgba(25,184,166,0.16);border-color:var(--teal);color:var(--teal);font-weight:800;}
+  .sb-suggested{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .qmeter{margin-bottom:14px;}
+  .qm-top{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:6px;}
+  .qm-bar{height:7px;background:rgba(8,26,44,0.6);border-radius:99px;overflow:hidden;border:1px solid var(--line);}
+  .qm-fill{height:100%;width:0;border-radius:99px;transition:width .4s ease, background .4s;}
+  .qm-hints{display:flex;flex-direction:column;gap:2px;margin-top:8px;font-size:11.5px;color:var(--muted);}
+  .jlive{
+    background:rgba(25,184,166,0.06);border:1px solid rgba(25,184,166,0.25);
+    border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;
+    font-size:13px;line-height:1.8;min-height:44px;
+  }
   .headstat{
     display:inline-flex;align-items:center;gap:6px;margin-top:8px;
     font-size:12px;font-weight:800;color:var(--teal);
@@ -593,6 +618,58 @@
     box-shadow:0 12px 34px rgba(25,184,166,0.35);
     animation:pop .5s var(--spring) both;
   }
+  /* =========================================================
+     THEMES — أورورا (الافتراضي، الهوية الحالية) / داكن هادئ / فاتح.
+     Aurora is the untouched default; the other two override the
+     token layer plus the few hardcoded dark surfaces.
+     ========================================================= */
+  html[data-theme="dark"] body::before,
+  html[data-theme="dark"] body::after{display:none;}
+  html[data-theme="dark"] body{background:#0b1c2e;}
+
+  html[data-theme="light"] body::before,
+  html[data-theme="light"] body::after{display:none;}
+  html[data-theme="light"]{
+    --bg:#f2f5f8;
+    --panel:#ffffff;
+    --panel-2:#f5f8fb;
+    --text:#16324a;
+    --muted:#5b7286;
+    --line:#dfe8f0;
+    --shadow-1:0 4px 18px rgba(18,43,66,0.08);
+  }
+  html[data-theme="light"] body{background:#f2f5f8;color:var(--text);}
+  html[data-theme="light"] .modal{
+    background:#ffffff;backdrop-filter:none;
+    border:1px solid var(--line);box-shadow:0 18px 60px rgba(18,43,66,0.18);
+  }
+  html[data-theme="light"] .sidebar{background:#ffffff;border-left-color:var(--line);}
+  html[data-theme="light"] .navtab.active{background:rgba(25,184,166,0.1);}
+  html[data-theme="light"] .idxcard, html[data-theme="light"] .kcol,
+  html[data-theme="light"] .kcard, html[data-theme="light"] .detail-section,
+  html[data-theme="light"] table, html[data-theme="light"] .toolbar,
+  html[data-theme="light"] .stat-tile{
+    background:#ffffff;border-color:var(--line);
+  }
+  html[data-theme="light"] .kcol{background:#f5f8fb;}
+  html[data-theme="light"] .skillbank, html[data-theme="light"] .kcard .kstage,
+  html[data-theme="light"] .qm-bar, html[data-theme="light"] .resume-box,
+  html[data-theme="light"] input, html[data-theme="light"] select,
+  html[data-theme="light"] textarea, html[data-theme="light"] .searchbox{
+    background:#fbfdfe;border-color:#d7e2ec;color:var(--text);
+  }
+  html[data-theme="light"] .mono[style*="rgba(8,26,44"]{
+    background:#f0f4f8 !important;color:var(--text);
+  }
+  html[data-theme="light"] .btn-ghost{background:#ffffff;color:var(--text);border-color:#cfdae6;}
+  html[data-theme="light"] .chip{background:#f0f5f9;border-color:#d7e2ec;color:#3d5a73;}
+  html[data-theme="light"] .chip.sb-cat.on, html[data-theme="light"] .chip.sb-skill.on{
+    background:rgba(25,184,166,0.12);border-color:var(--teal);color:#0f8577;
+  }
+  html[data-theme="light"] tbody tr:nth-child(even){background:#f7fafc;}
+  html[data-theme="light"] .brand-title, html[data-theme="light"] h1,
+  html[data-theme="light"] h2, html[data-theme="light"] h3{color:var(--text);}
+
   /* ---- Official-site light theme (public landing + apply only;
           the internal workspace keeps its dark identity) ---- */
   .landing{
@@ -679,6 +756,31 @@
     margin:2px 0 8px;font-size:11.5px;color:var(--muted);
     border-top:1px dashed var(--line);padding-top:8px;
   }
+  .skillbank{
+    background:rgba(8,26,44,0.35);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;
+  }
+  .skillbank .sb-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;}
+  .skillbank .sb-target{font-size:11.5px;color:var(--muted);display:flex;gap:12px;align-items:center;}
+  .skillbank .sb-target label{display:flex;gap:4px;align-items:center;cursor:pointer;}
+  .sb-cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line);}
+  .chip.sb-cat{cursor:pointer;opacity:.75;}
+  .chip.sb-cat.on{opacity:1;border-color:var(--teal);color:var(--teal);background:rgba(25,184,166,0.1);}
+  .sb-skills,.sb-suggested #sbSuggestedChips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip.sb-skill{cursor:pointer;transition:all .15s;}
+  .chip.sb-skill:hover{border-color:var(--teal);}
+  .chip.sb-skill.on{background:rgba(25,184,166,0.16);border-color:var(--teal);color:var(--teal);font-weight:800;}
+  .sb-suggested{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .qmeter{margin-bottom:14px;}
+  .qm-top{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:6px;}
+  .qm-bar{height:7px;background:rgba(8,26,44,0.6);border-radius:99px;overflow:hidden;border:1px solid var(--line);}
+  .qm-fill{height:100%;width:0;border-radius:99px;transition:width .4s ease, background .4s;}
+  .qm-hints{display:flex;flex-direction:column;gap:2px;margin-top:8px;font-size:11.5px;color:var(--muted);}
+  .jlive{
+    background:rgba(25,184,166,0.06);border:1px solid rgba(25,184,166,0.25);
+    border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;
+    font-size:13px;line-height:1.8;min-height:44px;
+  }
   .headstat{
     display:inline-flex;align-items:center;gap:6px;margin-top:8px;
     font-size:12px;font-weight:800;color:var(--teal);
@@ -710,6 +812,31 @@
     .cand-edu{
     margin:2px 0 8px;font-size:11.5px;color:var(--muted);
     border-top:1px dashed var(--line);padding-top:8px;
+  }
+  .skillbank{
+    background:rgba(8,26,44,0.35);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;
+  }
+  .skillbank .sb-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;font-size:13px;}
+  .skillbank .sb-target{font-size:11.5px;color:var(--muted);display:flex;gap:12px;align-items:center;}
+  .skillbank .sb-target label{display:flex;gap:4px;align-items:center;cursor:pointer;}
+  .sb-cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--line);}
+  .chip.sb-cat{cursor:pointer;opacity:.75;}
+  .chip.sb-cat.on{opacity:1;border-color:var(--teal);color:var(--teal);background:rgba(25,184,166,0.1);}
+  .sb-skills,.sb-suggested #sbSuggestedChips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip.sb-skill{cursor:pointer;transition:all .15s;}
+  .chip.sb-skill:hover{border-color:var(--teal);}
+  .chip.sb-skill.on{background:rgba(25,184,166,0.16);border-color:var(--teal);color:var(--teal);font-weight:800;}
+  .sb-suggested{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .qmeter{margin-bottom:14px;}
+  .qm-top{display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:6px;}
+  .qm-bar{height:7px;background:rgba(8,26,44,0.6);border-radius:99px;overflow:hidden;border:1px solid var(--line);}
+  .qm-fill{height:100%;width:0;border-radius:99px;transition:width .4s ease, background .4s;}
+  .qm-hints{display:flex;flex-direction:column;gap:2px;margin-top:8px;font-size:11.5px;color:var(--muted);}
+  .jlive{
+    background:rgba(25,184,166,0.06);border:1px solid rgba(25,184,166,0.25);
+    border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;
+    font-size:13px;line-height:1.8;min-height:44px;
   }
   .headstat{
     display:inline-flex;align-items:center;gap:6px;margin-top:8px;
@@ -767,6 +894,13 @@
     .ss-model{width:min(280px,74vw);}
   }
 </style>
+<script>
+  // Apply the saved theme before the body paints.
+  (function(){try{
+    var t = localStorage.getItem('tad_theme');
+    if(t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}})();
+</script>
 </head>
 <body>
 <div id="app">
@@ -849,6 +983,7 @@ const api = {
   forgotPassword: (b)        => apiFetch('/api/forgot-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
   resetPassword:  (b)        => apiFetch('/api/reset-password', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
   jobMatches:  (jobId)       => apiFetch('/api/jobs/'+encodeURIComponent(jobId)+'/matches'),
+  jobPreview:  (b)           => apiFetch('/api/jobs/preview', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
   tfaSetup:    ()            => apiFetch('/api/2fa/setup', {method:'POST'}),
   tfaVerify:   (b)           => apiFetch('/api/2fa/verify', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
   tfaDisable:  (b)           => apiFetch('/api/2fa/disable', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)}),
@@ -1277,6 +1412,176 @@ function assessmentScoreColor(score){
   if(pct>=60) return '#d4a24c';
   return '#c1585f';
 }
+// بنك المهارات — a large curated library the recruiter picks from
+// when building a job. Separate from SKILL_BANK (interview questions).
+// بنك أسئلة المقابلات — منظم حسب المجال (١٥ مجالًا) والمستوى
+// (مبتدئ/متوسط/كبير/قيادي). مبني على أفضل ممارسات المقابلات المنشورة:
+// المبتدئ يُقاس بقابلية التعلم لا بقصص خبرة لا يملكها، والمتوسط
+// بالاستقلالية والتأثير بلا سلطة، والكبير بإدارة الغموض والقيادة عبر
+// الآخرين، والقيادي بالقرارات المؤسسية والمساءلة.
+const QUESTION_BANK = {
+'تقنية المعلومات والبرمجة': {
+ 'مبتدئ':['اشرح مشروعًا برمجيًا بنيته أثناء الدراسة أو تدريبك — ما دورك فيه بالضبط؟','كيف تتصرف حين تواجه خطأ برمجيًا لا تفهم سببه؟ صف خطواتك.','ما الفرق بين قاعدة البيانات العلائقية وغير العلائقية؟ ومتى تختار كلًا منهما؟'],
+ 'متوسط':['صف نظامًا صممته أو طورته من البداية للنهاية — ما القرارات التقنية التي اتخذتها ولماذا؟','حدثني عن خطأ في الإنتاج تعاملت معه — كيف شخصته وما الذي غيرته بعده؟','كيف توازن بين سرعة التسليم وجودة الكود عندما يضغط الجدول الزمني؟'],
+ 'كبير':['صف قرارًا معماريًا اتخذته وكان مثيرًا للجدل داخل الفريق — كيف حسمته؟','كيف ترفع مستوى مطورين أقل خبرة منك دون أن تكتب الكود بدلًا عنهم؟','حدثني عن دين تقني ورثته — كيف قيّمت ما يستحق الإصلاح وما يُؤجل؟'],
+ 'قيادي':['كيف تبني استراتيجية تقنية لإدارة كاملة وتربطها بأهداف المنشأة؟','صف قرارًا تقنيًا مكلفًا اتخذته وتحملت مسؤولية نتائجه أمام الإدارة العليا.','كيف توازن بين الابتكار والاستقرار التشغيلي في أنظمة حساسة؟']},
+'البيانات والذكاء الاصطناعي': {
+ 'مبتدئ':['اشرح مشروع تحليل بيانات أنجزته — ما السؤال الذي أجبت عنه وما أدواتك؟','ما الفرق بين المتوسط والوسيط، ومتى يضللك المتوسط؟','كيف تتعامل مع بيانات ناقصة أو مكررة قبل التحليل؟'],
+ 'متوسط':['حدثني عن تحليل قدمته غيّر قرارًا فعليًا لدى صاحب العمل — كيف عرضته؟','كيف تتحقق من صحة نموذج تنبؤي قبل الاعتماد عليه؟','صف لوحة معلومات بنيتها — كيف اخترت مؤشراتها ولمن؟'],
+ 'كبير':['صف مشروع بيانات فشل أو أعطى نتائج مضللة — ما الذي تعلمته عن جودة البيانات؟','كيف تحكم على ملاءمة الذكاء الاصطناعي لمشكلة ما بدل الحلول التقليدية؟','كيف تبني حوكمة بيانات تحمي الخصوصية دون خنق التحليل؟'],
+ 'قيادي':['كيف تبني قدرة بيانات مؤسسية من الصفر: الفريق والأدوات والثقافة؟','صف موقفًا دافعت فيه عن استنتاج تحليلي أمام قيادة لم يعجبها — ماذا فعلت؟','كيف تقيس العائد الفعلي لاستثمارات المنشأة في البيانات والذكاء الاصطناعي؟']},
+'الموارد البشرية': {
+ 'مبتدئ':['لماذا اخترت مجال الموارد البشرية؟ وما الذي تعرفه عن دورة حياة الموظف؟','كيف تتعامل مع موظف جاءك بشكوى وأنت لا تملك صلاحية حلها؟','ما الفرق بين الاستقطاب والتوظيف؟'],
+ 'متوسط':['صف شاغرًا صعبًا أغلقته — ما القنوات التي جربتها وما الذي نجح؟','حدثني عن حالة موظف متعثر الأداء شاركت في معالجتها — ما خطتك؟','كيف توازن بين مصلحة الموظف ومصلحة المنشأة في نزاع بينهما؟'],
+ 'كبير':['صف مبادرة موارد بشرية صممتها وقادتها بالكامل — كيف قست أثرها؟','كيف تبني خطة تعاقب وظيفي للأدوار الحرجة؟','حدثني عن قرار إنهاء خدمة صعب شاركت فيه — كيف ضمنت العدالة والنظامية؟'],
+ 'قيادي':['كيف تربط استراتيجية رأس المال البشري باستراتيجية المنشأة؟','صف تحولًا ثقافيًا قدته في منشأة — ما مقاومته وكيف تجاوزتها؟','كيف توازن بين ضغط التوطين ومتطلبات الكفاءة النادرة؟']},
+'المالية والمحاسبة': {
+ 'مبتدئ':['اشرح الفرق بين قائمة الدخل وقائمة المركز المالي والتدفقات النقدية.','ما القيد المحاسبي لشراء أصل بالأجل؟','كيف تتأكد من دقة عملك عند إدخال بيانات مالية كثيرة؟'],
+ 'متوسط':['صف إقفالًا شهريًا أو سنويًا توليته — ما أصعب بنوده وكيف عالجته؟','حدثني عن فرق غير مبرر اكتشفته في التسويات — كيف تتبعته؟','كيف تعد موازنة تقديرية لإدارة لا تملك بيانات تاريخية كافية؟'],
+ 'كبير':['صف ملاحظة تدقيق جوهرية أُغلقت تحت إشرافك — ما المعالجة الجذرية؟','كيف تقيم الجدوى المالية لمشروع استثماري؟ اذكر الأدوات التي تعتمدها.','حدثني عن موقف اكتشفت فيه ممارسة مالية غير سليمة — ماذا فعلت؟'],
+ 'قيادي':['كيف تبني خطة مالية خمسية لمنشأة في بيئة إيرادات متقلبة؟','صف قرارًا ماليًا استراتيجيًا (تمويل/استحواذ/خفض تكاليف) شاركت في صنعه.','كيف توازن بين الرقابة المالية الصارمة وتمكين الإدارات من التحرك؟']},
+'الهندسة': {
+ 'مبتدئ':['اشرح مشروع تخرجك الهندسي — ما المشكلة وما حلّك؟','ما الاعتبارات الأساسية عند قراءة مخطط تنفيذي قبل بدء العمل؟','كيف تتصرف لو لاحظت في الموقع تنفيذًا مخالفًا للمخطط؟'],
+ 'متوسط':['صف مشكلة تنفيذية واجهتها في مشروع — كيف شخصتها وما البدائل التي طرحتها؟','كيف تدير التعارض بين الجودة والتكلفة والجدول في مشروع هندسي؟','حدثني عن تنسيقك مع تخصصات هندسية أخرى — أين تحدث الفجوات عادة؟'],
+ 'كبير':['صف مشروعًا أدرت جوانبه الفنية بالكامل — كيف ضبطت التغييرات وأوامر التغيير؟','كيف تراجع تصاميم مهندسين أقل خبرة وترفع مستواهم؟','حدثني عن حادث سلامة أو كاد يقع — ما الذي غيرته بعده جذريًا؟'],
+ 'قيادي':['كيف تبني منظومة إدارة مشاريع هندسية لمحفظة مشاريع متوازية؟','صف قرارًا هندسيًا استراتيجيًا تحملت مسؤوليته أمام الجهات العليا.','كيف توازن بين توطين سلاسل الإمداد الهندسية وضمان الجودة العالمية؟']},
+'إدارة المشاريع': {
+ 'مبتدئ':['ما مراحل دورة حياة المشروع؟ وما دور مدير المشروع في كل مرحلة؟','كيف تتابع مهامك حين تعمل على أكثر من مهمة بمواعيد متقاربة؟','ما الفرق بين النطاق والجدول والميزانية؟ وماذا يحدث حين يتغير أحدها؟'],
+ 'متوسط':['صف مشروعًا أدرته من البداية للإغلاق — ما أكبر انحراف حدث وكيف عالجته؟','كيف تدير صاحب مصلحة معطِّلًا لا يحضر ولا يعتمد؟','حدثني عن خطر توقعته مبكرًا وخطة استجابتك له.'],
+ 'كبير':['صف مشروعًا متعثرًا استُدعيت لإنقاذه — ما أول ثلاثة أشياء فعلتها؟','كيف توازن محفظة مشاريع تتنافس على نفس الموارد؟','حدثني عن قرار إيقاف مشروع — كيف بنيت التوصية وأقنعت بها؟'],
+ 'قيادي':['كيف تبني مكتب إدارة مشاريع (PMO) يضيف قيمة ولا يتحول لبيروقراطية؟','صف تحولًا منهجيًا قدته (Agile/تقليدي) — ما المقاومة وكيف أدرتها؟','كيف تربط محفظة المشاريع بالاستراتيجية وتقيس قيمتها الفعلية؟']},
+'التسويق والاتصال': {
+ 'مبتدئ':['صف محتوى أنشأته (منشور/تصميم/فيديو) — ما هدفه وكيف قست تفاعله؟','ما الفرق بين التسويق والعلاقات العامة؟','أي منصات التواصل تناسب جهة حكومية علمية ولماذا؟'],
+ 'متوسط':['صف حملة خططتها ونفذتها — ما مؤشراتها وما الذي كنت ستغيره؟','حدثني عن أزمة إعلامية أو تعليق سلبي واسع تعاملت معه.','كيف توائم بين هوية الجهة الرسمية وجاذبية المحتوى؟'],
+ 'كبير':['صف استراتيجية اتصال سنوية بنيتها — كيف ربطتها بأهداف الجهة؟','كيف تدير وكالات خارجية وتضمن جودة مخرجاتها؟','حدثني عن رسالة مؤسسية حساسة صغتها — ما الاعتبارات التي وازنت بينها؟'],
+ 'قيادي':['كيف تبني سمعة مؤسسية وطنية ودولية لجهة علمية؟','صف موقفًا نصحت فيه القيادة العليا بعكس ما تريد إعلاميًا — ماذا حدث؟','كيف تقيس أثر الاتصال المؤسسي بما يتجاوز أرقام التفاعل؟']},
+'الإدارة والقيادة': {
+ 'مبتدئ':['صف موقفًا قدت فيه مجموعة (دراسة/تطوع) — ما الذي تعلمته عن نفسك؟','كيف تنظم أولوياتك حين يطلب منك رئيسان مهمتين متعارضتين؟','ما الذي يجعل الاجتماع ناجحًا في رأيك؟'],
+ 'متوسط':['حدثني عن مبادرة اقترحتها ونفذتها دون أن يُطلب منك — ما أثرها؟','صف موقفًا أثّرت فيه على قرار زميل أو إدارة أخرى دون سلطة عليهم.','كيف تعاملت مع زميل يعرقل عمل الفريق؟'],
+ 'كبير':['صف فريقًا بنيته أو أعدت بناءه — كيف اخترت الأدوار وعالجت الفجوات؟','حدثني عن قرار صعب اتخذته بمعلومات ناقصة — كيف فكرت؟','كيف تفوّض عملًا حساسًا وتضمن جودته دون إدارة تفصيلية؟'],
+ 'قيادي':['كيف تقود تغييرًا مؤسسيًا يقاومه المتأثرون به؟','صف قرارًا استراتيجيًا فشل — كيف تحملت مسؤوليته وماذا تغير بعده؟','كيف توازن بين النتائج قصيرة المدى وبناء القدرات طويل المدى؟']},
+'المهارات المكتبية': {
+ 'مبتدئ':['ما مستوى إتقانك لبرامج أوفيس؟ اذكر أعقد شيء أنجزته بها.','كيف تنظم ملفات ومراسلات إدارة كاملة بحيث يجدها أي شخص؟','صف يومك حين تتزاحم المهام الصغيرة — كيف ترتبها؟'],
+ 'متوسط':['صف تحسينًا أدخلته على إجراء إداري وفّر وقتًا فعليًا.','كيف تدير جدول مدير مشغول وتحمي وقته من التضارب؟','حدثني عن محضر اجتماع حساس أعددته — ما الذي تحرص عليه؟'],
+ 'كبير':['كيف تبني منظومة أرشفة ومتابعة معاملات لإدارة كاملة؟','صف موقفًا أدرت فيه معلومات سرية — ما ضوابطك؟','كيف تدرب موظفي دعم إداري جدد وترفع جاهزيتهم بسرعة؟'],
+ 'قيادي':['كيف تعيد تصميم الخدمات الإدارية المساندة لتقاس بمؤشرات خدمة؟','صف تحولًا رقميًا إداريًا (تعاملات بلا ورق) شاركت في قيادته.','كيف توازن بين الضبط الإجرائي وسرعة إنجاز المعاملات؟']},
+'اللغات': {
+ 'مبتدئ':['ترجم لي شفهيًا هذه الجملة وسأقيّم دقتك وسلاستك.','ما الفرق بين الترجمة الحرفية وترجمة المعنى؟ ومتى تصح كل منهما؟','كيف تتحقق من مصطلح تقني لا تعرف مقابله؟'],
+ 'متوسط':['صف نصًا صعبًا ترجمته أو دققته — ما أصعب ما فيه؟','كيف تحافظ على اتساق المصطلحات في مستندات جهة كاملة؟','حدثني عن خطأ لغوي جوهري اكتشفته قبل النشر — كيف أمسكته؟'],
+ 'كبير':['كيف تبني دليل أسلوب لغوي (Style Guide) لجهة رسمية؟','صف ترجمة فورية أو تحريرية عالية الحساسية أنجزتها — ما ضوابطك؟','كيف تقيّم جودة مترجمين آخرين وتوحد مخرجاتهم؟'],
+ 'قيادي':['كيف تبني وحدة ترجمة وتحرير لغوي تخدم منشأة بأكملها؟','ما موقفك من الترجمة الآلية — أين تعتمدها وأين تمنعها؟','كيف تحمي الهوية اللغوية العربية في بيئة عمل ثنائية اللغة؟']},
+'البحث العلمي': {
+ 'مبتدئ':['لخص لي بحث تخرجك: السؤال، المنهج، النتيجة.','ما الفرق بين الفرضية وسؤال البحث؟','كيف توثق المصادر وتتجنب الانتحال العلمي؟'],
+ 'متوسط':['صف ورقة نشرتها أو شاركت فيها — ما مساهمتك تحديدًا وما ملاحظات المحكمين؟','كيف تصمم تجربة تعزل المتغير الذي تدرسه؟','حدثني عن نتيجة عكس توقعك — ماذا فعلت بها؟'],
+ 'كبير':['صف مشروعًا بحثيًا قدته بميزانية وفريق — كيف أدرت المنحة ومخرجاتها؟','كيف تنقل نتائج بحثك من المختبر نحو التطبيق أو براءة الاختراع؟','كيف توجه باحثين مبتدئين وترفع جودة كتابتهم العلمية؟'],
+ 'قيادي':['كيف تبني برنامجًا بحثيًا وطنيًا في أولوية علمية محددة؟','صف شراكة بحثية دولية بنيتها — ما مقايضاتها؟','كيف توازن بين البحث الحر والبحث الموجه بأولويات المنشأة؟']},
+'الجودة والسلامة': {
+ 'مبتدئ':['ما الفرق بين ضبط الجودة وضمان الجودة؟','صف موقفًا لاحظت فيه ممارسة غير آمنة — ماذا فعلت؟','ما أهمية التوثيق في أنظمة الجودة؟'],
+ 'متوسط':['صف عدم مطابقة اكتشفتها — كيف حللت سببها الجذري وأغلقتها؟','حدثني عن تدقيق داخلي نفذته — كيف تعاملت مع مقاومة الإدارة المدققة؟','كيف تبني ثقافة إبلاغ عن الحوادث دون خوف من اللوم؟'],
+ 'كبير':['صف رحلة حصول منشأتك على شهادة آيزو شاركت في قيادتها.','كيف تصمم مصفوفة مخاطر تشغيلية وتحدّثها؟','حدثني عن حادث جسيم حققت فيه — ما التوصيات الجذرية التي خرجت بها؟'],
+ 'قيادي':['كيف تدمج الجودة والسلامة في القرار التشغيلي اليومي لا كإدارة منفصلة؟','صف تحولًا في ثقافة السلامة قدته — كيف قست تغيّر السلوك؟','كيف توازن بين متطلبات الامتثال المتزايدة وسلاسة العمليات؟']},
+'المشتريات وسلاسل الإمداد': {
+ 'مبتدئ':['ما مراحل دورة الشراء من الطلب حتى الاستلام؟','كيف تقارن بين عرضين متقاربين سعرًا؟ ما الذي تنظر إليه غير السعر؟','ما الذي تعرفه عن منصة اعتماد والمنافسات الحكومية؟'],
+ 'متوسط':['صف منافسة أدرت طرحها وترسيتها — ما أصعب مراحلها؟','حدثني عن مورد متعثر أثناء التنفيذ — كيف عالجت الموقف تعاقديًا وعمليًا؟','كيف تكتشف مؤشرات تلاعب أو تواطؤ في العروض؟'],
+ 'كبير':['صف تفاوضًا كبيرًا قدته — ما استراتيجيتك وما الذي حصلت عليه فعلًا؟','كيف تبني تقييم موردين دوريًا يؤثر حقًا في قرارات الترسية؟','حدثني عن عقد إطاري صممته — لماذا اخترته وما وفّره؟'],
+ 'قيادي':['كيف تبني استراتيجية مشتريات توازن بين الكفاءة والمحتوى المحلي؟','صف أزمة سلسلة إمداد (انقطاع/تضخم أسعار) قدت الاستجابة لها.','كيف تحوّل المشتريات من وظيفة إجرائية إلى شريك استراتيجي؟']},
+'القانون والحوكمة': {
+ 'مبتدئ':['ما الفرق بين العقد والاتفاقية ومذكرة التفاهم؟','كيف تبحث عن نظام أو لائحة سعودية محدثة وتتأكد من سريانها؟','صف حالة درستها وأعجبك تحليلها القانوني — لماذا؟'],
+ 'متوسط':['صف عقدًا صغته أو راجعته — ما البنود التي شددت عليها ولماذا؟','حدثني عن رأي قانوني أعددته في مسألة غير واضحة النص — كيف بنيت الاجتهاد؟','كيف توازن بين تمكين الإدارات من التحرك وحمايتها من المخاطر القانونية؟'],
+ 'كبير':['صف نزاعًا أو تحكيمًا توليت ملفه — ما استراتيجيتك وما النتيجة؟','كيف تبني برنامج امتثال (حماية بيانات/مكافحة فساد) داخل منشأة؟','حدثني عن موقف قلت فيه "لا" قانونية لقيادة متحمسة — كيف قلتها؟'],
+ 'قيادي':['كيف تبني إدارة قانونية وحوكمة رشيقة لا تعطل الأعمال؟','صف إطار حوكمة صممته لمجلس أو لجان عليا.','كيف توازن بين السرية القانونية وشفافية الحوكمة المطلوبة نظامًا؟']},
+'خدمة العملاء': {
+ 'مبتدئ':['صف موقفًا تعاملت فيه مع شخص غاضب — ماذا قلت له أولًا؟','ما الفرق بين الاستجابة السريعة والحل الفعلي للمشكلة؟','كيف ترد كتابيًا على شكوى بأسلوب رسمي ومتعاطف معًا؟'],
+ 'متوسط':['حدثني عن شكوى معقدة أغلقتها بنفسك من أولها لآخرها.','كيف تتعامل مع عميل محق لكن النظام لا يسمح بما يطلبه؟','صف تحسينًا اقترحته من واقع الشكاوى المتكررة — ماذا حدث له؟'],
+ 'كبير':['كيف تبني مصفوفة تصعيد للشكاوى تحمي العميل والموظف معًا؟','صف قياسًا لرضا المستفيدين صممته — ماذا غيّرت بناء على نتائجه؟','كيف تدرب فريق خدمة وترفع جودة ردوده وتوحدها؟'],
+ 'قيادي':['كيف تحول تجربة المستفيد إلى مؤشر استراتيجي تُحاسب عليه الإدارات؟','صف تحولًا رقميًا في قنوات الخدمة قدته — ما أثره المقاس؟','كيف توازن بين الأتمتة والاحتفاظ باللمسة الإنسانية في الخدمة؟']}
+};
+
+// أسئلة سلوكية عامة حسب المستوى — تُضاف لأي مجال
+const BEHAVIORAL_BANK = {
+ 'مبتدئ':['أين ترى نفسك مهنيًا بعد ثلاث سنوات، وما الذي ستفعله للوصول؟','حدثني عن مهارة تعلمتها بنفسك مؤخرًا — كيف تعلمتها ولماذا؟','صف موقفًا أخطأت فيه — كيف اكتشفت الخطأ وماذا فعلت؟','لو استلمت مهمة لا تعرف كيف تنجزها، ما أول ثلاث خطوات تفعلها؟','ما الذي يجذبك للعمل في كاكست تحديدًا؟'],
+ 'متوسط':['صف موقفًا تلقيت فيه ملاحظة نقدية صعبة — كيف استفدت منها؟','حدثني عن مشروع أدرته من البداية للنهاية بأقل إشراف ممكن.','صف موقفًا أقنعت فيه طرفًا لا سلطة لك عليه بتغيير رأيه.','حدثني عن زميل أقل خبرة وجّهته — كيف تابعت تطوره؟','صف مشكلة متكررة في العمل حددتها وعالجت جذرها.'],
+ 'كبير':['صف موقفًا ضحّيت فيه بمكسب قصير المدى لصالح هدف أبعد.','حدثني عن قرار اتخذته وسط غموض وتضارب آراء — كيف حسمته ومتى؟','صف موقفًا اختلفت فيه مع مديرك المباشر — كيف أدرت الخلاف؟','كيف تحقق نتائج من خلال أشخاص لا يتبعونك تنظيميًا؟','حدثني عن أصعب رسالة سلبية اضطررت لإيصالها — كيف صغتها؟'],
+ 'قيادي':['كيف تتعامل مع خطأ جسيم ارتكبه أحد مرؤوسيك أمام جهات عليا؟','صف قرارًا مؤسسيًا اتخذته وتحملت كلفته السياسية داخل المنشأة.','كيف تبني قادة تحتك بدل الاعتماد الدائم عليك؟','حدثني عن مبادرة استراتيجية أوقفتها رغم استثمار كبير فيها — لماذا؟','كيف توازن بين ما تريده القيادة العليا وما يحتاجه فريقك فعلًا؟']
+};
+
+// خريطة كلمات تكشف مجال المرشح من مسماه وتخصصه ومهاراته
+const FIELD_KEYWORDS = {
+ 'تقنية المعلومات والبرمجة':['مطور','برمج','developer','software','تقنية المعلومات','نظم المعلومات','حاسب','python','javascript','java','node','react','devops','شبكات','أمن سيبراني','it '],
+ 'البيانات والذكاء الاصطناعي':['بيانات','data','تحليل','analyst','ذكاء اصطناعي','machine learning','تعلم آلة','bi','إحصاء','statistics'],
+ 'الموارد البشرية':['موارد بشرية','hr','استقطاب','توظيف','recruit','talent','شؤون موظفين','تدريب وتطوير'],
+ 'المالية والمحاسبة':['محاسب','مالي','finance','account','ميزانية','تدقيق','audit','مراقب مالي','زكاة','ضريب'],
+ 'الهندسة':['مهندس','هندسة','engineer','مدني','ميكانيك','كهرباء','معماري','صناعية','autocad'],
+ 'إدارة المشاريع':['مشاريع','مشروع','project','pmp','pmo','scrum','agile'],
+ 'التسويق والاتصال':['تسويق','marketing','إعلام','اتصال مؤسسي','علاقات عامة','محتوى','سوشال','تواصل اجتماعي','تصميم جرافيك'],
+ 'الإدارة والقيادة':['مدير عام','مدير إدارة','رئيس قسم','قيادة','استراتيجي','تخطيط','تطوير أعمال','عمليات'],
+ 'المهارات المكتبية':['سكرتير','إداري','مساعد','منسق','أرشفة','مكتب'],
+ 'اللغات':['مترجم','ترجمة','translator','لغوي','تدقيق لغوي'],
+ 'البحث العلمي':['باحث','بحث','research','مختبر','عالم','دكتوراه','postdoc','منح بحثية'],
+ 'الجودة والسلامة':['جودة','quality','سلامة','safety','iso','بيئة وصحة','hse'],
+ 'المشتريات وسلاسل الإمداد':['مشتريات','procurement','عقود وم','مناقصات','لوجست','إمداد','مخزون','مستودع'],
+ 'القانون والحوكمة':['قانوني','محامي','legal','حوكمة','امتثال','compliance','عقود قانونية','تشريع'],
+ 'خدمة العملاء':['خدمة عملاء','customer','مركز اتصال','call center','شكاوى','مستفيدين']
+};
+
+function candidateLevel(yrs){
+  if(yrs >= 15) return 'قيادي';
+  if(yrs >= 8) return 'كبير';
+  if(yrs >= 3) return 'متوسط';
+  return 'مبتدئ';
+}
+function detectField(candidate){
+  const hay = ((candidate.currentTitle||'') + ' ' + (candidate.specialization||'') + ' ' +
+    (candidate.skills||[]).join(' ') + ' ' + (candidate.resumeText||'').slice(0,2500)).toLowerCase();
+  let best = null, bestHits = 0;
+  for(const [field, kws] of Object.entries(FIELD_KEYWORDS)){
+    const hits = kws.reduce((n,k)=> n + (hay.includes(k.toLowerCase()) ? 1 : 0), 0);
+    if(hits > bestHits){ bestHits = hits; best = field; }
+  }
+  return bestHits > 0 ? best : null;
+}
+// أسئلة المرشح: مجاله + مستواه + مهاراته + وظيفته المرتبطة
+function genCandidateQuestions(candidate){
+  const yrs = (candidate.experienceYears && candidate.experienceYears > 0)
+    ? candidate.experienceYears
+    : ((candidate.resumeText && candidate.resumeText.trim()) ? guessExperienceYears(candidate.resumeText) : 0);
+  const level = candidateLevel(yrs);
+  const field = detectField(candidate);
+  const qs = [];
+  const add = (q)=>{ if(q && !qs.includes(q)) qs.push(q); };
+  if(field && QUESTION_BANK[field]) (QUESTION_BANK[field][level]||[]).forEach(add);
+  (BEHAVIORAL_BANK[level]||[]).slice(0,3).forEach(add);
+  (candidate.skills||[]).slice(0,4).forEach(s=>{
+    const bank = SKILL_BANK[String(s).toLowerCase()];
+    if(bank && qs.length < 9) add(bank[0]);
+  });
+  const job = DB.jobs.find(j=>j.id===candidate.appliedFor);
+  if(job) genQuestions(job).slice(0,2).forEach(q=>{ if(qs.length < 10) add(q); });
+  while(qs.length < 5){
+    const g = GENERIC_QUESTIONS[qs.length % GENERIC_QUESTIONS.length];
+    if(!qs.includes(g)) add(g); else break;
+  }
+  return { questions: qs.slice(0,10), field, level, yrs };
+}
+
+const SKILL_LIBRARY = {
+  'تقنية المعلومات والبرمجة': ['python','javascript','typescript','java','c#','sql','html/css','react','node.js','apis','git','linux','docker','أمن المعلومات','الحوسبة السحابية','إدارة قواعد البيانات'],
+  'البيانات والذكاء الاصطناعي': ['تحليل البيانات','power bi','tableau','excel متقدم','الإحصاء','تعلم الآلة','التعلم العميق','معالجة اللغة الطبيعية','تنظيف البيانات','التنبؤ والنمذجة','لوحات المعلومات','big data','التقارير التحليلية'],
+  'الموارد البشرية': ['استقطاب المواهب','إجراء المقابلات','تخطيط القوى العاملة','إدارة الأداء','التعويضات والمزايا','التدريب والتطوير','علاقات الموظفين','التوطين وسعودة الوظائف','أنظمة العمل السعودية','التهيئة الوظيفية','بناء الثقافة المؤسسية','تحليلات الموارد البشرية'],
+  'المالية والمحاسبة': ['المحاسبة المالية','إعداد الميزانيات','التقارير المالية','التدقيق الداخلي','التحليل المالي','الضرائب والزكاة','المعايير الدولية ifrs','إدارة التدفق النقدي','التكاليف','التخطيط المالي','sap','oracle financials'],
+  'الهندسة': ['autocad','solidworks','revit','إدارة المشاريع الهندسية','الإشراف على التنفيذ','التصميم الإنشائي','الهندسة الكهربائية','الهندسة الميكانيكية','هندسة العمليات','ضبط الجودة الهندسية','السلامة الإنشائية','حساب الكميات'],
+  'إدارة المشاريع': ['pmp','إدارة النطاق والجدول','agile','scrum','إدارة المخاطر','إدارة أصحاب المصلحة','متابعة التنفيذ','التقارير الدورية','ms project','jira','إدارة الميزانية','إغلاق المشاريع'],
+  'التسويق والاتصال': ['التسويق الرقمي','إدارة وسائل التواصل','تحسين محركات البحث seo','صناعة المحتوى','الهوية البصرية','الحملات الإعلانية','تحليلات التسويق','العلاقات العامة','الاتصال المؤسسي','كتابة الأخبار والبيانات','التصوير والمونتاج','إدارة الفعاليات'],
+  'الإدارة والقيادة': ['القيادة','التخطيط الاستراتيجي','اتخاذ القرار','بناء الفرق','إدارة التغيير','التفويض والمتابعة','حل المشكلات','التفكير النقدي','إدارة الاجتماعات','مؤشرات الأداء kpis','الحوكمة الإدارية','إعداد السياسات'],
+  'المهارات المكتبية': ['microsoft word','microsoft excel','powerpoint','outlook','إدارة الملفات والأرشفة','الطباعة السريعة','محاضر الاجتماعات','إدارة المواعيد','خدمات الدعم الإداري','التقارير الإدارية'],
+  'اللغات': ['العربية (كتابة احترافية)','الإنجليزية (متقدم)','الإنجليزية (متوسط)','الترجمة','التدقيق اللغوي','كتابة التقارير بالإنجليزية','الفرنسية','الصينية'],
+  'البحث العلمي': ['منهجية البحث','كتابة الأوراق العلمية','التحليل الإحصائي spss','النشر العلمي','مراجعة الأدبيات','التجارب المخبرية','براءات الاختراع','التقييم العلمي','أخلاقيات البحث','إدارة المنح البحثية'],
+  'الجودة والسلامة': ['iso 9001','الصحة والسلامة المهنية','osha','تحليل المخاطر','التدقيق على الجودة','التحسين المستمر','six sigma','سلامة الغذاء haccp','الاستجابة للطوارئ','التوعية والتدريب الوقائي'],
+  'المشتريات وسلاسل الإمداد': ['إدارة المشتريات','التفاوض مع الموردين','إدارة العقود','المناقصات والترسية','إدارة المخزون','الخدمات اللوجستية','التخليص الجمركي','تقييم الموردين','منصة اعتماد','sap mm'],
+  'القانون والحوكمة': ['صياغة العقود','الاستشارات القانونية','الامتثال والحوكمة','أنظمة الشركات السعودية','حماية البيانات pdpl','التقاضي والترافع','الملكية الفكرية','التحقيقات الإدارية','مكافحة غسل الأموال'],
+  'خدمة العملاء': ['التعامل مع العملاء','إدارة الشكاوى','مهارات الاتصال الهاتفي','أنظمة crm','قياس رضا العملاء','الرد الكتابي الاحترافي','إدارة مراكز الاتصال','الاحتواء وحل النزاعات']
+};
+
 function genQuestions(job){
   if(!job) return GENERIC_QUESTIONS.slice(0,3);
   const qs = [];
@@ -1869,6 +2174,7 @@ async function viewJobs(){
         <button class="btn btn-sm btn-ghost" data-addonejob="${j.id}">+ مرشح واحد</button>
       </div>
       <div style="text-align:left;margin-top:8px;">
+        <span class="btn btn-sm btn-ghost" data-clonejob="${j.id}" style="padding:4px 10px;">استنساخ</span>
         <span class="btn btn-sm btn-danger" data-deljob="${j.id}" style="padding:4px 10px;">حذف الوظيفة</span>
       </div>
     </div>`;
@@ -2370,6 +2676,15 @@ function openChangePassword(){
   };
 }
 
+function applyTheme(t){
+  try{ localStorage.setItem('tad_theme', t); }catch(e){}
+  if(t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+  else document.documentElement.removeAttribute('data-theme');
+}
+function currentTheme(){
+  try{ return localStorage.getItem('tad_theme') || 'aurora'; }catch(e){ return 'aurora'; }
+}
+
 async function openEnable2FA(){
   let setup;
   try{ setup = await api.tfaSetup(); }
@@ -2694,29 +3009,87 @@ async function deleteJob(jobId){
   render();
 }
 
-function openAddJob(){
+function openAddJob(preset){
+  // preset = clone source (or null). The modal is "live": as you type,
+  // the database answers back — match counts, skill suggestions, and
+  // a quality meter — all inside the existing design language.
+  const p = preset || {};
+  const SAL_RANGES = ['1000 – 5000','5000 – 10000','10000 – 15000','15000 – 20000','20000 – 30000','30000 – 45000','45000 – 60000','أكثر من 60000'];
+  const DEGS = ['','ثانوية عامة','دبلوم','بكالوريوس','ماجستير','دكتوراه'];
   openModal(`
-    <div class="modal-head"><h2>إضافة وظيفة</h2><span class="xbtn" id="mClose">&times;</span></div>
-    <div class="field"><label>المسمى الوظيفي</label><input type="text" id="jTitle"></div>
+    <div class="modal-head"><h2>${p.title?'استنساخ وظيفة':'إضافة وظيفة'}</h2><span class="xbtn" id="mClose">&times;</span></div>
+
+    <div class="field"><label>المسمى الوظيفي</label><input type="text" id="jTitle" value="${esc(p.title||'')}"></div>
     <div class="field-row">
-      <div class="field"><label>القسم</label><input type="text" id="jDept"></div>
+      <div class="field"><label>القسم</label><input type="text" id="jDept" value="${esc(p.department||'')}"></div>
       <div class="field"><label>المستوى الوظيفي</label>
-        <select id="jSeniority"><option>مبتدئ</option><option selected>متوسط</option><option>كبير</option><option>قيادي</option></select>
+        <select id="jSeniority">${['مبتدئ','متوسط','كبير','قيادي'].map(s=>`<option ${(p.seniority||'متوسط')===s?'selected':''}>${s}</option>`).join('')}</select>
       </div>
     </div>
     <div class="field-row">
-      <div class="field"><label>عدد الشواغر المطلوبة</label><input type="number" id="jHeadcount" min="1" value="1"></div>
-      <div class="field"><label>تاريخ نشر الوظيفة</label><input type="date" id="jPostDate"></div>
+      <div class="field"><label>عدد الشواغر</label><input type="number" id="jHeadcount" min="1" value="${p.headcount||1}"></div>
+      <div class="field"><label>تاريخ النشر</label><input type="date" id="jPostDate" value="${esc(p.postDate||'')}"></div>
+      <div class="field"><label>تاريخ إغلاق التقديم</label><input type="date" id="jClosing" value="${esc(p.closingDate||'')}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>المؤهل المطلوب</label>
+        <select id="jDegree">${DEGS.map(d=>`<option value="${d}" ${(p.requiredDegree||'')===d?'selected':''}>${d===''?'— غير محدد —':d}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>سنوات الخبرة (من)</label><input type="number" id="jMinExp" min="0" max="40" value="${p.minExperience||''}" placeholder="0"></div>
+      <div class="field"><label>إلى</label><input type="number" id="jMaxExp" min="0" max="45" value="${p.maxExperience||''}" placeholder="—"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>مدينة العمل</label><input type="text" id="jCity" value="${esc(p.city||'')}" placeholder="الرياض"></div>
+      <div class="field"><label>نطاق الراتب</label>
+        <select id="jSalary"><option value="">— غير محدد —</option>${SAL_RANGES.map(r=>`<option ${(p.salaryRange||'')===r?'selected':''}>${r}</option>`).join('')}</select>
+      </div>
     </div>
     <div class="field">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-        <input type="checkbox" id="jApproved" checked style="width:auto;">
+        <input type="checkbox" id="jApproved" ${p.approved===false?'':'checked'} style="width:auto;">
         <span>وظيفة معتمدة (لديها موافقة رسمية للتوظيف)</span>
       </label>
     </div>
-    <div class="field"><label>المهارات المطلوبة (مفصولة بفواصل)</label><input type="text" id="jReq" placeholder="javascript, react, leadership"></div>
-    <div class="field"><label>مهارات إضافية مفضلة</label><input type="text" id="jNice" placeholder="sql, writing"></div>
-    <div class="field"><label>الوصف</label><textarea id="jDesc" rows="3" style="direction:rtl;text-align:right;"></textarea></div>
+
+    <div class="field"><label>المهارات المطلوبة (مفصولة بفواصل)</label><input type="text" id="jReq" value="${esc((p.requiredSkills||[]).join(', '))}" placeholder="python, sql, تحليل البيانات"></div>
+    <div class="field"><label>مهارات إضافية مفضلة</label><input type="text" id="jNice" value="${esc((p.niceSkills||[]).join(', '))}" placeholder="tableau, الإنجليزية (متقدم)"></div>
+
+    <div class="skillbank">
+      <div class="sb-head">
+        <strong>بنك المهارات</strong>
+        <span class="sb-target">
+          أضف إلى:
+          <label><input type="radio" name="sbTarget" value="req" checked style="width:auto;"> المطلوبة</label>
+          <label><input type="radio" name="sbTarget" value="nice" style="width:auto;"> المفضلة</label>
+        </span>
+      </div>
+      <div class="sb-cats" id="sbCats">
+        ${Object.keys(SKILL_LIBRARY).map((c,i)=>`<span class="chip sb-cat ${i===0?'on':''}" data-sbcat="${esc(c)}">${esc(c)}</span>`).join('')}
+      </div>
+      <div class="sb-skills" id="sbSkills"></div>
+      <div class="sb-suggested" id="sbSuggested" style="display:none;">
+        <div style="font-size:11px;color:var(--teal);font-weight:800;margin-bottom:6px;">مقترحة من مرشحي قاعدتك لهذا المسمى:</div>
+        <div id="sbSuggestedChips"></div>
+      </div>
+    </div>
+
+    <div class="field"><label>الوصف الوظيفي — كلماته وقود المطابقة</label><textarea id="jDesc" rows="4" style="direction:rtl;text-align:right;">${esc(p.description||'')}</textarea></div>
+
+    <div class="qmeter">
+      <div class="qm-top"><span>جودة الوظيفة</span><span id="qmPct">0%</span></div>
+      <div class="qm-bar"><div class="qm-fill" id="qmFill"></div></div>
+      <div class="qm-hints" id="qmHints"></div>
+    </div>
+
+    <div class="jlive" id="jLive">
+      <span style="color:var(--muted);">ابدأ بكتابة المسمى والمهارات — وسترى فورًا كم مرشحًا في قاعدتك يطابق هذه الوظيفة.</span>
+    </div>
+
+    <div style="margin:10px 0 4px;">
+      <span class="btn btn-sm btn-ghost" id="jPreviewQs">معاينة أسئلة المقابلة المتوقعة</span>
+      <div id="jQsList" style="display:none;margin-top:10px;font-size:12.5px;line-height:2;color:var(--muted);"></div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn btn-ghost" id="mCancel">إلغاء</button>
       <button class="btn btn-primary" id="mSave">حفظ الوظيفة</button>
@@ -2724,19 +3097,137 @@ function openAddJob(){
   `);
   document.getElementById('mClose').onclick = closeModal;
   document.getElementById('mCancel').onclick = closeModal;
+
+  const val = id => document.getElementById(id).value;
+  const skillsOf = id => val(id).split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const draft = () => ({
+    title: val('jTitle').trim(), department: val('jDept').trim(),
+    description: val('jDesc').trim(),
+    requiredSkills: skillsOf('jReq'), niceSkills: skillsOf('jNice'),
+    requiredDegree: val('jDegree'), minExperience: Number(val('jMinExp'))||0
+  });
+
+  // ---- skill bank ----
+  const renderBankCat = (cat)=>{
+    const have = new Set(skillsOf('jReq').concat(skillsOf('jNice')));
+    document.getElementById('sbSkills').innerHTML = (SKILL_LIBRARY[cat]||[])
+      .map(s=>`<span class="chip sb-skill ${have.has(s.toLowerCase())?'on':''}" data-sbskill="${esc(s)}">${esc(s)}</span>`).join('');
+  };
+  let currentCat = Object.keys(SKILL_LIBRARY)[0];
+  renderBankCat(currentCat);
+  document.getElementById('sbCats').addEventListener('click', (e)=>{
+    const c = e.target.closest('[data-sbcat]'); if(!c) return;
+    currentCat = c.dataset.sbcat;
+    document.querySelectorAll('.sb-cat').forEach(x=>x.classList.toggle('on', x===c));
+    renderBankCat(currentCat);
+  });
+  const toggleSkill = (skill)=>{
+    const target = document.querySelector('input[name="sbTarget"]:checked').value==='req' ? 'jReq' : 'jNice';
+    const other = target==='jReq' ? 'jNice' : 'jReq';
+    const low = skill.toLowerCase();
+    const rm = (id)=>{ const arr = skillsOf(id).filter(s=>s!==low);
+      document.getElementById(id).value = arr.join(', '); return arr; };
+    if(skillsOf('jReq').includes(low) || skillsOf('jNice').includes(low)){
+      rm('jReq'); rm('jNice');           // second click removes it
+    } else {
+      rm(other);
+      const arr = skillsOf(target); arr.push(low);
+      document.getElementById(target).value = arr.join(', ');
+    }
+    renderBankCat(currentCat); refresh();
+  };
+  document.getElementById('sbSkills').addEventListener('click', (e)=>{
+    const s = e.target.closest('[data-sbskill]'); if(s) toggleSkill(s.dataset.sbskill);
+  });
+  document.getElementById('sbSuggestedChips').addEventListener('click', (e)=>{
+    const s = e.target.closest('[data-sbskill]'); if(s) toggleSkill(s.dataset.sbskill);
+  });
+
+  // ---- quality meter (local, instant) ----
+  const meter = ()=>{
+    const d = draft();
+    const checks = [
+      [15, !!d.title, 'اكتب المسمى الوظيفي'],
+      [20, d.description.length >= 200, 'أطل الوصف — 200 حرف على الأقل (حاليًا ' + d.description.length + ')'],
+      [20, d.requiredSkills.length >= 3, 'حدد 3 مهارات مطلوبة على الأقل'],
+      [10, d.niceSkills.length >= 1, 'أضف مهارة مفضلة واحدة على الأقل'],
+      [10, !!d.requiredDegree, 'حدد المؤهل المطلوب'],
+      [10, d.minExperience > 0, 'حدد الحد الأدنى لسنوات الخبرة'],
+      [8, !!val('jSalary'), 'حدد نطاق الراتب'],
+      [7, !!val('jClosing'), 'حدد تاريخ إغلاق التقديم']
+    ];
+    let pct = 0; const hints = [];
+    checks.forEach(([w, ok, hint])=>{ if(ok) pct += w; else hints.push(hint); });
+    document.getElementById('qmPct').textContent = pct + '%';
+    document.getElementById('qmFill').style.width = pct + '%';
+    document.getElementById('qmFill').style.background =
+      pct >= 80 ? 'var(--green)' : pct >= 50 ? '#d4a24c' : '#8fa3b3';
+    document.getElementById('qmHints').innerHTML =
+      hints.slice(0,3).map(x=>`<span>• ${esc(x)}</span>`).join('');
+  };
+
+  // ---- live database preview (debounced) ----
+  let previewTimer = null;
+  const preview = async ()=>{
+    const d = draft();
+    if(!d.title && !d.description && !d.requiredSkills.length) return;
+    try{
+      const r = await api.jobPreview(d);
+      const live = document.getElementById('jLive');
+      if(!live) return;
+      live.innerHTML = `
+        <div style="font-weight:800;color:var(--teal);">يطابق الآن ${r.count} من ${r.total} مرشحًا في قاعدتك (40%+)</div>
+        ${r.top.length ? `<div style="margin-top:4px;font-size:12px;color:var(--muted);">الأفضل: ${r.top.map(t=>esc(t.name)+' <strong style="color:var(--text);">'+t.pct+'%</strong>').join(' · ')}</div>` : ''}`;
+      const sug = document.getElementById('sbSuggested');
+      if(r.suggestedSkills.length){
+        sug.style.display = '';
+        const have = new Set(skillsOf('jReq').concat(skillsOf('jNice')));
+        document.getElementById('sbSuggestedChips').innerHTML =
+          r.suggestedSkills.map(s=>`<span class="chip sb-skill ${have.has(s.toLowerCase())?'on':''}" data-sbskill="${esc(s)}">${esc(s)}</span>`).join('');
+      } else { sug.style.display = 'none'; }
+    }catch(e){}
+  };
+  const refresh = ()=>{
+    meter();
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(preview, 600);
+  };
+  ['jTitle','jDept','jDesc','jReq','jNice','jDegree','jMinExp','jSalary','jClosing'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener('input', refresh);
+    el.addEventListener('change', refresh);
+  });
+  meter();
+  if(p.title) refresh();   // clones preview immediately
+
+  // ---- interview questions preview ----
+  document.getElementById('jPreviewQs').onclick = ()=>{
+    const box = document.getElementById('jQsList');
+    const d = draft();
+    box.innerHTML = genQuestions({requiredSkills:d.requiredSkills, niceSkills:d.niceSkills})
+      .map((q,i)=>`<div>${i+1}. ${esc(q)}</div>`).join('');
+    box.style.display = box.style.display === 'none' ? '' : 'none';
+  };
+
   document.getElementById('mSave').onclick = async ()=>{
-    const title = document.getElementById('jTitle').value.trim();
+    const title = val('jTitle').trim();
     if(!title){ alert('المسمى الوظيفي مطلوب.'); return; }
     const j = {
       title,
-      department: document.getElementById('jDept').value.trim(),
-      seniority: document.getElementById('jSeniority').value,
-      headcount: Math.max(1, Number(document.getElementById('jHeadcount').value)||1),
-      postDate: document.getElementById('jPostDate').value || null,
+      department: val('jDept').trim(),
+      seniority: val('jSeniority'),
+      headcount: Math.max(1, Number(val('jHeadcount'))||1),
+      postDate: val('jPostDate') || null,
       approved: document.getElementById('jApproved').checked,
-      requiredSkills: document.getElementById('jReq').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean),
-      niceSkills: document.getElementById('jNice').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean),
-      description: document.getElementById('jDesc').value.trim(),
+      requiredSkills: skillsOf('jReq'),
+      niceSkills: skillsOf('jNice'),
+      description: val('jDesc').trim(),
+      requiredDegree: val('jDegree') || null,
+      minExperience: Number(val('jMinExp')) || null,
+      maxExperience: Number(val('jMaxExp')) || null,
+      city: val('jCity').trim() || null,
+      salaryRange: val('jSalary') || null,
+      closingDate: val('jClosing') || null
     };
     await mutate(()=>api.createJob(j));
     await refreshJobs();
@@ -2830,7 +3321,8 @@ async function openDetail(candId){
   }
   const job = DB.jobs.find(j=>j.id===c.appliedFor);
   const r = compositeRank(c);
-  const questions = genQuestions(job);
+  const qgen = genCandidateQuestions(c);
+  const questions = qgen.questions;
   const assessments = c.assessments || [];
 
   openModal(`
@@ -2899,6 +3391,10 @@ async function openDetail(candId){
     </div>
     <div class="detail-section">
       <h3>أسئلة مقابلة مقترحة</h3>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">
+        مولّدة حسب ${qgen.field ? `مجاله (<strong style="color:var(--teal);">${esc(qgen.field)}</strong>) و` : ''}مستواه
+        (<strong style="color:var(--teal);">${qgen.level}</strong>${qgen.yrs?` — ${qgen.yrs} سنة خبرة`:''})${c.appliedFor?' ووظيفته المرتبطة':''}.
+      </div>
       <div class="qlist">${questions.map(q=>`<div class="qitem">${esc(q)}</div>`).join('')}</div>
     </div>
 
@@ -2998,6 +3494,12 @@ function attachViewHandlers(){
   document.querySelectorAll('[data-addonejob]').forEach(el=>{
     el.onclick = ()=> openAddCandidate(null, el.dataset.addonejob);
   });
+  document.querySelectorAll('[data-clonejob]').forEach(el=>{
+    el.onclick = ()=>{
+      const j = DB.jobs.find(x=>x.id===el.dataset.clonejob);
+      if(j) openAddJob({...j, title: j.title + ' (نسخة)', id: undefined});
+    };
+  });
   document.querySelectorAll('[data-deljob]').forEach(el=>{
     el.onclick = ()=> deleteJob(el.dataset.deljob);
   });
@@ -3093,6 +3595,14 @@ function showResetForm(token){
 }
 
 document.addEventListener('click', (e)=>{
+  const th = e.target.closest && e.target.closest('[data-settheme]');
+  if(th){
+    applyTheme(th.dataset.settheme);
+    document.querySelectorAll('[data-settheme]').forEach(b=>{
+      b.className = 'btn btn-sm ' + (b.dataset.settheme===th.dataset.settheme ? 'btn-primary' : 'btn-ghost');
+    });
+    return;
+  }
   const dl = e.target.closest && e.target.closest('[data-dlassess]');
   if(dl){ window.open('/api/assessments/' + encodeURIComponent(dl.dataset.dlassess) + '/file', '_blank'); return; }
   const foot = e.target.closest && e.target.closest('#sidebarFoot');
@@ -3100,6 +3610,13 @@ document.addEventListener('click', (e)=>{
     openModal(`
       <div class="modal-head"><h2>${esc(CURRENT_USER.displayName)}</h2><span class="xbtn" onclick="closeModal()">×</span></div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">اسم المستخدم: <span class="mono">${esc(CURRENT_USER.username)}</span></div>
+      <div style="font-size:12.5px;margin-bottom:14px;">
+        <div style="margin-bottom:8px;">مظهر المنصة:</div>
+        <div style="display:flex;gap:8px;">
+          ${[['aurora','أورورا'],['dark','داكن'],['light','فاتح']].map(([v,label])=>
+            `<button class="btn btn-sm ${currentTheme()===v?'btn-primary':'btn-ghost'}" data-settheme="${v}">${label}</button>`).join('')}
+        </div>
+      </div>
       <div style="font-size:12.5px;margin-bottom:16px;">
         المصادقة الثنائية:
         ${CURRENT_USER.totpEnabled

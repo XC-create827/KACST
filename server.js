@@ -52,6 +52,12 @@ async function initSchema() {
   await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS file_name TEXT');
   await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS mime_type TEXT');
   await pool.query('ALTER TABLE assessments ADD COLUMN IF NOT EXISTS file_bytes BYTEA');
+  await pool.query('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS required_degree TEXT');
+  await pool.query('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS min_experience INTEGER');
+  await pool.query('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS max_experience INTEGER');
+  await pool.query('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS city TEXT');
+  await pool.query('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary_range TEXT');
+  await pool.query('ALTER TABLE jobs ADD COLUMN IF NOT EXISTS closing_date DATE');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE');
   const renames = [["تم الترشيح","الفرز"],["العرض","العرض الوظيفي"]];
@@ -295,6 +301,10 @@ function rowToJob(r) {
     postDate: r.post_date ? new Date(r.post_date).toISOString().slice(0, 10) : '',
     approved: r.approved, requiredSkills: r.required_skills || [],
     niceSkills: r.nice_skills || [], description: r.description || '',
+    requiredDegree: r.required_degree || '', minExperience: r.min_experience || 0,
+    maxExperience: r.max_experience || 0, city: r.city || '',
+    salaryRange: r.salary_range || '',
+    closingDate: r.closing_date ? new Date(r.closing_date).toISOString().slice(0, 10) : '',
     candidateCount: r.candidate_count !== undefined ? Number(r.candidate_count) : undefined,
     hiredCount: r.hired_count !== undefined ? Number(r.hired_count) : undefined
   };
@@ -485,6 +495,9 @@ function significantWords(text){
     .map(normalizeArabic)
     .filter(w => w.length > 2 && !MATCH_STOP.has(w)))];
 }
+const DEGREE_RANK = { 'ثانوية عامة': 0, 'دبلوم': 1, 'بكالوريوس': 2, 'ماجستير': 3, 'دكتوراه': 4 };
+function degreeRank(d){ return DEGREE_RANK[String(d || '').trim()] ?? -1; }
+
 function jobKeywords(jobRow){
   // The job TITLE's words are separated out and weighted double:
   // finding them anywhere in the CV — current role OR past job
@@ -493,6 +506,8 @@ function jobKeywords(jobRow){
   return {
     req:  (jobRow.required_skills || []).map(s => String(s).toLowerCase()).filter(Boolean),
     nice: (jobRow.nice_skills || []).map(s => String(s).toLowerCase()).filter(Boolean),
+    minExp: Number(jobRow.min_experience) || 0,
+    reqDegRank: degreeRank(jobRow.required_degree),
     titleWords,
     text: significantWords((jobRow.department || '') + ' ' + (jobRow.description || ''))
       .filter(w => !titleWords.includes(w)).slice(0, 30)
@@ -513,8 +528,61 @@ function scoreCandidateForJob(jk, cand){
   (jk.titleWords || []).forEach(w => { max += 2; if (tokens.has(w) || raw.includes(w)) score += 2; });
   // remaining JD words: normalized-token match (handles Arabic prefixes)
   jk.text.forEach(w => { max += 1;   if (tokens.has(w) || raw.includes(w)) score += 1; });
-  return max ? Math.round(100 * score / max) : 0;
+  let pct = max ? Math.round(100 * score / max) : 0;
+  // Structural requirements soften the score — only when BOTH sides
+  // are known; missing candidate data never punishes.
+  if (jk.minExp > 0) {
+    const cy = Number(cand.experience_years) || 0;
+    if (cy > 0 && cy < jk.minExp) pct = Math.round(pct * 0.75);
+  }
+  if (jk.reqDegRank >= 0) {
+    const cr = degreeRank(cand.degree);
+    if (cr >= 0 && cr < jk.reqDegRank) pct = Math.round(pct * 0.85);
+  }
+  return pct;
 }
+
+// Live draft preview: score the WHOLE database against a job draft
+// (before it's even saved) and suggest skills from candidates who
+// hold the same title. Powers the smart job-creation modal.
+app.post('/api/jobs/preview', wrap(async (req, res) => {
+  const b = req.body || {};
+  const draft = {
+    title: String(b.title || ''), department: String(b.department || ''),
+    description: String(b.description || ''),
+    required_skills: Array.isArray(b.requiredSkills) ? b.requiredSkills : [],
+    nice_skills: Array.isArray(b.niceSkills) ? b.niceSkills : [],
+    required_degree: b.requiredDegree || null,
+    min_experience: Number(b.minExperience) || 0
+  };
+  if (!draft.title.trim() && !draft.description.trim() && !draft.required_skills.length) {
+    return res.json({ total: 0, count: 0, top: [], suggestedSkills: [] });
+  }
+  const jk = jobKeywords(draft);
+  const { rows } = await pool.query(`
+    SELECT id, name, current_title, specialization, degree, experience_years, skills, resume_text
+    FROM candidates`);
+  const scored = rows.map(r => ({ name: r.name, pct: scoreCandidateForJob(jk, r) }))
+    .filter(x => x.pct >= 40).sort((a, b2) => b2.pct - a.pct);
+  // Skill suggestions: what do candidates with this title actually list?
+  const tw = jk.titleWords;
+  const have = new Set(draft.required_skills.concat(draft.nice_skills).map(s => String(s).toLowerCase()));
+  const tally = {};
+  if (tw.length) {
+    for (const r of rows) {
+      const hay = significantWords((r.current_title || '') + ' ' + (r.resume_text || '').slice(0, 4000));
+      if (tw.some(w => hay.includes(w))) {
+        (r.skills || []).forEach(s => {
+          const k = String(s).toLowerCase().trim();
+          if (k && !have.has(k)) tally[k] = (tally[k] || 0) + 1;
+        });
+      }
+    }
+  }
+  const suggestedSkills = Object.entries(tally).sort((a, b2) => b2[1] - a[1]).slice(0, 15).map(e => e[0]);
+  res.json({ total: rows.length, count: scored.length,
+    top: scored.slice(0, 3), suggestedSkills });
+}));
 
 // The canonical candidate set for a job everywhere in the platform:
 // manually linked (applied_for) PLUS anyone matching the JD at ≥40%.
@@ -524,7 +592,7 @@ async function candidateIdsForJob(jobId){
   if (!jr.rows.length) return [];
   const jk = jobKeywords(jr.rows[0]);
   const { rows } = await pool.query(`
-    SELECT id, applied_for, skills, current_title, specialization, degree, resume_text
+    SELECT id, applied_for, skills, current_title, specialization, degree, experience_years, resume_text
     FROM candidates`);
   return rows
     .filter(r => r.applied_for === jobId || scoreCandidateForJob(jk, r) >= 40)
@@ -774,11 +842,14 @@ app.post('/api/jobs', wrap(async (req, res) => {
   if (!b.title) return res.status(400).json({ error: 'title is required' });
   const id = uid('job');
   await pool.query(
-    `INSERT INTO jobs (id,title,department,seniority,headcount,post_date,approved,required_skills,nice_skills,description)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    `INSERT INTO jobs (id,title,department,seniority,headcount,post_date,approved,required_skills,nice_skills,description,
+       required_degree,min_experience,max_experience,city,salary_range,closing_date)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
     [id, b.title, b.department || null, b.seniority || null,
      Math.max(1, Number(b.headcount) || 1), b.postDate || null,
-     b.approved !== false, b.requiredSkills || [], b.niceSkills || [], b.description || null]);
+     b.approved !== false, b.requiredSkills || [], b.niceSkills || [], b.description || null,
+     b.requiredDegree || null, Number(b.minExperience) || null, Number(b.maxExperience) || null,
+     b.city || null, b.salaryRange || null, b.closingDate || null]);
   await audit(pool, getActor(req), 'إضافة وظيفة', null, null, b.title);
   res.json({ id });
 }));
@@ -1273,7 +1344,7 @@ app.get('/api/pipeline', wrap(async (req, res) => {
   const jk = jobKeywords(jr.rows[0]);
   const { rows } = await pool.query(`
     SELECT c.id, c.name, c.stage, c.stage_changed_at, c.applied_for,
-           c.skills, c.current_title, c.specialization, c.degree, c.resume_text,
+           c.skills, c.current_title, c.specialization, c.degree, c.experience_years, c.resume_text,
            j.title AS job_title
     FROM candidates c LEFT JOIN jobs j ON j.id=c.applied_for
     ORDER BY c.stage_changed_at DESC`);
@@ -1336,7 +1407,7 @@ app.get('/api/export/resumes.zip', wrap(async (req, res) => {
     if (mode === 'matches') {
       const jk = jobKeywords(jr.rows[0]);
       const { rows } = await pool.query(`
-        SELECT id, skills, current_title, specialization, degree, resume_text, stage, applied_for FROM candidates`);
+        SELECT id, skills, current_title, specialization, degree, experience_years, resume_text, stage, applied_for FROM candidates`);
       ids = rows
         .map(r => ({ id: r.id, stage: r.stage, linked: r.applied_for === jobId, pct: scoreCandidateForJob(jk, r) }))
         .filter(x => (x.pct >= 40 || x.linked) && (!stage || x.stage === stage))
