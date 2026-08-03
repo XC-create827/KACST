@@ -1710,8 +1710,114 @@ const NAV_ICONS = {
   candidates: '<svg viewBox="0 0 24 24"><circle cx="9.5" cy="8.5" r="3.2"/><path d="M3.5 20c.6-3.4 3-5.3 6-5.3s5.4 1.9 6 5.3"/><circle cx="17" cy="9.5" r="2.4"/><path d="M16.5 14.6c2.4.3 3.8 1.8 4.2 4.4"/></svg>',
   audit: '<svg viewBox="0 0 24 24"><path d="M12 3.5 19 6v5.5c0 4.2-2.9 6.9-7 8.5-4.1-1.6-7-4.3-7-8.5V6z"/><path d="m9 11.8 2.1 2.1 4-4"/></svg>',
   users: '<svg viewBox="0 0 24 24"><circle cx="10" cy="8.5" r="3.2"/><path d="M4 20c.6-3.4 3-5.3 6-5.3 1.4 0 2.7.4 3.7 1.2"/><path d="M18 14.5v6"/><path d="M15 17.5h6"/></svg>',
+  sourcing: '<svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="5.5"/><path d="M15 15l5.5 5.5"/><path d="M8 10.5h5M10.5 8v5"/></svg>',
   settings: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6"/></svg>'
 };
+/* ---------------------------------------------------------
+   البحث الاستقطابي (X-Ray Sourcing): يبني استعلامات بحث دقيقة
+   موجهة لمنصات التوظيف عبر محركات البحث العامة — تقنية المستقطبين
+   المحترفين — مقيّدة بالسعودية، والنتائج تُفتح في متصفح المستخدم.
+   --------------------------------------------------------- */
+const SOURCING_PLATFORMS = [
+  { id:'linkedin',   label:'LinkedIn',    site:'linkedin.com/in',     saSite:'sa.linkedin.com/in', note:'الأغنى بالملفات المهنية' },
+  { id:'bayt',       label:'Bayt بيت',    site:'bayt.com',            saSite:'bayt.com',           note:'قوي خليجيًا' },
+  { id:'gulftalent', label:'GulfTalent',  site:'gulftalent.com',      saSite:'gulftalent.com',     note:'كفاءات الخليج' },
+  { id:'naukrigulf', label:'Naukrigulf',  site:'naukrigulf.com',      saSite:'naukrigulf.com',     note:'واسع الانتشار' },
+  { id:'indeed',     label:'Indeed',      site:'indeed.com',          saSite:'sa.indeed.com',      note:'أغلب سيره غير علنية' },
+  { id:'open',       label:'الويب كاملًا', site:'',                    saSite:'',                   note:'بلا تقييد منصة' },
+];
+
+function buildXrayQuery(o, platform){
+  const q = [];
+  const quote = s => '"' + s.trim() + '"';
+  const site = o.saudiOnly ? platform.saSite : platform.site;
+  if (site) q.push('site:' + site);
+  const titles = [o.title].concat(o.alts).map(t=>t.trim()).filter(Boolean);
+  if (titles.length === 1) q.push(quote(titles[0]));
+  else if (titles.length > 1) q.push('(' + titles.map(quote).join(' OR ') + ')');
+  o.skills.slice(0, 3).forEach(s => q.push(quote(s)));
+  if (o.degree) q.push(quote(o.degree));
+  if (o.city) q.push(quote(o.city));
+  if (o.saudiOnly) {
+    if (platform.id !== 'linkedin') q.push('("السعودية" OR "Saudi Arabia")');
+    if (o.strictSaudi) q.push('("سعودي الجنسية" OR "سعودية الجنسية" OR "Saudi national")');
+  }
+  o.exclude.forEach(x => q.push('-' + quote(x)));
+  q.push('-intitle:"وظائف"'); q.push('-intitle:"jobs"');
+  return q.join(' ');
+}
+
+function viewSourcing(){
+  const jobOpts = DB.jobs.map(j=>`<option value="${j.id}">${esc(j.title)}</option>`).join('');
+  return `
+  <div class="page-head"><div><h1>البحث عن مرشحين</h1>
+    <div class="sub">صف من تبحث عنه بدقة — وتفتح لك المنصة نتائج حية من منصات التوظيف عبر بحث X-Ray الاحترافي، مقيّدة بالسعوديين.</div></div></div>
+
+  <div class="detail-section" style="max-width:760px;">
+    <div class="field"><label>ابدأ من وظيفة شاغرة (اختياري — يعبئ الحقول تلقائيًا)</label>
+      <select id="srcJob"><option value="">— بدون —</option>${jobOpts}</select></div>
+    <div class="field"><label>المسمى الوظيفي</label><input type="text" id="srcTitle" placeholder="محاسب قانوني"></div>
+    <div class="field"><label>مسميات مرادفة (مفصولة بفواصل)</label><input type="text" id="srcAlts" placeholder="محاسب أول, Senior Accountant"></div>
+    <div class="field"><label>مهارات حاسمة — تُستخدم أقوى 3 (مفصولة بفواصل)</label><input type="text" id="srcSkills" placeholder="SOCPA, IFRS, SAP"></div>
+    <div class="field-row">
+      <div class="field"><label>المؤهل</label><input type="text" id="srcDegree" placeholder="بكالوريوس محاسبة"></div>
+      <div class="field"><label>المدينة</label><input type="text" id="srcCity" placeholder="الرياض"></div>
+    </div>
+    <div class="field"><label>استبعد من يذكر (مفصولة بفواصل)</label><input type="text" id="srcExclude" placeholder="تدريب تعاوني, طالب"></div>
+    <div class="field-row" style="align-items:center;">
+      <label style="display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13px;">
+        <input type="checkbox" id="srcSaudi" checked style="width:auto;"> سعوديون فقط (نطاقات سعودية + كلمات الجنسية)
+      </label>
+      <label style="display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13px;">
+        <input type="checkbox" id="srcStrict" style="width:auto;"> تشديد: من صرّح بجنسيته نصًا
+      </label>
+    </div>
+    <div style="margin:14px 0 6px;font-size:13px;font-weight:800;">المنصات:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      ${SOURCING_PLATFORMS.map((p,i)=>`
+        <label style="display:flex;gap:6px;align-items:center;cursor:pointer;font-size:12.5px;background:var(--panel-2);border:1px solid var(--line);border-radius:99px;padding:6px 14px;">
+          <input type="checkbox" class="srcPlat" value="${p.id}" ${i<4?'checked':''} style="width:auto;">
+          ${p.label} <span style="color:var(--muted);font-size:10.5px;">${p.note}</span>
+        </label>`).join('')}
+    </div>
+    <button class="btn btn-primary" id="srcGo">توليد عمليات البحث</button>
+    <div id="srcResults" style="margin-top:18px;"></div>
+    <div style="margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.9;">
+      ملاحظة مهنية: تحديد الجنسية آليًا تقريبي — النطاقات السعودية والكلمات ترشّح بقوة، والتحقق النهائي من الجنسية مسؤوليتك عند التواصل. النتائج من محركات البحث العامة وفق ما أتاحه أصحاب الملفات للعلن.
+    </div>
+  </div>`;
+}
+
+function runSourcing(){
+  const g = id => document.getElementById(id);
+  const list = v => v.split(',').map(s=>s.trim()).filter(Boolean);
+  const o = {
+    title: g('srcTitle').value.trim(),
+    alts: list(g('srcAlts').value),
+    skills: list(g('srcSkills').value),
+    degree: g('srcDegree').value.trim(),
+    city: g('srcCity').value.trim(),
+    exclude: list(g('srcExclude').value),
+    saudiOnly: g('srcSaudi').checked,
+    strictSaudi: g('srcStrict').checked
+  };
+  if(!o.title && !o.skills.length){ alert('اكتب المسمى الوظيفي أو مهارة واحدة على الأقل.'); return; }
+  const chosen = Array.from(document.querySelectorAll('.srcPlat'))
+    .filter(c=>c.checked).map(c=>SOURCING_PLATFORMS.find(p=>p.id===c.value));
+  if(!chosen.length){ alert('اختر منصة واحدة على الأقل.'); return; }
+  g('srcResults').innerHTML = chosen.map(p=>{
+    const q = buildXrayQuery(o, p);
+    const url = 'https://www.google.com/search?q=' + encodeURIComponent(q);
+    return `<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <strong style="font-size:13px;">${p.label}</strong>
+        <a class="btn btn-sm btn-primary" href="${url}" target="_blank" rel="noopener" style="text-decoration:none;">فتح النتائج</a>
+      </div>
+      <div class="mono" style="direction:ltr;text-align:left;font-size:11px;color:var(--muted);margin-top:8px;word-break:break-all;user-select:all;">${esc(q)}</div>
+    </div>`;
+  }).join('');
+}
+
 let settingsTab = 'appearance';
 async function viewSettings(){
   const isAdmin = CURRENT_USER && CURRENT_USER.isAdmin;
@@ -1774,7 +1880,8 @@ const NAV = [
   {id:'assessments', label:'التقييمات', num:'٠٢'},
   {id:'jobs', label:'الوظائف الشاغرة', num:'٠٣'},
   {id:'candidates', label:'قاعدة السير الذاتية', num:'٠٤'},
-  {id:'settings', label:'الإعدادات', num:'٠٥'},
+  {id:'sourcing', label:'البحث عن مرشحين', num:'٠٥'},
+  {id:'settings', label:'الإعدادات', num:'٠٦'},
 ];
 let currentView = 'dashboard';
 
@@ -1829,6 +1936,7 @@ async function render(){
     else if(currentView==='jobs')       html = await viewJobs();
     else if(currentView==='audit')      html = await viewAudit();
     else if(currentView==='users')      html = await viewUsers();
+    else if(currentView==='sourcing')   html = viewSourcing();
     else if(currentView==='settings')   html = await viewSettings();
     main.innerHTML = html;
     renderNav();
@@ -3603,6 +3711,18 @@ function attachViewHandlers(){
   document.querySelectorAll('[data-addonejob]').forEach(el=>{
     el.onclick = ()=> openAddCandidate(null, el.dataset.addonejob);
   });
+  const srcGo = document.getElementById('srcGo');
+  if(srcGo){
+    srcGo.onclick = runSourcing;
+    document.getElementById('srcJob').onchange = (e)=>{
+      const j = DB.jobs.find(x=>x.id===e.target.value);
+      if(!j) return;
+      document.getElementById('srcTitle').value = j.title || '';
+      document.getElementById('srcSkills').value = (j.requiredSkills||[]).slice(0,3).join(', ');
+      document.getElementById('srcDegree').value = j.requiredDegree || '';
+      document.getElementById('srcCity').value = j.city || '';
+    };
+  }
   document.querySelectorAll('[data-settab]').forEach(el=>{
     el.onclick = ()=>{ settingsTab = el.dataset.settab; render(); };
   });
