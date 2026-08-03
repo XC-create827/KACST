@@ -1719,27 +1719,74 @@ const NAV_ICONS = {
    المحترفين — مقيّدة بالسعودية، والنتائج تُفتح في متصفح المستخدم.
    --------------------------------------------------------- */
 const SOURCING_PLATFORMS = [
-  { id:'linkedin',   label:'LinkedIn',    site:'linkedin.com/in',     saSite:'sa.linkedin.com/in', note:'الأغنى بالملفات المهنية' },
-  { id:'bayt',       label:'Bayt بيت',    site:'bayt.com',            saSite:'bayt.com',           note:'قوي خليجيًا' },
-  { id:'gulftalent', label:'GulfTalent',  site:'gulftalent.com',      saSite:'gulftalent.com',     note:'كفاءات الخليج' },
-  { id:'naukrigulf', label:'Naukrigulf',  site:'naukrigulf.com',      saSite:'naukrigulf.com',     note:'واسع الانتشار' },
-  { id:'indeed',     label:'Indeed',      site:'indeed.com',          saSite:'sa.indeed.com',      note:'أغلب سيره غير علنية' },
-  { id:'open',       label:'الويب كاملًا', site:'',                    saSite:'',                   note:'بلا تقييد منصة' },
+  { id:'linkedin',   label:'LinkedIn',    note:'نتائج أشخاص مباشرة داخل المنصة' },
+  { id:'indeed',     label:'Indeed CV',   note:'بحث السير — يتطلب حساب صاحب عمل' },
+  { id:'bayt',       label:'Bayt بيت',    note:'قاعدة سير — حساب صاحب عمل' },
+  { id:'gulftalent', label:'GulfTalent',  note:'قاعدة سير — حساب صاحب عمل' },
+  { id:'naukrigulf', label:'Naukrigulf',  note:'قاعدة سير — حساب صاحب عمل' },
 ];
 
-function buildXrayQuery(o, platform){
+// Boolean expression shared by LinkedIn keywords and Indeed q=
+function sourcingBoolean(o){
+  const quote = s => '"' + s.trim() + '"';
+  const parts = [];
+  const titles = [o.title].concat(o.alts).map(t=>t.trim()).filter(Boolean);
+  if (titles.length === 1) parts.push(quote(titles[0]));
+  else if (titles.length > 1) parts.push('(' + titles.map(quote).join(' OR ') + ')');
+  o.skills.slice(0, 3).forEach(s => parts.push(quote(s)));
+  if (o.degree) parts.push(quote(o.degree));
+  return parts.join(' AND ');
+}
+
+// Direct links INTO each platform's own people/CV search.
+function sourcingNativeUrl(p, o){
+  const bool = sourcingBoolean(o);
+  if (p.id === 'linkedin') {
+    // Lands inside LinkedIn People search: a list of member profiles.
+    let kw = bool;
+    if (o.city) kw += ' AND "' + o.city + '"';
+    if (o.saudiOnly) kw += ' AND ("السعودية" OR "Saudi Arabia")';
+    return 'https://www.linkedin.com/search/results/people/?keywords=' +
+      encodeURIComponent(kw) + '&origin=GLOBAL_SEARCH_HEADER';
+  }
+  if (p.id === 'indeed') {
+    // Indeed's resume search accepts q= and l= directly.
+    return 'https://resumes.indeed.com/search?q=' + encodeURIComponent(bool) +
+      '&l=' + encodeURIComponent(o.city ? o.city + ', Saudi Arabia' : 'Saudi Arabia');
+  }
+  if (p.id === 'bayt')       return 'https://employer.bayt.com/en/cv-search/';
+  if (p.id === 'gulftalent') return 'https://www.gulftalent.com/recruiters';
+  if (p.id === 'naukrigulf') return 'https://www.naukrigulf.com/recruiter';
+  return '#';
+}
+
+// Copyable criteria bundle — paste into any platform's own filters
+// (this is where min-years lives: platforms filter it in their UI).
+function sourcingCriteria(o){
+  const c = [];
+  if (o.title) c.push('المسمى: ' + [o.title].concat(o.alts).filter(Boolean).join(' / '));
+  if (o.skills.length) c.push('المهارات: ' + o.skills.join('، '));
+  if (o.minYears > 0) c.push('الخبرة: ' + o.minYears + '+ سنوات');
+  if (o.degree) c.push('المؤهل: ' + o.degree);
+  if (o.city) c.push('المدينة: ' + o.city);
+  if (o.saudiOnly) c.push('الجنسية: سعودي' + (o.strictSaudi ? ' (مصرّح بها نصًا)' : ''));
+  return c.join(' | ');
+}
+
+// Google X-Ray fallback (kept as a secondary option)
+function buildXrayQuery(o, siteExpr){
   const q = [];
   const quote = s => '"' + s.trim() + '"';
-  const site = o.saudiOnly ? platform.saSite : platform.site;
-  if (site) q.push('site:' + site);
+  if (siteExpr) q.push('site:' + siteExpr);
   const titles = [o.title].concat(o.alts).map(t=>t.trim()).filter(Boolean);
   if (titles.length === 1) q.push(quote(titles[0]));
   else if (titles.length > 1) q.push('(' + titles.map(quote).join(' OR ') + ')');
   o.skills.slice(0, 3).forEach(s => q.push(quote(s)));
   if (o.degree) q.push(quote(o.degree));
   if (o.city) q.push(quote(o.city));
+  if (o.minYears > 0) q.push('("' + o.minYears + ' سنوات" OR "' + o.minYears + ' years")');
   if (o.saudiOnly) {
-    if (platform.id !== 'linkedin') q.push('("السعودية" OR "Saudi Arabia")');
+    q.push('("السعودية" OR "Saudi Arabia")');
     if (o.strictSaudi) q.push('("سعودي الجنسية" OR "سعودية الجنسية" OR "Saudi national")');
   }
   o.exclude.forEach(x => q.push('-' + quote(x)));
@@ -1762,6 +1809,7 @@ function viewSourcing(){
     <div class="field-row">
       <div class="field"><label>المؤهل</label><input type="text" id="srcDegree" placeholder="بكالوريوس محاسبة"></div>
       <div class="field"><label>المدينة</label><input type="text" id="srcCity" placeholder="الرياض"></div>
+      <div class="field"><label>سنوات الخبرة (حد أدنى)</label><input type="number" id="srcYears" min="0" max="40" placeholder="5"></div>
     </div>
     <div class="field"><label>استبعد من يذكر (مفصولة بفواصل)</label><input type="text" id="srcExclude" placeholder="تدريب تعاوني, طالب"></div>
     <div class="field-row" style="align-items:center;">
@@ -1776,7 +1824,7 @@ function viewSourcing(){
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
       ${SOURCING_PLATFORMS.map((p,i)=>`
         <label style="display:flex;gap:6px;align-items:center;cursor:pointer;font-size:12.5px;background:var(--panel-2);border:1px solid var(--line);border-radius:99px;padding:6px 14px;">
-          <input type="checkbox" class="srcPlat" value="${p.id}" ${i<4?'checked':''} style="width:auto;">
+          <input type="checkbox" class="srcPlat" value="${p.id}" checked style="width:auto;">
           ${p.label} <span style="color:var(--muted);font-size:10.5px;">${p.note}</span>
         </label>`).join('')}
     </div>
@@ -1797,6 +1845,7 @@ function runSourcing(){
     skills: list(g('srcSkills').value),
     degree: g('srcDegree').value.trim(),
     city: g('srcCity').value.trim(),
+    minYears: Number(g('srcYears').value) || 0,
     exclude: list(g('srcExclude').value),
     saudiOnly: g('srcSaudi').checked,
     strictSaudi: g('srcStrict').checked
@@ -1805,17 +1854,40 @@ function runSourcing(){
   const chosen = Array.from(document.querySelectorAll('.srcPlat'))
     .filter(c=>c.checked).map(c=>SOURCING_PLATFORMS.find(p=>p.id===c.value));
   if(!chosen.length){ alert('اختر منصة واحدة على الأقل.'); return; }
-  g('srcResults').innerHTML = chosen.map(p=>{
-    const q = buildXrayQuery(o, p);
-    const url = 'https://www.google.com/search?q=' + encodeURIComponent(q);
+
+  const crit = sourcingCriteria(o);
+  const cards = chosen.map(p=>{
+    const url = sourcingNativeUrl(p, o);
+    const deep = (p.id === 'linkedin' || p.id === 'indeed');
     return `<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-        <strong style="font-size:13px;">${p.label}</strong>
-        <a class="btn btn-sm btn-primary" href="${url}" target="_blank" rel="noopener" style="text-decoration:none;">فتح النتائج</a>
+        <div><strong style="font-size:13px;">${p.label}</strong>
+          <span style="font-size:10.5px;color:var(--muted);margin-inline-start:8px;">${p.note}</span></div>
+        <a class="btn btn-sm btn-primary" href="${url}" target="_blank" rel="noopener" style="text-decoration:none;">${deep?'فتح النتائج داخل المنصة':'فتح قاعدة السير'}</a>
       </div>
-      <div class="mono" style="direction:ltr;text-align:left;font-size:11px;color:var(--muted);margin-top:8px;word-break:break-all;user-select:all;">${esc(q)}</div>
+      ${deep ? '' : `<div style="font-size:11px;color:var(--muted);margin-top:6px;">بعد الدخول بحساب صاحب العمل، الصق المعايير أدناه في فلاتر البحث.</div>`}
     </div>`;
   }).join('');
+
+  const googleLinks = [
+    ['LinkedIn عبر Google', o.saudiOnly ? 'sa.linkedin.com/in' : 'linkedin.com/in'],
+    ['Bayt عبر Google', 'bayt.com'],
+    ['الويب كاملًا', '']
+  ].map(([label, site])=>{
+    const q = buildXrayQuery(o, site);
+    return `<a href="https://www.google.com/search?q=${encodeURIComponent(q)}" target="_blank" rel="noopener" style="color:var(--teal);font-size:12px;display:inline-block;margin-inline-end:16px;">${label}</a>`;
+  }).join('');
+
+  document.getElementById('srcResults').innerHTML = `
+    <div style="background:rgba(25,184,166,0.06);border:1px solid rgba(25,184,166,0.25);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--teal);font-weight:800;margin-bottom:4px;">معاييرك — جاهزة للنسخ واللصق في فلاتر أي منصة (تشمل سنوات الخبرة):</div>
+      <div class="mono" style="font-size:12px;user-select:all;line-height:1.9;">${esc(crit)}</div>
+    </div>
+    ${cards}
+    <details style="margin-top:12px;">
+      <summary style="cursor:pointer;font-size:11.5px;color:var(--muted);">خيار إضافي: بحث X-Ray عبر Google (بلا تسجيل دخول)</summary>
+      <div style="margin-top:10px;">${googleLinks}</div>
+    </details>`;
 }
 
 let settingsTab = 'appearance';
