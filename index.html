@@ -784,6 +784,82 @@
     color:#c7d6e4;background:#0d2b47;border-top:none;
     margin:60px -28px -80px;padding:26px 28px;
   }
+  /* ---- Intro: KACST film hero + stats + news strip (landing only) ---- */
+  .landing .li-hero-slide{padding:0;overflow:hidden;background:#0d2b47;}
+  .landing .li-hero{position:relative;width:100%;min-height:100vh;display:flex;align-items:center;}
+  .landing .li-hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .landing .li-hero::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(to left, rgba(13,43,71,0.88) 0%, rgba(13,43,71,0.58) 46%, rgba(13,43,71,0.22) 100%);}
+  .landing .li-hero-inner{position:relative;z-index:2;max-width:1080px;margin:0 auto;padding:96px 28px 72px;width:100%;}
+  .landing .li-eyebrow{display:inline-flex;align-items:center;gap:8px;color:#cfe4ec;font-size:13.5px;font-weight:700;margin-bottom:12px;}
+  .landing .li-eyebrow::before{content:"";width:26px;height:2px;background:var(--teal);border-radius:2px;}
+  .landing .li-hero h1{color:#ffffff;font-size:clamp(30px,4.4vw,46px);line-height:1.28;margin:0 0 14px;font-weight:800;}
+  .landing .li-hero p{color:#dbe7ee;max-width:600px;font-size:clamp(14.5px,1.6vw,17px);line-height:1.95;margin:0 0 24px;}
+  .landing .li-cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:44px;}
+  .landing .li-btn-ghost{
+    display:inline-flex;align-items:center;padding:12px 34px;border-radius:var(--radius-sm,8px);
+    font-size:14.5px;font-weight:800;cursor:pointer;
+    background:rgba(255,255,255,0.10);color:#fff;border:1px solid rgba(255,255,255,0.45);
+    transition:background .18s;
+  }
+  .landing .li-btn-ghost:hover{background:rgba(255,255,255,0.22);}
+  .landing .li-sound{
+    position:absolute;z-index:3;bottom:18px;inset-inline-end:18px;width:42px;height:42px;border-radius:50%;
+    border:1px solid rgba(255,255,255,0.5);background:rgba(13,43,71,0.55);color:#fff;font-size:16px;cursor:pointer;
+  }
+  .landing .li-sound:hover{background:rgba(13,43,71,0.85);}
+  .landing .li-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:880px;}
+  .landing .li-stat{
+    background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.22);
+    backdrop-filter:blur(8px);border-radius:var(--radius-sm,10px);padding:16px 12px;text-align:center;
+  }
+  .landing .li-stat b{display:block;font-size:clamp(20px,2.4vw,27px);color:#fff;font-weight:800;margin-bottom:4px;}
+  .landing .li-stat small{color:#cfe0ec;font-size:12px;line-height:1.7;display:block;}
+  .landing .li-news-slide{flex-direction:column;justify-content:center;}
+  .landing .li-news{max-width:1080px;width:100%;margin:0 auto;}
+  .landing .li-news-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:6px;}
+  .landing .li-news-head h2{
+    margin:0;font-size:clamp(22px,2.8vw,30px);
+    background:linear-gradient(115deg,#122b42 40%, #149a8b 90%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .landing .li-news-head a{color:#0f8577;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap;}
+  .landing .li-news-head a:hover{text-decoration:underline;}
+  .landing .li-news-sub{color:var(--l-muted);font-size:14px;margin:0 0 20px;line-height:1.8;}
+  .landing .li-news-scroll{
+    display:grid;grid-auto-flow:column;grid-auto-columns:228px;gap:14px;
+    overflow-x:auto;padding:4px 2px 16px;scroll-snap-type:x proximity;
+  }
+  .landing .li-news-scroll::-webkit-scrollbar{height:8px;}
+  .landing .li-news-scroll::-webkit-scrollbar-thumb{background:#c8d4de;border-radius:8px;}
+  .landing .li-news-card{
+    scroll-snap-align:start;background:var(--l-card);border:1px solid var(--l-line);
+    border-radius:var(--radius-sm,10px);overflow:hidden;cursor:pointer;margin:0;
+    box-shadow:0 8px 30px rgba(18,43,66,0.07);transition:transform .18s, box-shadow .18s;
+    display:flex;flex-direction:column;
+  }
+  .landing .li-news-card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(18,43,66,0.14);}
+  .landing .li-news-card img{width:100%;aspect-ratio:9/16;object-fit:cover;object-position:top;display:block;background:#eef2f6;}
+  .landing .li-news-card figcaption{padding:11px 13px;font-size:12.5px;color:#2a4258;line-height:1.7;border-top:1px solid var(--l-line);}
+  .landing .li-lightbox{
+    position:fixed;inset:0;background:rgba(10,22,33,0.86);z-index:999;
+    display:none;align-items:center;justify-content:center;padding:28px;
+  }
+  .landing .li-lightbox.open{display:flex;}
+  .landing .li-lightbox img{max-width:min(92vw,540px);max-height:92vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+  .landing .li-lightbox button{
+    position:absolute;top:18px;inset-inline-start:18px;width:44px;height:44px;border-radius:50%;border:none;
+    background:rgba(255,255,255,0.14);color:#fff;font-size:20px;cursor:pointer;
+  }
+  .landing .li-lightbox button:hover{background:rgba(255,255,255,0.28);}
+  @media(max-width:860px){
+    .landing .li-stats{grid-template-columns:repeat(2,1fr);}
+    .landing .li-news-scroll{grid-auto-columns:196px;}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .landing .li-news-card{transition:none;}
+    .landing .li-news-card:hover{transform:none;}
+  }
   /* ---- Large displays: 1440p ---- */
   @media(min-width:1600px){
     main{padding:46px 64px 80px;}
@@ -1763,7 +1839,18 @@ const I18N = {
     add_cand_h:'Add Candidate', edit_cand_h:'Edit Candidate', import_h:'Import CVs',
     vacancies_stat:'Open Positions', fill_rate:'Vacancy Fill Rate',
     alt_pool:'Fits Another Role', alt_empty:'No candidates in the waiting pool yet', alt_empty_hint:'From any candidate profile, set "Fits Another Role" to show them here.',
-    vac_count:'Positions', all_stages:'All Stages'
+    vac_count:'Positions', all_stages:'All Stages', all_jobs:'All Positions',
+    m_title:'Job Title', m_dept:'Department', m_seniority:'Seniority Level', m_headcount:'Vacancies',
+    m_postdate:'Post Date', m_closing:'Application Closing Date', m_reqdegree:'Required Degree',
+    m_expfrom:'Experience (from)', m_expto:'to', m_city:'Work City', m_salary:'Salary Range',
+    m_reqskills:'Required Skills (comma-separated)', m_niceskills:'Preferred Additional Skills',
+    m_approved:'Approved position (has official hiring approval)', m_desc:'Job Description — its words fuel the matching',
+    m_uploadcv:'Upload CV (PDF, DOCX, or TXT)', m_fullname:'Full Name', m_email:'Email',
+    m_phone:'Phone', m_source:'Source', m_expyears:'Years of Experience', m_curtitle:'Current/Last Job Title',
+    m_appliedfor:'Applied Position', m_spec:'Specialization', m_degree:'Degree', m_candcity:'City',
+    m_skills:'Skills (comma-separated)', save_job:'Save Position', save_cand:'Save Candidate', save_changes:'Save Changes',
+    clone_job_h:'Clone Position', none_opt:'— None —', choose_opt:'— Select —', unset_opt:'— Not set —',
+    upload_to_job:'Upload CVs for this position', add_one_cand:'+ One candidate', posted_on:'Posted', card_approved:'Approved', card_not_approved:'Not Approved'
   },
   ar: {
     nav_dashboard:'لوحة التحكم', nav_pipeline:'مسار الاستقطاب', nav_assessments:'التقييمات',
@@ -1802,7 +1889,18 @@ const I18N = {
     add_cand_h:'إضافة مرشح', edit_cand_h:'تعديل مرشح', import_h:'استيراد السير الذاتية',
     vacancies_stat:'الوظائف الشاغرة', fill_rate:'معدل تعبئة الشواغر',
     alt_pool:'مناسب لشاغر آخر', alt_empty:'لا يوجد مرشحون في قائمة الانتظار بعد', alt_empty_hint:'من ملف أي مرشح، فعّل "مناسب لشاغر آخر" ليظهر هنا.',
-    vac_count:'الشواغر', all_stages:'كل المراحل'
+    vac_count:'الشواغر', all_stages:'كل المراحل', all_jobs:'كل الوظائف',
+    m_title:'المسمى الوظيفي', m_dept:'القسم', m_seniority:'المستوى الوظيفي', m_headcount:'عدد الشواغر',
+    m_postdate:'تاريخ النشر', m_closing:'تاريخ إغلاق التقديم', m_reqdegree:'المؤهل المطلوب',
+    m_expfrom:'سنوات الخبرة (من)', m_expto:'إلى', m_city:'مدينة العمل', m_salary:'نطاق الراتب',
+    m_reqskills:'المهارات المطلوبة (مفصولة بفواصل)', m_niceskills:'مهارات إضافية مفضلة',
+    m_approved:'وظيفة معتمدة (لديها موافقة رسمية للتوظيف)', m_desc:'الوصف الوظيفي — كلماته وقود المطابقة',
+    m_uploadcv:'رفع السيرة الذاتية (PDF أو DOCX أو TXT)', m_fullname:'الاسم الكامل', m_email:'البريد الإلكتروني',
+    m_phone:'رقم الهاتف', m_source:'المصدر', m_expyears:'سنوات الخبرة', m_curtitle:'المسمى الوظيفي الحالي/الأخير',
+    m_appliedfor:'الوظيفة المتقدم لها', m_spec:'التخصص', m_degree:'الدرجة العلمية', m_candcity:'المدينة',
+    m_skills:'المهارات (مفصولة بفواصل)', save_job:'حفظ الوظيفة', save_cand:'حفظ المرشح', save_changes:'حفظ التغييرات',
+    clone_job_h:'استنساخ وظيفة', none_opt:'— بدون —', choose_opt:'— اختر —', unset_opt:'— غير محدد —',
+    upload_to_job:'رفع سير ذاتية لهذه الوظيفة', add_one_cand:'+ مرشح واحد', posted_on:'تاريخ النشر', card_approved:'معتمدة', card_not_approved:'غير معتمدة'
   }
 };
 let LANG = (function(){ try{ const l = localStorage.getItem('tad_lang'); return (l==='ar'||l==='en') ? l : 'en'; }catch(e){ return 'en'; } })();
@@ -2002,7 +2100,7 @@ async function viewDashboard(){
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
       <h3 style="margin:0;">مؤشرات أداء الاستقطاب</h3>
       <select id="dashboardJobFilter">
-        <option value="الكل" ${dashboardJobFilter==='الكل'?'selected':''}>كل الوظائف</option>
+        <option value="الكل" ${dashboardJobFilter==='الكل'?'selected':''}>${t('all_jobs')}</option>
         ${DB.jobs.map(j=>`<option value="${j.id}" ${dashboardJobFilter===j.id?'selected':''}>${esc(j.title)}</option>`).join('')}
       </select>
     </div>
@@ -2066,11 +2164,11 @@ async function viewCandidates(){
   <div class="toolbar">
     <input type="text" class="searchbox" id="candSearchInput" placeholder="${t('search_ph')}" value="${esc(candSearch)}">
     <select id="candStageFilter">
-      <option value="الكل">كل المراحل</option>
+      <option value="الكل">${t('all_stages')}</option>
       ${STAGES.map(s=>`<option value="${s}" ${candFilterStage===s?'selected':''}>${tStage(s)}</option>`).join('')}
     </select>
     <select id="candJobFilter">
-      <option value="الكل">كل الوظائف</option>
+      <option value="الكل">${t('all_jobs')}</option>
       ${DB.jobs.map(j=>`<option value="${j.id}" ${candFilterJob===j.id?'selected':''}>${esc(j.title)}</option>`).join('')}
     </select>
   </div>
@@ -2115,11 +2213,11 @@ async function viewCandidatesMatches(){
   <div class="toolbar">
     <input type="text" class="searchbox" id="candSearchInput" placeholder="ابحث ضمن نتائج المطابقة…" value="${esc(candSearch)}">
     <select id="candStageFilter">
-      <option value="الكل">كل المراحل</option>
+      <option value="الكل">${t('all_stages')}</option>
       ${STAGES.map(s=>`<option value="${s}" ${candFilterStage===s?'selected':''}>${tStage(s)}</option>`).join('')}
     </select>
     <select id="candJobFilter">
-      <option value="الكل">كل الوظائف</option>
+      <option value="الكل">${t('all_jobs')}</option>
       ${DB.jobs.map(j=>`<option value="${j.id}" ${candFilterJob===j.id?'selected':''}>${esc(j.title)}</option>`).join('')}
     </select>
     <button class="btn btn-ghost" id="btnClearMatch">إلغاء المطابقة</button>
@@ -2203,7 +2301,7 @@ async function viewPipeline(){
   </div>
   <div class="toolbar">
     <select id="pipelineJobFilter">
-      <option value="الكل" ${pipelineJobFilter==='الكل'?'selected':''}>كل الوظائف</option>
+      <option value="الكل" ${pipelineJobFilter==='الكل'?'selected':''}>${t('all_jobs')}</option>
       ${DB.jobs.map(j=>`<option value="${j.id}" ${pipelineJobFilter===j.id?'selected':''}>${esc(j.title)}</option>`).join('')}
     </select>
   </div>
@@ -2291,7 +2389,7 @@ async function viewAssessments(){
   </div>
   <div class="toolbar">
     <select id="assessJobFilter">
-      <option value="الكل" ${assessJobFilter==='الكل'?'selected':''}>كل الوظائف</option>
+      <option value="الكل" ${assessJobFilter==='الكل'?'selected':''}>${t('all_jobs')}</option>
       ${DB.jobs.map(j=>`<option value="${j.id}" ${assessJobFilter===j.id?'selected':''}>${esc(j.title)}</option>`).join('')}
     </select>
   </div>
@@ -2370,13 +2468,13 @@ async function viewJobs(){
       </div>
       <div class="skills">
         ${(j.requiredSkills||[]).map(s=>`<span class="chip">${esc(s)}</span>`).join('')}
-        <span class="chip ar" style="background:${j.approved!==false?'rgba(20,149,138,0.15)':'rgba(193,88,95,0.15)'};color:${j.approved!==false?'#0e5f58':'#8a2f34'};">${j.approved!==false?(LANG==='ar'?'معتمدة':'Approved'):(LANG==='ar'?'غير معتمدة':'Not Approved')}</span>
+        <span class="chip ar" style="background:${j.approved!==false?'rgba(20,149,138,0.15)':'rgba(193,88,95,0.15)'};color:${j.approved!==false?'#0e5f58':'#8a2f34'};">${j.approved!==false?t('card_approved'):t('card_not_approved')}</span>
       </div>
       <div class="meta-row"><span>${esc((j.description||'').slice(0,60))}${j.description&&j.description.length>60?'…':''}</span><span class="mono">${t('vac_count')} ${filled}/${need}</span></div>
-      ${j.postDate ? `<div class="meta-row" style="border-top:none;padding-top:0;"><span>تاريخ النشر: ${esc(j.postDate)}</span></div>` : ''}
+      ${j.postDate ? `<div class="meta-row" style="border-top:none;padding-top:0;"><span>${t('posted_on')}: ${esc(j.postDate)}</span></div>` : ''}
       <div style="display:flex;gap:8px;margin-top:12px;">
-        <button class="btn btn-sm btn-primary" style="flex:1;" data-uploadjob="${j.id}">رفع سير ذاتية لهذه الوظيفة</button>
-        <button class="btn btn-sm btn-ghost" data-addonejob="${j.id}">+ مرشح واحد</button>
+        <button class="btn btn-sm btn-primary" style="flex:1;" data-uploadjob="${j.id}">${t('upload_to_job')}</button>
+        <button class="btn btn-sm btn-ghost" data-addonejob="${j.id}">${t('add_one_cand')}</button>
       </div>
       <div style="text-align:left;margin-top:8px;">
         <span class="btn btn-sm btn-ghost" data-clonejob="${j.id}" style="padding:4px 10px;">${t('clone')}</span>
@@ -2529,6 +2627,34 @@ function showLogin(){
       </div>
     </div>`;
   ov.innerHTML = navbar + `
+    <section class="lslide li-hero-slide">
+      <div class="li-hero">
+        <video id="liVideo" autoplay muted loop playsinline preload="metadata" poster="/intro/kacst-intro-poster.jpg">
+          <source src="/intro/kacst-intro.mp4" type="video/mp4">
+        </video>
+        <div class="li-hero-inner">
+          <span class="li-eyebrow">مدينة الملك عبدالعزيز للعلوم والتقنية</span>
+          <h1>إدارة استقطاب الكفاءات</h1>
+          <p>
+            نؤمن بأن البحث العلمي والتطوير التقني ركيزتان أساسيتان للنمو الاقتصادي والتنمية
+            الوطنية في المملكة. هذه بوابتك للانضمام إلى نخبة الباحثين والمبتكرين الذين
+            يصنعون مستقبل التقنية في المملكة.
+          </p>
+          <div class="li-cta-row">
+            <button class="btn btn-primary" id="liHeroApply" style="font-size:15px;padding:13px 44px;">قدّم الآن</button>
+            <button class="li-btn-ghost" id="liHeroSignIn">تسجيل الدخول</button>
+          </div>
+          <div class="li-stats">
+            <div class="li-stat"><b>+3000</b><small>باحث ومبتكر ومختص</small></div>
+            <div class="li-stat"><b>+90</b><small>شركة ناشئة في التقنيات العميقة</small></div>
+            <div class="li-stat"><b>+600</b><small>شركة تقنية تخرّجت من «الكراج»</small></div>
+            <div class="li-stat"><b>+21.7 ألف</b><small>مستفيد من البرامج التدريبية والتأهيلية</small></div>
+          </div>
+        </div>
+        <button class="li-sound" id="liSound" aria-label="تشغيل الصوت" title="تشغيل / كتم الصوت">🔇</button>
+      </div>
+    </section>
+
     <section class="lslide landing-hero">
       <div>
         ${brandImg ? `<img src="${brandImg.src}" alt="KACST">` : ''}
@@ -2566,6 +2692,47 @@ function showLogin(){
       </div>
     </section>`).join('')}
 
+    <section class="lslide li-news-slide">
+      <div class="li-news">
+        <div class="li-news-head">
+          <h2>من أخبار المدينة وابتكاراتها</h2>
+          <a href="https://www.linkedin.com/company/kacst---employment" target="_blank" rel="noopener">تابعنا على LinkedIn ←</a>
+        </div>
+        <p class="li-news-sub">أحدث الإنجازات والبراءات والبرامج من مدينة الملك عبدالعزيز للعلوم والتقنية.</p>
+        <div class="li-news-scroll" id="liNews">
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-innovations-ar.jpg">
+            <img src="/intro/news-innovations-ar.jpg" alt="ابتكارات شهر يوليو 2026" loading="lazy">
+            <figcaption>ابتكارات شهر يوليو ٢٠٢٦: براءات اختراع وورش عمل وإنجازات بحثية</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-isef-champions.jpg">
+            <img src="/intro/news-isef-champions.jpg" alt="أبطال اليوم مبتكرو المستقبل" loading="lazy">
+            <figcaption>الاحتفاء بأبطال المنتخب السعودي للعلوم والهندسة بعد ٢٤ جائزة دولية في آيسف ٢٠٢٦</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-omar-yaghi.jpg">
+            <img src="/intro/news-omar-yaghi.jpg" alt="لقاء البروفيسور عمر ياغي" loading="lazy">
+            <figcaption>البروفيسور عمر ياغي يشارك رحلته العلمية لطلبة برنامج موهبة الإثرائي البحثي</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-future-researcher.jpg">
+            <img src="/intro/news-future-researcher.jpg" alt="جائزة باحث المستقبل" loading="lazy">
+            <figcaption>١٠ مشروعات بحثية تفوز بجائزة باحث المستقبل في برنامج موهبة الإثرائي ٢٠٢٦</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-skill-to-impact.jpg">
+            <img src="/intro/news-skill-to-impact.jpg" alt="كاكست من المهارة إلى الأثر" loading="lazy">
+            <figcaption>من المهارة إلى الأثر: تمكين الشباب في البحث والابتكار وريادة الأعمال</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-innovations-en.jpg">
+            <img src="/intro/news-innovations-en.jpg" alt="Innovations of the Month — July 2026" loading="lazy">
+            <figcaption>Innovations of the Month — July 2026</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <div class="li-lightbox" id="liLightbox" role="dialog" aria-modal="true" aria-label="عرض الصورة">
+      <button id="liLbClose" aria-label="إغلاق">✕</button>
+      <img id="liLbImg" src="" alt="">
+    </div>
+
     <section class="lslide landing-cta">
       <div>
         <h2 class="landing-sec-title" style="font-size:26px;">انضم إلى مسيرة الابتكار</h2>
@@ -2598,6 +2765,38 @@ function showLogin(){
   document.getElementById('landingApply').onclick = ()=>{ location.href = '/?apply=1'; };
   document.getElementById('navApply').onclick = ()=>{ location.href = '/?apply=1'; };
   document.getElementById('navSignIn').onclick = ()=>{ document.getElementById('landingSignIn').click(); };
+  // ---- Intro slide wiring (video hero + news lightbox) ----
+  document.getElementById('liHeroApply').onclick = ()=>{ location.href = '/?apply=1'; };
+  document.getElementById('liHeroSignIn').onclick = ()=>{ document.getElementById('landingSignIn').click(); };
+  const liVideo = document.getElementById('liVideo');
+  const liSound = document.getElementById('liSound');
+  if(liSound && liVideo){
+    liSound.onclick = ()=>{
+      liVideo.muted = !liVideo.muted;
+      liSound.textContent = liVideo.muted ? '🔇' : '🔊';
+      liSound.setAttribute('aria-label', liVideo.muted ? 'تشغيل الصوت' : 'كتم الصوت');
+      if(!liVideo.muted) liVideo.play();
+    };
+  }
+  if(liVideo && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    liVideo.removeAttribute('autoplay'); liVideo.pause();
+  }
+  const liLb = document.getElementById('liLightbox');
+  const liLbImg = document.getElementById('liLbImg');
+  const liCloseLb = ()=>{ liLb.classList.remove('open'); liLbImg.src = ''; };
+  document.getElementById('liNews').addEventListener('click', (e)=>{
+    const c = e.target.closest('.li-news-card');
+    if(c){ liLbImg.src = c.dataset.limg; liLbImg.alt = c.querySelector('img').alt; liLb.classList.add('open'); }
+  });
+  document.getElementById('liNews').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' || e.key === ' '){
+      const c = e.target.closest('.li-news-card');
+      if(c){ e.preventDefault(); liLbImg.src = c.dataset.limg; liLbImg.alt = c.querySelector('img').alt; liLb.classList.add('open'); }
+    }
+  });
+  document.getElementById('liLbClose').onclick = liCloseLb;
+  liLb.addEventListener('click', (e)=>{ if(e.target === liLb) liCloseLb(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && liLb.classList.contains('open')) liCloseLb(); });
   const doLogin = async ()=>{
     const btn = document.getElementById('loginBtn');
     btn.disabled = true; btn.textContent = 'جارٍ الدخول…';
@@ -2691,7 +2890,7 @@ async function showApplyPage(){
           <div class="field"><label>الاسم الكامل *</label><input type="text" id="apName"></div>
           <div class="field-row">
             <div class="field"><label>تاريخ الميلاد</label><input type="date" id="apDob" style="direction:ltr;text-align:right;"></div>
-            <div class="field"><label>المدينة</label><input type="text" id="apCity" placeholder="الرياض"></div>
+            <div class="field"><label>${t('m_candcity')}</label><input type="text" id="apCity" placeholder="الرياض"></div>
           </div>
           <div class="field"><label>العنوان</label><input type="text" id="apAddress" placeholder="الحي، الشارع…"></div>
           <div class="field-row">
@@ -2706,8 +2905,8 @@ async function showApplyPage(){
 
         <div id="apStep2" style="display:none;">
           <div class="field-row">
-            <div class="field"><label>التخصص</label><input type="text" id="apSpec" placeholder="مثال: علوم حاسب، هندسة صناعية…"></div>
-            <div class="field"><label>الدرجة العلمية</label>
+            <div class="field"><label>${t('m_spec')}</label><input type="text" id="apSpec" placeholder="مثال: علوم حاسب، هندسة صناعية…"></div>
+            <div class="field"><label>${t('m_degree')}</label>
               <select id="apDegree">
                 <option value="">— اختر —</option>
                 <option>ثانوية عامة</option><option>دبلوم</option><option>بكالوريوس</option>
@@ -3014,17 +3213,17 @@ function openAddCandidate(editId, presetJobId){
     <div class="modal-head"><h2>${editing?t('edit_cand_h'):t('add_cand_h')}</h2><span class="xbtn" id="mClose">&times;</span></div>
     ${presetJob ? `<div style="background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;font-size:12.5px;margin-bottom:14px;">سيُضاف هذا المرشح مباشرة إلى: <strong>${esc(presetJob.title)}</strong></div>` : ''}
     <div class="field">
-      <label>رفع السيرة الذاتية (PDF أو DOCX أو TXT)</label>
+      <label>${t('m_uploadcv')}</label>
       <input type="file" id="fResumeFile" accept=".pdf,.docx,.txt">
       <div id="fUploadStatus" class="mono" style="font-size:11px;color:var(--muted);margin-top:6px;direction:rtl;font-family:'Tajawal',sans-serif;"></div>
     </div>
-    <div class="field"><label>الاسم الكامل</label><input type="text" id="fName" value="${editing?esc(editing.name):''}"></div>
+    <div class="field"><label>${t('m_fullname')}</label><input type="text" id="fName" value="${editing?esc(editing.name):''}"></div>
     <div class="field-row">
-      <div class="field"><label>البريد الإلكتروني</label><input type="email" id="fEmail" value="${editing?esc(editing.email||''):''}"></div>
-      <div class="field"><label>رقم الهاتف</label><input type="tel" id="fPhone" value="${editing?esc(editing.phone||''):''}"></div>
+      <div class="field"><label>${t('m_email')}</label><input type="email" id="fEmail" value="${editing?esc(editing.email||''):''}"></div>
+      <div class="field"><label>${t('m_phone')}</label><input type="tel" id="fPhone" value="${editing?esc(editing.phone||''):''}"></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>المصدر</label>
+      <div class="field"><label>${t('m_source')}</label>
         <select id="fSource">
           ${(()=>{
             const SOURCES = ['','لينكدإن','منصة هدف','منصة جدارات','مواقع التوظيف','ترشيح داخلي','معرض توظيف','التقديم المباشر','أخرى'];
@@ -3034,13 +3233,13 @@ function openAddCandidate(editId, presetJobId){
           })()}
         </select>
       </div>
-      <div class="field"><label>سنوات الخبرة</label><input type="number" id="fExp" min="0" value="${editing?editing.experienceYears||0:0}"></div>
+      <div class="field"><label>${t('m_expyears')}</label><input type="number" id="fExp" min="0" value="${editing?editing.experienceYears||0:0}"></div>
     </div>
-    <div class="field"><label>المسمى الوظيفي الحالي/الأخير</label><input type="text" id="fTitle" placeholder="مثال: مهندس برمجيات أول" value="${editing?esc(editing.currentTitle||''):''}"></div>
-    <div class="field"><label>الوظيفة المتقدم لها</label><select id="fJob" ${presetJob?'disabled':''}>${jobOptions(editing?editing.appliedFor:(presetJob?presetJob.id:null))}</select></div>
+    <div class="field"><label>${t('m_curtitle')}</label><input type="text" id="fTitle" placeholder="مثال: مهندس برمجيات أول" value="${editing?esc(editing.currentTitle||''):''}"></div>
+    <div class="field"><label>${t('m_appliedfor')}</label><select id="fJob" ${presetJob?'disabled':''}>${jobOptions(editing?editing.appliedFor:(presetJob?presetJob.id:null))}</select></div>
     <div class="field-row">
-      <div class="field"><label>التخصص</label><input type="text" id="fSpec" value="${editing?esc(editing.specialization||''):''}"></div>
-      <div class="field"><label>الدرجة العلمية</label>
+      <div class="field"><label>${t('m_spec')}</label><input type="text" id="fSpec" value="${editing?esc(editing.specialization||''):''}"></div>
+      <div class="field"><label>${t('m_degree')}</label>
         <select id="fDegree">
           ${(()=>{
             const DEGS=['','ثانوية عامة','دبلوم','بكالوريوس','ماجستير','دكتوراه','أخرى'];
@@ -3050,13 +3249,13 @@ function openAddCandidate(editId, presetJobId){
           })()}
         </select>
       </div>
-      <div class="field"><label>المدينة</label><input type="text" id="fCity" value="${editing?esc(editing.city||''):''}"></div>
+      <div class="field"><label>${t('m_candcity')}</label><input type="text" id="fCity" value="${editing?esc(editing.city||''):''}"></div>
     </div>
-    <div class="field"><label>المهارات (مفصولة بفواصل)</label><input type="text" id="fSkills" placeholder="javascript, react, leadership" value="${editing?esc(editing.skills.join(', ')):''}"></div>
+    <div class="field"><label>${t('m_skills')}</label><input type="text" id="fSkills" placeholder="javascript, react, leadership" value="${editing?esc(editing.skills.join(', ')):''}"></div>
     <textarea id="fResume" style="display:none;">${editing?esc(editing.resumeText||''):''}</textarea>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="mCancel">إلغاء</button>
-      <button class="btn btn-primary" id="mSave">${editing?'حفظ التغييرات':'حفظ المرشح'}</button>
+      <button class="btn btn-primary" id="mSave">${editing?t('save_changes'):t('save_cand')}</button>
     </div>
   `);
   document.getElementById('mClose').onclick = closeModal;
@@ -3239,42 +3438,42 @@ function openAddJob(preset){
   const SAL_RANGES = ['1000 – 5000','5000 – 10000','10000 – 15000','15000 – 20000','20000 – 30000','30000 – 45000','45000 – 60000','أكثر من 60000'];
   const DEGS = ['','ثانوية عامة','دبلوم','بكالوريوس','ماجستير','دكتوراه'];
   openModal(`
-    <div class="modal-head"><h2>${p.title?(LANG==='ar'?'استنساخ وظيفة':'Clone Position'):t('add_job_h')}</h2><span class="xbtn" id="mClose">&times;</span></div>
+    <div class="modal-head"><h2>${p.title?t('clone_job_h'):t('add_job_h')}</h2><span class="xbtn" id="mClose">&times;</span></div>
 
-    <div class="field"><label>المسمى الوظيفي</label><input type="text" id="jTitle" value="${esc(p.title||'')}"></div>
+    <div class="field"><label>${t('m_title')}</label><input type="text" id="jTitle" value="${esc(p.title||'')}"></div>
     <div class="field-row">
-      <div class="field"><label>القسم</label><input type="text" id="jDept" value="${esc(p.department||'')}"></div>
-      <div class="field"><label>المستوى الوظيفي</label>
+      <div class="field"><label>${t('m_dept')}</label><input type="text" id="jDept" value="${esc(p.department||'')}"></div>
+      <div class="field"><label>${t('m_seniority')}</label>
         <select id="jSeniority">${['مبتدئ','متوسط','كبير','قيادي'].map(s=>`<option ${(p.seniority||'متوسط')===s?'selected':''}>${s}</option>`).join('')}</select>
       </div>
     </div>
     <div class="field-row">
-      <div class="field"><label>عدد الشواغر</label><input type="number" id="jHeadcount" min="1" value="${p.headcount||1}"></div>
-      <div class="field"><label>تاريخ النشر</label><input type="date" id="jPostDate" value="${esc(p.postDate||'')}"></div>
-      <div class="field"><label>تاريخ إغلاق التقديم</label><input type="date" id="jClosing" value="${esc(p.closingDate||'')}"></div>
+      <div class="field"><label>${t('m_headcount')}</label><input type="number" id="jHeadcount" min="1" value="${p.headcount||1}"></div>
+      <div class="field"><label>${t('m_postdate')}</label><input type="date" id="jPostDate" value="${esc(p.postDate||'')}"></div>
+      <div class="field"><label>${t('m_closing')}</label><input type="date" id="jClosing" value="${esc(p.closingDate||'')}"></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>المؤهل المطلوب</label>
+      <div class="field"><label>${t('m_reqdegree')}</label>
         <select id="jDegree">${DEGS.map(d=>`<option value="${d}" ${(p.requiredDegree||'')===d?'selected':''}>${d===''?'— غير محدد —':d}</option>`).join('')}</select>
       </div>
-      <div class="field"><label>سنوات الخبرة (من)</label><input type="number" id="jMinExp" min="0" max="40" value="${p.minExperience||''}" placeholder="0"></div>
-      <div class="field"><label>إلى</label><input type="number" id="jMaxExp" min="0" max="45" value="${p.maxExperience||''}" placeholder="—"></div>
+      <div class="field"><label>${t('m_expfrom')}</label><input type="number" id="jMinExp" min="0" max="40" value="${p.minExperience||''}" placeholder="0"></div>
+      <div class="field"><label>${t('m_expto')}</label><input type="number" id="jMaxExp" min="0" max="45" value="${p.maxExperience||''}" placeholder="—"></div>
     </div>
     <div class="field-row">
-      <div class="field"><label>مدينة العمل</label><input type="text" id="jCity" value="${esc(p.city||'')}" placeholder="الرياض"></div>
-      <div class="field"><label>نطاق الراتب</label>
+      <div class="field"><label>${t('m_city')}</label><input type="text" id="jCity" value="${esc(p.city||'')}" placeholder="الرياض"></div>
+      <div class="field"><label>${t('m_salary')}</label>
         <select id="jSalary"><option value="">— غير محدد —</option>${SAL_RANGES.map(r=>`<option ${(p.salaryRange||'')===r?'selected':''}>${r}</option>`).join('')}</select>
       </div>
     </div>
     <div class="field">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
         <input type="checkbox" id="jApproved" ${p.approved===false?'':'checked'} style="width:auto;">
-        <span>وظيفة معتمدة (لديها موافقة رسمية للتوظيف)</span>
+        <span>${t('m_approved')}</span>
       </label>
     </div>
 
-    <div class="field"><label>المهارات المطلوبة (مفصولة بفواصل)</label><input type="text" id="jReq" value="${esc((p.requiredSkills||[]).join(', '))}" placeholder="python, sql, تحليل البيانات"></div>
-    <div class="field"><label>مهارات إضافية مفضلة</label><input type="text" id="jNice" value="${esc((p.niceSkills||[]).join(', '))}" placeholder="tableau, الإنجليزية (متقدم)"></div>
+    <div class="field"><label>${t('m_reqskills')}</label><input type="text" id="jReq" value="${esc((p.requiredSkills||[]).join(', '))}" placeholder="python, sql, تحليل البيانات"></div>
+    <div class="field"><label>${t('m_niceskills')}</label><input type="text" id="jNice" value="${esc((p.niceSkills||[]).join(', '))}" placeholder="tableau, الإنجليزية (متقدم)"></div>
 
     <div class="skillbank">
       <div class="sb-head">
@@ -3295,7 +3494,7 @@ function openAddJob(preset){
       </div>
     </div>
 
-    <div class="field"><label>الوصف الوظيفي — كلماته وقود المطابقة</label><textarea id="jDesc" rows="4" style="direction:rtl;text-align:right;">${esc(p.description||'')}</textarea></div>
+    <div class="field"><label>${t('m_desc')}</label><textarea id="jDesc" rows="4" style="direction:rtl;text-align:right;">${esc(p.description||'')}</textarea></div>
 
     <div class="qmeter">
       <div class="qm-top"><span>جودة الوظيفة</span><span id="qmPct">0%</span></div>
@@ -3314,7 +3513,7 @@ function openAddJob(preset){
 
     <div class="modal-actions">
       <button class="btn btn-ghost" id="mCancel">إلغاء</button>
-      <button class="btn btn-primary" id="mSave">حفظ الوظيفة</button>
+      <button class="btn btn-primary" id="mSave">${t('save_job')}</button>
     </div>
   `);
   document.getElementById('mClose').onclick = closeModal;
