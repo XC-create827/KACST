@@ -3826,6 +3826,7 @@ async function openDetail(candId){
           <span>${esc(a.type)} — ${new Date(a.date).toLocaleDateString('ar-EG')}</span>
           <span style="display:flex;align-items:center;gap:10px;">
             ${a.hasFile?`<span class="btn btn-sm btn-ghost" data-dlassess="${a.id}">تنزيل التقييم</span>`:''}
+            <span class="btn btn-sm btn-danger" data-delassess="${a.id}" data-candref="${c.id}">حذف</span>
             <span class="scoreband" style="color:${assessmentScoreColor(a.score)}">${a.score}/${ASSESSMENT_MAX}</span>
           </span>
         </div>`).join('') : '<div style="color:var(--muted);font-size:12.5px;">لا توجد تقييمات مسجلة بعد.</div>'}
@@ -3958,13 +3959,8 @@ function attachViewHandlers(){
     render();
   };
 
-  document.querySelectorAll('[data-delassess]').forEach(el=>{
-    el.onclick = async (e)=>{
-      e.stopPropagation();
-      await mutate(()=>api.deleteAssessment(el.dataset.delassess));
-      render();
-    };
-  });
+  // [data-delassess] is handled by the global click delegation below,
+  // so the delete works both here and inside the detail modal.
   document.querySelectorAll('[data-downloadcv]').forEach(el=>{
     el.onclick = (e)=>{
       e.stopPropagation();
@@ -4027,6 +4023,15 @@ document.addEventListener('click', (e)=>{
     document.querySelectorAll('[data-settheme]').forEach(b=>{
       b.className = 'btn btn-sm ' + (b.dataset.settheme===th.dataset.settheme ? 'btn-primary' : 'btn-ghost');
     });
+    return;
+  }
+  const da = e.target.closest && e.target.closest('[data-delassess]');
+  if(da){
+    if(!confirm('حذف هذا التقييم نهائيًا؟ لا يمكن التراجع.')) return;
+    mutate(()=>api.deleteAssessment(da.dataset.delassess)).then(()=>{
+      if(da.dataset.candref) openDetail(da.dataset.candref);
+      render();
+    }).catch(()=>{});
     return;
   }
   const dl = e.target.closest && e.target.closest('[data-dlassess]');
