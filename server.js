@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="kacst-build" content="RD-20260811-2">
+<meta name="kacst-build" content="RD-20260811-4">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>&#x625;&#x62F;&#x627;&#x631;&#x629; &#x627;&#x633;&#x62A;&#x642;&#x637;&#x627;&#x628; &#x627;&#x644;&#x643;&#x641;&#x627;&#x621;&#x627;&#x62A; &#x2014; KACST</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -10,7 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>console.log("KACST build RD-20260811-2");</script>
+<script>console.log("KACST build RD-20260811-4");</script>
 <style>
   /* ============================================================
      DESIGN SYSTEM v3 \2014  "aurora, refined"
@@ -1125,8 +1125,8 @@
 .landing .rd-ch{position:absolute;inset-inline:30px;top:50%;transform:translateY(-50%);opacity:0;pointer-events:none;max-width:620px;will-change:opacity,transform;}
 .landing .rd-ch.on{pointer-events:auto;}
 .landing .rd-tl-photos{position:absolute;inset:0;pointer-events:none;}
-.landing .rd-tl-photo{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;filter:saturate(.55) brightness(.8);will-change:opacity;}
-.landing .rd-tl-shade{position:absolute;inset:0;background:linear-gradient(to left, rgba(5,15,30,.94) 15%, rgba(5,15,30,.78) 55%, rgba(5,15,30,.62) 100%);}
+.landing .rd-tl-photo{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;filter:saturate(.75) brightness(.9);will-change:opacity;}
+.landing .rd-tl-shade{position:absolute;inset:0;background:linear-gradient(to left, rgba(5,15,30,.88) 12%, rgba(5,15,30,.6) 55%, rgba(5,15,30,.34) 100%);}
 .landing .rd-tl-beam{position:absolute;top:16%;bottom:16%;inset-inline-end:38px;width:3px;border-radius:3px;background:rgba(157,180,198,.18);overflow:hidden;}
 .landing .rd-tl-beam i{position:absolute;top:0;right:0;left:0;height:0%;border-radius:3px;background:linear-gradient(180deg,#19b8a6,#2f7ff0,#8b5cf6);}
 .landing .rd-tl-credit{position:absolute;bottom:30px;inset-inline-end:30px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:rgba(157,180,198,.55);}
@@ -2878,7 +2878,7 @@ function showLogin(){
     <section class="rd-tl" id="rdTimeline">
       <div class="rd-tl-sticky">
         <div class="rd-tl-photos">
-          ${Array.from({length:6},(_,i)=>`<div class="rd-tl-photo" data-p="${i}" style="background-image:url('/intro/tl-0${i+1}.jpg');"></div>`).join('')}
+          ${['/intro/tl-01.jpg','/intro/tl-02.jpg','/intro/tl-03.jpg','/intro/tl-04.jpg','/intro/tl-05.jpg','/intro/kacst-intro-poster.jpg'].map((u,i)=>`<div class="rd-tl-photo" data-p="${i}" style="background-image:url('${u}');"></div>`).join('')}
           <div class="rd-tl-shade"></div>
         </div>
         <div class="rd-tl-beam" aria-hidden="true"><i id="rdBeamFill"></i></div>
@@ -3008,7 +3008,7 @@ function showLogin(){
     </section>
     <div class="rd-foot">
       <span>\u00a9 \u0645\u062f\u064a\u0646\u0629 \u0627\u0644\u0645\u0644\u0643 \u0639\u0628\u062f\u0627\u0644\u0639\u0632\u064a\u0632 \u0644\u0644\u0639\u0644\u0648\u0645 \u0648\u0627\u0644\u062a\u0642\u0646\u064a\u0629 \u2014 \u0643\u0627\u0643\u0633\u062a</span>
-      <span class="mono">KACST \u00b7 TALENT ACQUISITION \u00b7 RD-20260811-2</span>
+      <span class="mono">KACST \u00b7 TALENT ACQUISITION \u00b7 RD-20260811-4</span>
     </div>`;
   document.body.appendChild(ov);
 
@@ -3074,7 +3074,7 @@ function showLogin(){
             chs[i].style.opacity = v;
             chs[i].style.transform = `translateY(calc(-50% + ${(-d*46).toFixed(1)}px))`;
             chs[i].classList.toggle('on', i===idx);
-            if(photos[i]) photos[i].style.opacity = (v * 0.35).toFixed(3);
+            if(photos[i]) photos[i].style.opacity = (v * 0.7).toFixed(3);
           }
           if(beamFill) beamFill.style.height = (prog*100).toFixed(2) + '%';
           dots.forEach((dd,i)=>dd.classList.toggle('on', i<=idx));
