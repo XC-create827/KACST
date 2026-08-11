@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="kacst-build" content="RD-20260811-2">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>&#x625;&#x62F;&#x627;&#x631;&#x629; &#x627;&#x633;&#x62A;&#x642;&#x637;&#x627;&#x628; &#x627;&#x644;&#x643;&#x641;&#x627;&#x621;&#x627;&#x62A; &#x2014; KACST</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -9,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>console.log("KACST build RD-20260811-2");</script>
 <style>
   /* ============================================================
      DESIGN SYSTEM v3 \2014  "aurora, refined"
@@ -3006,7 +3008,7 @@ function showLogin(){
     </section>
     <div class="rd-foot">
       <span>\u00a9 \u0645\u062f\u064a\u0646\u0629 \u0627\u0644\u0645\u0644\u0643 \u0639\u0628\u062f\u0627\u0644\u0639\u0632\u064a\u0632 \u0644\u0644\u0639\u0644\u0648\u0645 \u0648\u0627\u0644\u062a\u0642\u0646\u064a\u0629 \u2014 \u0643\u0627\u0643\u0633\u062a</span>
-      <span class="mono">KACST \u00b7 TALENT ACQUISITION</span>
+      <span class="mono">KACST \u00b7 TALENT ACQUISITION \u00b7 RD-20260811-2</span>
     </div>`;
   document.body.appendChild(ov);
 
