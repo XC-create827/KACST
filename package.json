@@ -1,11 +1,11 @@
 {
   "name": "talent-acquisition-department",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
-  "description": "Talent Acquisition Department — PostgreSQL-backed recruiting platform (KACST).",
-  "main": "server.js",
+  "description": "Talent Acquisition Department - PostgreSQL-backed recruiting platform (KACST).",
+  "main": "app.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node app.js",
     "build": "echo \"No build step required.\""
   },
   "engines": {
