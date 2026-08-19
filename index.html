@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>console.log("KACST build RD-20260819-2");</script>
+<script>console.log("KACST build RD-20260819-3");</script>
 <style>
   /* ============================================================
      DESIGN SYSTEM v3 — "aurora, refined"
@@ -1026,11 +1026,12 @@
 .landing{
   --rd-bg:#050f1e; --rd-bg2:#081426; --rd-card:#0b1a30;
   --rd-ink:#eef6fa; --rd-mut:#9db4c6; --rd-line:rgba(157,180,198,.16);
-  --rd-violet:#8b5cf6; --rd-blue:#2f7ff0; --rd-gold:#e8b93e; --rd-teal:#19b8a6; --rd-rose:#f4536e;
-  --rd-grad:linear-gradient(120deg,#2f7ff0,#8b5cf6);
+  --rd-violet:#7d2ef0; --rd-blue:#2f6bff; --rd-gold:#ff5526; --rd-teal:#00b25a; --rd-rose:#f4536e;
+  --rd-grad:#0048d8;
   background:var(--rd-bg) !important;
   color:var(--rd-ink);
-  font-family:'Tajawal','Segoe UI',Tahoma,sans-serif !important;
+  font-family:'Sakkal Majalla','Tajawal','Segoe UI',Tahoma,sans-serif !important;
+  font-size:13px;
   scroll-snap-type:none !important;
 }
 .landing .lslide{scroll-snap-align:none !important;}
@@ -1042,19 +1043,19 @@
   padding:12px 26px;background:rgba(5,15,30,.72) !important;backdrop-filter:blur(14px);
   border-bottom:1px solid var(--rd-line) !important;box-shadow:none !important;
 }
-.landing .landing-nav::before{content:"";position:absolute;top:0;right:0;left:0;height:3px;
-  background:linear-gradient(90deg,#f4536e,#e8b93e,#19b8a6,#2f7ff0,#8b5cf6);}
+.landing .landing-nav::before{content:"";position:absolute;top:0;right:0;left:0;height:2px;
+  background:#0048d8;opacity:.85;}
 .landing .landing-nav .nb{display:flex;align-items:center;gap:12px;}
 .landing .landing-nav .nb img{width:40px;height:40px;object-fit:contain;}
 .landing .landing-nav .nt{font-weight:800;font-size:15px;color:var(--rd-ink) !important;line-height:1.3;}
 .landing .landing-nav .nt small{display:block;font-weight:400;font-size:10.5px;color:var(--rd-mut) !important;}
 .landing .landing-nav .na{display:flex;gap:10px;}
-.landing .btn{font-family:'Tajawal',sans-serif;}
+.landing .btn{font-family:'Sakkal Majalla','Tajawal',sans-serif;font-size:13px;}
 .landing .btn-primary{
   background:var(--rd-grad) !important;color:#fff !important;border:none !important;border-radius:999px !important;
-  font-weight:800;box-shadow:0 8px 26px rgba(47,127,240,.35) !important;
+  font-weight:800;box-shadow:0 8px 26px rgba(0,72,216,.35) !important;
 }
-.landing .btn-primary:hover{filter:brightness(1.12);}
+.landing .btn-primary:hover{filter:none;background:#0a5cf0 !important;}
 .landing .btn-ghost{
   background:rgba(255,255,255,.05) !important;color:var(--rd-ink) !important;
   border:1px solid rgba(157,180,198,.35) !important;border-radius:999px !important;font-weight:700;
@@ -1062,7 +1063,7 @@
 .landing .btn-ghost:hover{background:rgba(255,255,255,.12) !important;}
 
 /* ---- reveal-on-scroll ---- */
-.landing .rd-rev{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease;}
+.landing .rd-rev{opacity:0;transform:translateY(30px) rotateX(7deg);transform-origin:50% 0;transition:opacity .8s ease,transform .8s ease;}
 .landing .rd-rev.in{opacity:1;transform:none;}
 @media (prefers-reduced-motion:reduce){ .landing .rd-rev{opacity:1;transform:none;transition:none;} }
 
@@ -1071,15 +1072,12 @@
 .landing .rd-hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;}
 .landing .rd-hero::after{content:"";position:absolute;inset:0;
   background:linear-gradient(to left, rgba(5,15,30,.9) 0%, rgba(5,15,30,.55) 50%, rgba(5,15,30,.35) 100%);}
-.landing .rd-hero-inner{position:relative;z-index:2;max-width:1180px;margin:0 auto;width:100%;padding:130px 30px 60px;}
+.landing .rd-hero-inner{position:relative;z-index:2;will-change:transform;max-width:1180px;margin:0 auto;width:100%;padding:130px 30px 60px;}
 .landing .rd-hero h1{
-  font-size:clamp(42px,7.2vw,92px);line-height:1.12;font-weight:900;color:#fff;margin:0 0 22px;max-width:760px;
+  font-size:clamp(34px,5.8vw,74px);line-height:1.12;font-weight:900;color:#fff;margin:0 0 22px;max-width:760px;
 }
-.landing .rd-hero h1 .g{
-  background:linear-gradient(100deg,#8b5cf6 10%,#f4536e 90%);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.landing .rd-hero p{color:#c8d9e6;max-width:640px;font-size:clamp(15px,1.6vw,18px);line-height:2;margin:0 0 30px;}
+.landing .rd-hero h1 .g{color:#fff;}
+.landing .rd-hero p{color:#c8d9e6;max-width:640px;font-size:13px;line-height:2;margin:0 0 30px;}
 .landing .rd-cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:56px;}
 .landing .rd-btn-lg{font-size:16px !important;padding:15px 48px !important;}
 .landing .rd-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rd-line);
@@ -1108,14 +1106,14 @@
 /* ---- section shells ---- */
 .landing .rd-wrap{max-width:1180px;margin:0 auto;padding:90px 30px;}
 .landing .rd-kicker{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;color:var(--rd-teal);margin-bottom:10px;display:block;}
-.landing .rd-title{font-size:clamp(28px,4vw,44px);font-weight:900;color:#fff;margin:0 0 14px;line-height:1.3;}
+.landing .rd-title{font-size:clamp(24px,3.4vw,38px);font-weight:900;color:#fff;margin:0 0 14px;line-height:1.3;}
 
 /* ---- vision / mission ---- */
 .landing .rd-vm{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .landing .rd-vm-card{background:var(--rd-card);border:1px solid var(--rd-line);border-radius:18px;padding:30px 28px;}
 .landing .rd-vm-card h3{margin:0 0 8px;font-size:15px;color:var(--rd-teal);font-weight:800;}
 .landing .rd-vm-card strong{display:block;font-size:clamp(18px,2vw,23px);color:#fff;font-weight:800;margin-bottom:10px;line-height:1.6;}
-.landing .rd-vm-card p{margin:0;color:var(--rd-mut);font-size:14px;line-height:2;}
+.landing .rd-vm-card p{margin:0;color:var(--rd-mut);font-size:13px;line-height:2;}
 
 /* ---- timeline ---- */
 .landing .rd-tl{position:relative;height:520vh;}
@@ -1125,7 +1123,7 @@
 .landing .rd-ch.on{pointer-events:auto;}
 .landing .rd-tl-photos{position:absolute;inset:0;pointer-events:none;}
 .landing .rd-tl-photo{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;filter:saturate(.75) brightness(.9);will-change:opacity;}
-.landing .rd-tl-shade{position:absolute;inset:0;background:linear-gradient(to left, rgba(5,15,30,.88) 12%, rgba(5,15,30,.6) 55%, rgba(5,15,30,.34) 100%);}
+.landing .rd-tl-shade{position:absolute;inset:0;background:linear-gradient(to left, rgba(5,15,30,.8) 12%, rgba(5,15,30,.5) 55%, rgba(5,15,30,.26) 100%);}
 .landing .rd-tl-beam{position:absolute;top:16%;bottom:16%;inset-inline-end:38px;width:3px;border-radius:3px;background:rgba(157,180,198,.18);overflow:hidden;}
 .landing .rd-tl-beam i{position:absolute;top:0;right:0;left:0;height:0%;border-radius:3px;background:linear-gradient(180deg,#19b8a6,#2f7ff0,#8b5cf6);}
 .landing .rd-tl-credit{position:absolute;bottom:30px;inset-inline-end:30px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:rgba(157,180,198,.55);}
@@ -1153,19 +1151,23 @@
   position:absolute;top:10px;inset-inline-start:-10px;font-size:clamp(160px,26vw,340px);font-weight:900;line-height:1;
   color:transparent;-webkit-text-stroke:1px rgba(157,180,198,.12);pointer-events:none;font-family:'IBM Plex Mono',monospace;
 }
-.landing .rd-sec-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:44px;align-items:start;position:relative;}
+.landing .rd-sec-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:44px;align-items:start;position:relative;perspective:1100px;}
 .landing .rd-sec-head .rd-kicker{color:var(--sc);}
-.landing .rd-sec-head h2{font-size:clamp(30px,4.4vw,52px);font-weight:900;margin:0 0 12px;color:var(--sc);}
-.landing .rd-sec-head p{color:#c8d9e6;font-size:clamp(14.5px,1.6vw,17px);line-height:2;margin:0 0 26px;max-width:560px;}
+.landing .rd-sec-head h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;margin:0 0 12px;color:var(--sc);}
+.landing .rd-sec-head p{color:#c8d9e6;font-size:13px;line-height:2;margin:0 0 26px;max-width:560px;}
 .landing .rd-sub{background:var(--rd-card);border:1px solid var(--rd-line);border-inline-start:3px solid var(--sc);
   border-radius:12px;padding:16px 18px;margin-bottom:12px;}
 .landing .rd-sub strong{display:block;color:#fff;font-size:15px;font-weight:800;margin-bottom:4px;}
 .landing .rd-sub span{color:var(--rd-mut);font-size:13px;line-height:1.9;}
+.landing .rd-sub strong{font-size:13.5px;}
 .landing .rd-impact{background:rgba(8,20,38,.7);border:1px dashed rgba(157,180,198,.35);border-radius:14px;padding:20px 22px;margin-top:26px;}
 .landing .rd-impact h4{margin:0 0 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;color:var(--sc);font-weight:600;}
 .landing .rd-impact div{color:#d7e4ee;font-size:13.5px;line-height:1.9;margin-bottom:8px;}
 .landing .rd-impact div::before{content:"✦";color:var(--sc);margin-inline-end:8px;font-size:11px;}
-.landing .rd-sec-art{display:flex;align-items:center;justify-content:center;padding-top:40px;}
+.landing .rd-sec-art{display:flex;align-items:center;justify-content:center;padding-top:40px;position:relative;}
+.landing .rd-3d{width:min(340px,80%);aspect-ratio:1;display:none;}
+.landing .rd-sec-art.has3d .rd-3d{display:block;}
+.landing .rd-sec-art.has3d svg{display:none;}
 .landing .rd-sec-art svg{width:min(240px,60%);height:auto;stroke:var(--sc);opacity:.9;}
 
 /* ---- news (restyle existing li-news markup) ---- */
@@ -1181,9 +1183,9 @@
 /* ---- CTA ---- */
 .landing .rd-cta{padding:120px 30px;text-align:center;background:
   radial-gradient(ellipse at 50% 0%, rgba(139,92,246,.14), transparent 60%), var(--rd-bg);}
-.landing .rd-cta h2{font-size:clamp(38px,6vw,72px);font-weight:900;color:#fff;margin:0 0 14px;}
+.landing .rd-cta h2{font-size:clamp(32px,5vw,58px);font-weight:900;color:#fff;margin:0 0 14px;}
 .landing .rd-cta h2 .dot{color:var(--rd-violet);}
-.landing .rd-cta p{color:var(--rd-mut);font-size:clamp(14.5px,1.7vw,17px);margin:0 0 30px;}
+.landing .rd-cta p{color:var(--rd-mut);font-size:13px;margin:0 0 30px;}
 .landing .rd-staff{display:block;margin-top:20px;color:var(--rd-mut);font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:4px;}
 .landing .rd-staff:hover{color:var(--rd-ink);}
 .landing .landing-login{max-width:420px;margin:26px auto 0;display:none;text-align:right;}
@@ -1207,7 +1209,7 @@
 /* ---- apply page ---- */
 .landing .landing-inner{padding-top:110px;}
 .landing .landing-inner .landing-hero h1{font-size:clamp(30px,5vw,44px) !important;font-weight:900;color:#fff !important;}
-.landing .landing-inner .landing-hero h1 .g{background:linear-gradient(100deg,#8b5cf6,#2f7ff0);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.landing .landing-inner .landing-hero h1 .g{color:#eef6fa;}
 .landing .rd-join-kicker{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:2px;color:var(--rd-teal);display:block;margin-bottom:8px;}
 .landing .landing-inner .tag{color:var(--rd-mut) !important;}
 .landing .landing-inner .modal{background:var(--rd-card) !important;border:1px solid var(--rd-line) !important;border-radius:18px !important;box-shadow:0 30px 90px rgba(0,0,0,.45) !important;}
@@ -3048,71 +3050,8 @@ function openAddUser(){
 --------------------------------------------------------- */
 // Public landing shown before sign-in: KACST vision, mission and
 // focus sectors, with the sign-in action at the BOTTOM of the page.
-// All copy lives in LANDING below — edit there to match the exact
-// internal wording if KACST communications provide it.
-const LANDING = {
-  org: 'مدينة الملك عبدالعزيز للعلوم والتقنية — كاكست',
-  tag: 'المختبر الوطني وواحات الابتكار في المملكة العربية السعودية',
-  vision: 'الريادة العالمية في البحث والتطوير والابتكار؛ بما يعزز تنافسية المملكة، ويبني اقتصادًا معرفيًا مزدهرًا يتماشى مع مستهدفات رؤية المملكة 2030.',
-  mission: 'بوصفها المختبر الوطني وواحات الابتكار، تقود كاكست البحث التطبيقي والتطوير التقني وفق الأولويات الوطنية، وتحوّل مخرجات المعرفة إلى منتجات وخدمات ابتكارية ذات قيمة مضافة، وتمكّن رواد الأعمال والشركات الناشئة في التقنيات العميقة، وتؤدي دور الجهة التقنية المرجعية للجهات الحكومية والقطاع الخاص.',
-  sectors: [
-    { name:'الصحة', color:'var(--rose)', hex:0xe0636c, model:'knot',
-      desc:'التقنية الحيوية والحلول الصحية المتقدمة لجودة حياة أفضل للإنسان.',
-      vision:'صحة إنسان أفضل بعلوم وتقنيات سعودية رائدة.',
-      mission:'تطوير التقنية الحيوية والأدوية واللقاحات والأجهزة الطبية، وتوطين الصناعات الصحية بالشراكة مع القطاعين الحكومي والخاص.',
-      pillars:[
-        {t:'التقنية الحيوية والجينوم', d:'أبحاث الجينوم والعلاجات الحيوية للأمراض ذات الأولوية الوطنية.'},
-        {t:'الأدوية واللقاحات', d:'تطوير وتوطين صناعة الأدوية واللقاحات والمستحضرات الحيوية.'},
-        {t:'الأجهزة والحلول الطبية', d:'تقنيات تشخيصية وعلاجية متقدمة بشراكات مع المنظومة الصحية.'}
-      ],
-      outcomes:['علاجات وحلول صحية موطّنة','شراكات بحثية مع المنظومة الصحية','شركات ناشئة في التقنية الحيوية'],
-      icon:'<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.2-7-9.3C5 7.6 7.2 6 9.3 6c1.2 0 2.1.5 2.7 1.3C12.6 6.5 13.5 6 14.7 6 16.8 6 19 7.6 19 10.7 19 15.8 12 20 12 20z"/><path d="M8 12h2.2l1-1.8 1.6 3.4 1-1.6H16"/></svg>' },
-    { name:'البيئة والاستدامة', color:'var(--green)', hex:0x22c07a, model:'planet',
-      desc:'حلول المياه والبيئة والزراعة لمواجهة تحديات المناخ وتأمين الموارد.',
-      vision:'بيئة مستدامة وموارد مؤمّنة للأجيال القادمة.',
-      mission:'ابتكار حلول المياه والزراعة والبيئة، ومواجهة التحديات المناخية بتقنيات الاستشعار والمراقبة والمعالجة المتقدمة.',
-      pillars:[
-        {t:'تقنيات المياه', d:'التحلية والمعالجة وكفاءة الاستهلاك لمواجهة تحدي شح المياه.'},
-        {t:'البيئة والمناخ', d:'الرصد البيئي والنمذجة المناخية وحلول خفض الانبعاثات.'},
-        {t:'الزراعة والأمن الغذائي', d:'الزراعة الذكية وتقنيات الإنتاج المستدام في البيئات القاحلة.'}
-      ],
-      outcomes:['حلول وطنية لتحديات المياه والغذاء','رصد وبيانات بيئية دقيقة','دعم مستهدفات الاستدامة في رؤية 2030'],
-      icon:'<svg viewBox="0 0 24 24"><path d="M12 3.5C8 8 5.5 11 5.5 14.2a6.5 6.5 0 0 0 13 0C18.5 11 16 8 12 3.5z"/><path d="M9.5 14.5c.4 1.8 1.6 3 3.4 3.4"/></svg>' },
-    { name:'الطاقة والصناعة', color:'var(--gold)', hex:0xe8b93e, model:'octa',
-      desc:'تقنيات الطاقة النظيفة والتصنيع المتقدم لتنويع الاقتصاد الوطني.',
-      vision:'ريادة صناعية وطاقة نظيفة تصنع اقتصادًا منافسًا.',
-      mission:'تطوير تقنيات الطاقة المتجددة والتخزين والتصنيع المتقدم والمواد الجديدة، ودعم توطين الصناعات الإستراتيجية.',
-      pillars:[
-        {t:'الطاقة المتجددة والتخزين', d:'الخلايا الشمسية وتخزين الطاقة والمواد المتقدمة للطاقة النظيفة.'},
-        {t:'التصنيع المتقدم', d:'الروبوتات والأتمتة والتصنيع الرقمي لرفع تنافسية الصناعة الوطنية.'},
-        {t:'المواد المتقدمة', d:'مواد جديدة لقطاعات الطيران والبناء والصناعات الدقيقة.'}
-      ],
-      outcomes:['تقنيات موطّنة للصناعة السعودية','كفاءة أعلى للطاقة','منتجات وطنية ذات قيمة مضافة'],
-      icon:'<svg viewBox="0 0 24 24"><path d="M13 2.5 5 13.5h5L11 21.5l8-11h-5z"/></svg>' },
-    { name:'اقتصاديات المستقبل', color:'var(--blue)', hex:0x2f7ff0, model:'ico',
-      desc:'الذكاء الاصطناعي والتقنيات العميقة وبناء الاقتصاد المعرفي.',
-      vision:'اقتصاد معرفي تقوده التقنيات العميقة والعقول السعودية.',
-      mission:'البحث والتطوير في الذكاء الاصطناعي وعلوم الفضاء والاتصالات المتقدمة وأشباه الموصلات، وتمكين الشركات الناشئة في التقنيات العميقة.',
-      pillars:[
-        {t:'الذكاء الاصطناعي والحوسبة', d:'نماذج وتطبيقات الذكاء الاصطناعي والحوسبة المتقدمة.'},
-        {t:'الفضاء والاتصالات', d:'التقنيات الفضائية واتصالات الجيل القادم وأشباه الموصلات.'},
-        {t:'ريادة التقنيات العميقة', d:'احتضان وتسريع الشركات الناشئة عبر واحات الابتكار وبرامجها.'}
-      ],
-      outcomes:['تقنيات عميقة سعودية المنشأ','شركات ناشئة من مخرجات البحث','اقتصاد معرفي تنافسي عالميًا'],
-      icon:'<svg viewBox="0 0 24 24"><rect x="7.5" y="7.5" width="9" height="9" rx="2"/><path d="M9.5 4.5v3M14.5 4.5v3M9.5 16.5v3M14.5 16.5v3M4.5 9.5h3M4.5 14.5h3M16.5 9.5h3M16.5 14.5h3"/></svg>' },
-    { name:'رأس المال البشري', color:'var(--purple)', hex:0x8b5cf6, model:'torus',
-      desc:'استقطاب الكفاءات وتنمية العقول التي تقود البحث والتطوير والابتكار.',
-      vision:'كفاءات وطنية عالمية المستوى تقود مستقبل العلوم والتقنية.',
-      mission:'استقطاب أفضل المواهب محليًا وعالميًا، وتطوير الباحثين والمبتكرين عبر برامج التدريب والتأهيل والزمالات، وبناء بيئة عمل محفزة تُمكّن العقول من صناعة الأثر.',
-      pillars:[
-        {t:'استقطاب الكفاءات', d:'جذب أفضل العقول محليًا وعالميًا لمنظومة البحث والتطوير والابتكار.'},
-        {t:'تطوير الباحثين والقيادات', d:'برامج تأهيل وزمالات وتدريب متقدم لصناعة القيادات العلمية.'},
-        {t:'بيئة عمل مُمكِّنة', d:'ثقافة محفزة تستبقي المواهب وتحوّل الأفكار إلى أثر ملموس.'}
-      ],
-      outcomes:['كفاءات وطنية بمعايير عالمية','مسارات مهنية بحثية واضحة','ثقافة ابتكار جاذبة للمواهب'],
-      icon:'<svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="3.2"/><path d="M5.5 20c.7-3.8 3.2-5.8 6.5-5.8s5.8 2 6.5 5.8"/><path d="M12 11v2.5"/><path d="m8.5 4.5 1-1.5M15.5 4.5l-1-1.5"/></svg>' }
-  ]
-};
+// (legacy light-landing copy removed — the dark landing carries its own data)
+
 
 const SECTOR_ART = {"knot": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <path d=\"M40 15c22 12 22 26 0 38s-22 26 0 38\" stroke-width=\"3\"/>\n  <path d=\"M80 15c-22 12-22 26 0 38s22 26 0 38\" stroke-width=\"3\"/>\n  <path d=\"M44 24h32M44 40h32M44 56h32M44 72h32M44 88h32\" stroke-width=\"2\" opacity=\".65\"/>\n  <circle cx=\"40\" cy=\"15\" r=\"3.4\"/><circle cx=\"80\" cy=\"15\" r=\"3.4\"/>\n  <circle cx=\"40\" cy=\"91\" r=\"3.4\"/><circle cx=\"80\" cy=\"91\" r=\"3.4\"/>\n  <path d=\"M14 104h14l5-9 7 16 6-12 4 5h16\" stroke-width=\"2.6\" opacity=\".9\"/>\n</g></svg>", "planet": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <path d=\"M60 14C42 34 30 48 30 66a30 30 0 0 0 60 0c0-18-12-32-30-52z\" stroke-width=\"3\"/>\n  <path d=\"M45 68c1.5 9 7 14.5 15 16.5\" stroke-width=\"2.4\" opacity=\".8\"/>\n  <path d=\"M18 100c10-5 20-5 30 0s20 5 30 0 16-4 24 0\" stroke-width=\"2.4\" opacity=\".7\"/>\n  <path d=\"M18 109c10-5 20-5 30 0s20 5 30 0 16-4 24 0\" stroke-width=\"2\" opacity=\".45\"/>\n  <path d=\"M78 26c6-6 14-9 22-8-1 8-4 16-10 22\" stroke-width=\"2.2\" opacity=\".85\"/>\n  <path d=\"M90 40c-3 3-7 5-11 5\" stroke-width=\"2\" opacity=\".6\"/>\n</g></svg>", "octa": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <circle cx=\"60\" cy=\"46\" r=\"17\" stroke-width=\"3\"/>\n  <path d=\"M60 18v-8M60 82v-8M32 46h-8M96 46h-8M40 26l-6-6M86 72l-6-6M80 26l6-6M40 66l-6 6\" stroke-width=\"2.6\"/>\n  <path d=\"M22 112V96l12-10v26M50 112V88l12-8v32M78 112V80l12-6v38\" stroke-width=\"2.6\" opacity=\".9\"/>\n  <path d=\"M104 112H14\" stroke-width=\"2.8\"/>\n  <path d=\"M67 36 57 50h7l-8 12\" stroke-width=\"2.4\"/>\n</g></svg>", "ico": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <rect x=\"38\" y=\"38\" width=\"44\" height=\"44\" rx=\"7\" stroke-width=\"3\"/>\n  <rect x=\"50\" y=\"50\" width=\"20\" height=\"20\" rx=\"4\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <path d=\"M48 38V24M60 38V20M72 38V24M48 82v14M60 82v18M72 82v14M38 48H24M38 60H20M38 72H24M82 48h14M82 60h18M82 72h14\" stroke-width=\"2.4\"/>\n  <circle cx=\"48\" cy=\"20\" r=\"3\"/><circle cx=\"72\" cy=\"20\" r=\"3\"/>\n  <circle cx=\"100\" cy=\"60\" r=\"3\"/><circle cx=\"20\" cy=\"60\" r=\"3\"/>\n  <circle cx=\"48\" cy=\"100\" r=\"3\"/><circle cx=\"72\" cy=\"100\" r=\"3\"/>\n</g></svg>", "torus": "<svg viewBox=\"0 0 120 120\" class=\"sector-art\"><g fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n  <circle cx=\"60\" cy=\"34\" r=\"11\" stroke-width=\"3\"/>\n  <path d=\"M40 78c2-13 9-20 20-20s18 7 20 20\" stroke-width=\"3\"/>\n  <circle cx=\"26\" cy=\"46\" r=\"8\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <path d=\"M12 76c1.5-9 6.5-14 14-14 3.4 0 6.3 1 8.6 3\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <circle cx=\"94\" cy=\"46\" r=\"8\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <path d=\"M108 76c-1.5-9-6.5-14-14-14-3.4 0-6.3 1-8.6 3\" stroke-width=\"2.4\" opacity=\".85\"/>\n  <path d=\"M60 88v14M60 102l-8-7M60 102l8-7\" stroke-width=\"2.4\" opacity=\".9\"/>\n  <path d=\"M37 96h46\" stroke-width=\"2.6\" opacity=\".7\"/>\n</g></svg>"};
 
@@ -3127,7 +3066,7 @@ function showLogin(){
     <div class="landing-nav">
       <div class="nb">
         ${brandImg ? `<img src="${brandImg.src}" alt="KACST">` : ''}
-        <div class="nt">إدارة استقطاب الكفاءات<small>مدينة الملك عبدالعزيز للعلوم والتقنية</small></div>
+        <div class="nt">قطاع رأس المال البشري<small>مدينة الملك عبدالعزيز للعلوم والتقنية</small></div>
       </div>
       <div class="na">
         <button class="btn btn-sm btn-primary" id="navApply">قدّم الآن</button>
@@ -3147,10 +3086,10 @@ function showLogin(){
           <button class="btn btn-ghost rd-btn-lg" id="rdExplore">استكشف قطاعاتنا</button>
         </div>
         <div class="rd-stats">
-          <div class="rd-stat" style="--sc:#19b8a6;"><b>3,000<sup>+</sup></b><small>باحث ومبتكر ومختص</small></div>
-          <div class="rd-stat" style="--sc:#8b5cf6;"><b>90<sup>+</sup></b><small>شركة ناشئة في التقنيات العميقة</small></div>
-          <div class="rd-stat" style="--sc:#2f7ff0;"><b>600<sup>+</sup></b><small>شركة تقنية تخرّجت من «الكراج»</small></div>
-          <div class="rd-stat" style="--sc:#e8b93e;"><b>21,700<sup>+</sup></b><small>مستفيد من البرامج التدريبية والتأهيلية</small></div>
+          <div class="rd-stat" style="--sc:#2f6bff;"><b>3,000<sup>+</sup></b><small>باحث ومبتكر ومختص</small></div>
+          <div class="rd-stat" style="--sc:#7d2ef0;"><b>90<sup>+</sup></b><small>شركة ناشئة في التقنيات العميقة</small></div>
+          <div class="rd-stat" style="--sc:#ff5526;"><b>600<sup>+</sup></b><small>شركة تقنية تخرّجت من «الكراج»</small></div>
+          <div class="rd-stat" style="--sc:#00b25a;"><b>21,700<sup>+</sup></b><small>مستفيد من البرامج التدريبية والتأهيلية</small></div>
         </div>
       </div>
     </section>
@@ -3178,12 +3117,12 @@ function showLogin(){
         <span class="rd-tl-credit">PHOTO · KACST FILM</span>
         <div class="rd-tl-inner">
           ${[
-            {n:'01',y:'1977',t:'البداية',d:'مرسوم ملكي يُنشئ المركز الوطني السعودي للعلوم والتقنية في الرياض — أول مؤسسة علمية وطنية في المملكة.',c:'#19b8a6'},
-            {n:'02',y:'1985',t:'مدينة الملك عبدالعزيز',d:'إعادة التنظيم والتسمية بمرسوم ملكي لتصبح مدينة الملك عبدالعزيز للعلوم والتقنية — بيت البحث والتطوير في المملكة.',c:'#2f7ff0'},
-            {n:'03',y:'2000',t:'إلى الفضاء',d:'إطلاق «سعودي سات-1» — أول ١٣ قمرًا صناعيًا سعوديًا صُممت وصُنعت في المدينة بين 2000 و2017.',c:'#8b5cf6'},
-            {n:'04',y:'2018',t:'سعودي سات 5',d:'قمرا الاستشعار عالي الدقة 5A و5B — تصميم وتصنيع وتشغيل بأيدٍ سعودية بالكامل.',c:'#e8b93e'},
-            {n:'05',y:'2022',t:'«الكراج»',d:'افتتاح أكبر واحة ابتكار للتقنيات العميقة في المنطقة — تخرّجت منها أكثر من 600 شركة تقنية.',c:'#f4536e'},
-            {n:'06',y:'اليوم',t:'المختبر الوطني — وأنت التالي',d:'كاكست اليوم مختبر المملكة الوطني وواحات ابتكارها. القصة تستمر.',c:'#19b8a6'}
+            {n:'01',y:'1977',t:'البداية',d:'مرسوم ملكي يُنشئ المركز الوطني السعودي للعلوم والتقنية في الرياض — أول مؤسسة علمية وطنية في المملكة.',c:'#2f6bff'},
+            {n:'02',y:'1985',t:'مدينة الملك عبدالعزيز',d:'إعادة التنظيم والتسمية بمرسوم ملكي لتصبح مدينة الملك عبدالعزيز للعلوم والتقنية — بيت البحث والتطوير في المملكة.',c:'#00b25a'},
+            {n:'03',y:'2000',t:'إلى الفضاء',d:'إطلاق «سعودي سات-1» — أول ١٣ قمرًا صناعيًا سعوديًا صُممت وصُنعت في المدينة بين 2000 و2017.',c:'#7d2ef0'},
+            {n:'04',y:'2018',t:'سعودي سات 5',d:'قمرا الاستشعار عالي الدقة 5A و5B — تصميم وتصنيع وتشغيل بأيدٍ سعودية بالكامل.',c:'#ff5526'},
+            {n:'05',y:'2022',t:'«الكراج»',d:'افتتاح أكبر واحة ابتكار للتقنيات العميقة في المنطقة — تخرّجت منها أكثر من 600 شركة تقنية.',c:'#2f6bff'},
+            {n:'06',y:'اليوم',t:'المختبر الوطني — وأنت التالي',d:'كاكست اليوم مختبر المملكة الوطني وواحات ابتكارها. القصة تستمر.',c:'#00b25a'}
           ].map((ch,i)=>`
           <div class="rd-ch${i===0?' on':''}" style="--cc:${ch.c};" data-ch="${i}">
             <span class="num"><i>${ch.n}</i> / 06</span>
@@ -3198,30 +3137,26 @@ function showLogin(){
 
     <section class="rd-wrap" id="rdSectors" style="padding-bottom:20px;">
       <span class="rd-kicker">قطاعاتنا</span>
-      <h2 class="rd-title">خمسة قطاعات. مهمة واحدة.</h2>
+      <h2 class="rd-title">أربعة قطاعات. مهمة واحدة.</h2>
     </section>
 
     ${[
-      {n:'01',name:'الصحة',c:'#f4536e',desc:'التقنية الحيوية والحلول الصحية المتقدمة لجودة حياة أفضل للإنسان.',
+      {n:'01',name:'الصحة',c:'#7d2ef0',fig:'dna',desc:'التقنية الحيوية والحلول الصحية المتقدمة لجودة حياة أفضل للإنسان.',
        subs:[['التقنية الحيوية والجينوم','أبحاث الجينوم والعلاجات الحيوية للأمراض ذات الأولوية الوطنية.'],['الأدوية واللقاحات','تطوير وتوطين صناعة الأدوية واللقاحات والمستحضرات الحيوية.'],['الأجهزة والحلول الطبية','تقنيات تشخيصية وعلاجية متقدمة بشراكات مع المنظومة الصحية.']],
        impact:['علاجات وحلول صحية موطّنة','شراكات بحثية مع المنظومة الصحية','شركات ناشئة في التقنية الحيوية'],
        art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 52h18l7-20 12 40 9-28 5 8h33"/><circle cx="50" cy="16" r="8"/></svg>'},
-      {n:'02',name:'البيئة والاستدامة',c:'#19b8a6',desc:'حلول المياه والبيئة والزراعة لمواجهة تحديات المناخ وتأمين الموارد.',
+      {n:'02',name:'البيئة والاستدامة',c:'#00b25a',fig:'drop',desc:'حلول المياه والبيئة والزراعة لمواجهة تحديات المناخ وتأمين الموارد.',
        subs:[['تقنيات المياه','التحلية والمعالجة وكفاءة الاستهلاك لمواجهة تحدي شح المياه.'],['البيئة والمناخ','الرصد البيئي والنمذجة المناخية وحلول خفض الانبعاثات.'],['الزراعة والأمن الغذائي','الزراعة الذكية وتقنيات الإنتاج المستدام في البيئات القاحلة.']],
        impact:['حلول وطنية لتحديات المياه والغذاء','رصد وبيانات بيئية دقيقة','دعم مستهدفات الاستدامة في رؤية 2030'],
        art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M50 10C38 30 26 44 26 60a24 24 0 0 0 48 0c0-16-12-30-24-50z"/><path d="M38 62a12 12 0 0 0 12 12"/></svg>'},
-      {n:'03',name:'الطاقة والصناعة',c:'#e8b93e',desc:'تقنيات الطاقة النظيفة والتصنيع المتقدم لتنويع الاقتصاد الوطني.',
+      {n:'03',name:'الطاقة والصناعة',c:'#ff5526',fig:'gears',desc:'تقنيات الطاقة النظيفة والتصنيع المتقدم لتنويع الاقتصاد الوطني.',
        subs:[['الطاقة المتجددة والتخزين','الخلايا الشمسية وتخزين الطاقة والمواد المتقدمة للطاقة النظيفة.'],['التصنيع المتقدم','الروبوتات والأتمتة والتصنيع الرقمي لرفع تنافسية الصناعة الوطنية.'],['المواد المتقدمة','مواد جديدة لقطاعات الطيران والبناء والصناعات الدقيقة.']],
        impact:['تقنيات موطّنة للصناعة السعودية','كفاءة أعلى للطاقة','منتجات وطنية ذات قيمة مضافة'],
        art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M55 8 25 56h20l-6 36 34-52H51z"/></svg>'},
-      {n:'04',name:'اقتصاديات المستقبل',c:'#2f7ff0',desc:'الذكاء الاصطناعي والتقنيات العميقة وبناء الاقتصاد المعرفي.',
+      {n:'04',name:'اقتصاديات المستقبل',c:'#2f6bff',fig:'sat',desc:'الذكاء الاصطناعي والتقنيات العميقة وبناء الاقتصاد المعرفي.',
        subs:[['الذكاء الاصطناعي والحوسبة','نماذج وتطبيقات الذكاء الاصطناعي والحوسبة المتقدمة.'],['الفضاء والاتصالات','التقنيات الفضائية واتصالات الجيل القادم وأشباه الموصلات.'],['ريادة التقنيات العميقة','احتضان وتسريع الشركات الناشئة عبر واحات الابتكار وبرامجها.']],
        impact:['تقنيات عميقة سعودية المنشأ','شركات ناشئة من مخرجات البحث','اقتصاد معرفي تنافسي عالميًا'],
-       art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="30" y="30" width="40" height="40" rx="6"/><rect x="42" y="42" width="16" height="16" rx="3"/><path d="M40 30V16M60 30V16M40 84V70M60 84V70M30 40H16M30 60H16M84 40H70M84 60H70"/></svg>'},
-      {n:'05',name:'رأس المال البشري',c:'#8b5cf6',desc:'استقطاب الكفاءات وتنمية العقول التي تقود البحث والتطوير والابتكار.',
-       subs:[['استقطاب الكفاءات','جذب أفضل العقول محليًا وعالميًا لمنظومة البحث والتطوير والابتكار.'],['تطوير الباحثين والقيادات','برامج تأهيل وزمالات وتدريب متقدم لصناعة القيادات العلمية.'],['بيئة عمل مُمكِّنة','ثقافة محفزة تستبقي المواهب وتحوّل الأفكار إلى أثر ملموس.']],
-       impact:['كفاءات وطنية بمعايير عالمية','مسارات مهنية بحثية واضحة','ثقافة ابتكار جاذبة للمواهب'],
-       art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="38" cy="34" r="12"/><path d="M14 84c2-16 11-24 24-24s22 8 24 24"/><circle cx="72" cy="40" r="9"/><path d="M64 84c1-11 6-18 16-19 5 0 9 2 12 5"/></svg>'}
+       art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="30" y="30" width="40" height="40" rx="6"/><rect x="42" y="42" width="16" height="16" rx="3"/><path d="M40 30V16M60 30V16M40 84V70M60 84V70M30 40H16M30 60H16M84 40H70M84 60H70"/></svg>'}
     ].map(s=>`
     <section class="rd-sector" style="--sc:${s.c};">
       <div class="wm">${s.n}</div>
@@ -3233,7 +3168,7 @@ function showLogin(){
           ${s.subs.map(x=>`<div class="rd-sub"><strong>${x[0]}</strong><span>${x[1]}</span></div>`).join('')}
           <div class="rd-impact"><h4>الأثر المستهدف</h4>${s.impact.map(o=>`<div>${o}</div>`).join('')}</div>
         </div>
-        <div class="rd-sec-art rd-rev">${s.art}</div>
+        <div class="rd-sec-art rd-rev" data-fig="${s.fig}" data-color="${s.c}">${s.art}<canvas class="rd-3d" width="360" height="360"></canvas></div>
       </div>
     </section>`).join('')}
 
@@ -3334,6 +3269,7 @@ function showLogin(){
       ov.scrollTo({ top: rdTl.offsetTop + ((i + 0.5) / N) * total, behavior: 'smooth' });
     };});
     let rdLastY = -1;
+    const rdWms = Array.from(ov.querySelectorAll('.rd-sector .wm'));
     const rdFrame = ()=>{
       const y = ov.scrollTop;
       if(y !== rdLastY){
@@ -3344,6 +3280,18 @@ function showLogin(){
           if(el.classList.contains('in')) continue;
           const r = el.getBoundingClientRect();
           if(r.top < vh * 0.88 && r.bottom > 0) el.classList.add('in');
+        }
+        // 3D downscroll parallax: hero content drifts back, video breathes,
+        // sector watermarks slide at their own depth.
+        const heroInner = ov.querySelector('.rd-hero-inner');
+        if(heroInner && y < vh * 1.2){
+          heroInner.style.transform = `translateY(${(y*0.22).toFixed(1)}px)`;
+          heroInner.style.opacity = Math.max(0, 1 - y / (vh*0.9)).toFixed(3);
+        }
+        if(liVideo && y < vh * 1.2){ liVideo.style.transform = `scale(${(1 + y*0.00012).toFixed(4)})`; }
+        for(const wm of rdWms){
+          const wr = wm.parentElement.getBoundingClientRect();
+          if(wr.bottom > 0 && wr.top < vh) wm.style.transform = `translateY(${((wr.top - vh/2) * -0.12).toFixed(1)}px)`;
         }
         // timeline
         if(rdTl){
@@ -3358,7 +3306,7 @@ function showLogin(){
             chs[i].style.opacity = v;
             chs[i].style.transform = `translateY(calc(-50% + ${(-d*46).toFixed(1)}px))`;
             chs[i].classList.toggle('on', i===idx);
-            if(photos[i]) photos[i].style.opacity = (v * 0.7).toFixed(3);
+            if(photos[i]) photos[i].style.opacity = (v * 0.85).toFixed(3);
           }
           if(beamFill) beamFill.style.height = (prog*100).toFixed(2) + '%';
           dots.forEach((dd,i)=>dd.classList.toggle('on', i<=idx));
@@ -3368,6 +3316,146 @@ function showLogin(){
     };
     requestAnimationFrame(rdFrame);
   }
+
+  // ---- Industry 3D figures (three.js, lazy). DNA / droplet / gears / satellite ----
+  (function rdFigures(){
+    const arts = Array.from(ov.querySelectorAll('.rd-sec-art[data-fig]'));
+    if(!arts.length) return;
+    const boot = ()=>{
+      if(!window.THREE) return;
+      arts.forEach(art=>{
+        try{
+          const canvas = art.querySelector('.rd-3d');
+          const color = art.dataset.color || '#2f6bff';
+          const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+          renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
+          renderer.setSize(360, 360, false);
+          const scene = new THREE.Scene();
+          const cam = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+          cam.position.set(0, 0, 11);
+          const mat = ()=> new THREE.MeshBasicMaterial({color, wireframe:true, transparent:true, opacity:0.85});
+          const group = new THREE.Group();
+          const fig = art.dataset.fig;
+          if(fig === 'dna'){
+            const turns = 2.2, H = 7, R = 1.7, seg = 90;
+            const pts1 = [], pts2 = [];
+            for(let i=0;i<=seg;i++){
+              const t = i/seg, a = t * turns * Math.PI * 2;
+              pts1.push(new THREE.Vector3(Math.cos(a)*R, t*H - H/2, Math.sin(a)*R));
+              pts2.push(new THREE.Vector3(Math.cos(a+Math.PI)*R, t*H - H/2, Math.sin(a+Math.PI)*R));
+            }
+            group.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts1), 90, 0.16, 6), mat()));
+            group.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2), 90, 0.16, 6), mat()));
+            for(let i=0;i<=14;i++){
+              const t = i/14, a = t * turns * Math.PI * 2;
+              const p1 = new THREE.Vector3(Math.cos(a)*R, t*H - H/2, Math.sin(a)*R);
+              const p2 = new THREE.Vector3(Math.cos(a+Math.PI)*R, t*H - H/2, Math.sin(a+Math.PI)*R);
+              const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, p1.distanceTo(p2), 5), mat());
+              rung.position.copy(p1).add(p2).multiplyScalar(0.5);
+              rung.lookAt(p2); rung.rotateX(Math.PI/2);
+              group.add(rung);
+            }
+            group.rotation.z = 0.25;
+          } else if(fig === 'drop'){
+            const prof = [];
+            for(let i=0;i<=24;i++){
+              const t = i/24;                       // 0 bottom .. 1 top
+              const r = Math.sin(t*Math.PI*0.82) * 2.1 * (1 - t*0.55);
+              prof.push(new THREE.Vector2(Math.max(0.001, r), t*5.6 - 2.2));
+            }
+            group.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 26), mat()));
+            [2.6, 3.4, 4.2].forEach((rr, i)=>{
+              const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.045, 5, 60), mat());
+              ring.rotation.x = Math.PI/2; ring.position.y = -2.6 - i*0.22;
+              group.add(ring);
+            });
+          } else if(fig === 'gears'){
+            // Gears face the camera; teeth live in the XY plane, spin is in-plane (z).
+            const gear = (R, teeth, thick)=>{
+              const g = new THREE.Group();
+              const body = new THREE.Mesh(new THREE.CylinderGeometry(R, R, thick, 28), mat());
+              body.rotation.x = Math.PI/2; g.add(body);
+              const hub = new THREE.Mesh(new THREE.CylinderGeometry(R*0.32, R*0.32, thick*1.5, 14), mat());
+              hub.rotation.x = Math.PI/2; g.add(hub);
+              for(let i=0;i<teeth;i++){
+                const a = i/teeth * Math.PI*2;
+                const tooth = new THREE.Mesh(new THREE.BoxGeometry(R*0.30, R*0.26, thick), mat());
+                tooth.position.set(Math.cos(a)*(R+R*0.13), Math.sin(a)*(R+R*0.13), 0);
+                tooth.rotation.z = a;
+                g.add(tooth);
+              }
+              return g;
+            };
+            const g1 = gear(2.15, 12, 0.7); g1.position.set(-1.2, 1.1, 0);
+            const g2 = gear(1.4, 8, 0.7);  g2.position.set(1.9, -1.5, 0);
+            group.add(g1); group.add(g2);
+            group.userData.gears = [g1, g2];
+            group.userData.sway = true;
+          } else if(fig === 'sat'){
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.7, 2.6), mat());
+            group.add(body);
+            [-1, 1].forEach(s=>{
+              const panel = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.6, 6, 3), mat());
+              panel.position.x = s * 3.1;
+              group.add(panel);
+              const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.3, 5), mat());
+              arm.rotation.z = Math.PI/2; arm.position.x = s * 1.35;
+              group.add(arm);
+            });
+            const dishArm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.9, 5), mat());
+            dishArm.position.y = 1.25; group.add(dishArm);
+            const dish = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.5, 18, 1, true), mat());
+            dish.position.y = 1.9; dish.rotation.x = Math.PI;
+            group.add(dish);
+            group.rotation.z = -0.18;
+          }
+          scene.add(group);
+          art.classList.add('has3d');
+          let mx = 0, my = 0;
+          const sect = art.closest('.rd-sector');
+          if(sect && window.matchMedia('(pointer:fine)').matches){
+            sect.addEventListener('mousemove', e=>{
+              const r = sect.getBoundingClientRect();
+              mx = ((e.clientX - r.left)/r.width - 0.5);
+              my = ((e.clientY - r.top)/r.height - 0.5);
+            });
+          }
+          const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          let playing = false, raf = 0, t0 = performance.now();
+          const frame = (now)=>{
+            const t = (now - t0)/1000;
+            if(group.userData.sway){
+              group.rotation.y = Math.sin(t*0.5)*0.32 + mx*0.6;
+              group.rotation.x = Math.sin(t*0.3)*0.10 + my*0.35;
+            } else {
+              group.rotation.y = t*0.45 + mx*0.7;
+              group.rotation.x = Math.sin(t*0.30)*0.14 + my*0.4;
+            }
+            if(group.userData.gears){
+              group.userData.gears[0].rotation.z = t*0.55;
+              group.userData.gears[1].rotation.z = -t*0.85 + 0.22;
+            }
+            renderer.render(scene, cam);
+            if(playing) raf = requestAnimationFrame(frame);
+          };
+          if(reduced){ group.rotation.y = group.userData.sway ? 0.15 : 0.6; renderer.render(scene, cam); return; }
+          const io = new IntersectionObserver(en=>{
+            en.forEach(x=>{
+              if(x.isIntersecting && !playing){ playing = true; raf = requestAnimationFrame(frame); }
+              else if(!x.isIntersecting && playing){ playing = false; cancelAnimationFrame(raf); }
+            });
+          }, {threshold: 0.05});
+          io.observe(art);
+        }catch(e){ /* figure fails -> SVG fallback stays */ }
+      });
+    };
+    if(window.THREE){ boot(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    s.onload = boot;
+    document.head.appendChild(s);
+  })();
+
   const liLb = document.getElementById('liLightbox');
   const liLbImg = document.getElementById('liLbImg');
   const liCloseLb = ()=>{ liLb.classList.remove('open'); liLbImg.src = ''; };
@@ -3451,7 +3539,7 @@ async function showApplyPage(){
     <div class="landing-nav">
       <div class="nb">
         ${brandImg2 ? `<img src="${brandImg2.src}" alt="KACST">` : ''}
-        <div class="nt">إدارة استقطاب الكفاءات<small>مدينة الملك عبدالعزيز للعلوم والتقنية</small></div>
+        <div class="nt">قطاع رأس المال البشري<small>مدينة الملك عبدالعزيز للعلوم والتقنية</small></div>
       </div>
       <div class="na"><button class="btn btn-sm btn-ghost" onclick="location.href='/'">الصفحة الرئيسية</button></div>
     </div>
