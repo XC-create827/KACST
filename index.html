@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>console.log("KACST build RD-20260819-1");</script>
 <style>
   /* ============================================================
      DESIGN SYSTEM v3 — "aurora, refined"
@@ -784,6 +785,82 @@
     color:#c7d6e4;background:#0d2b47;border-top:none;
     margin:60px -28px -80px;padding:26px 28px;
   }
+  /* ---- Intro: KACST film hero + stats + news strip (landing only) ---- */
+  .landing .li-hero-slide{padding:0;overflow:hidden;background:#0d2b47;}
+  .landing .li-hero{position:relative;width:100%;min-height:100vh;display:flex;align-items:center;}
+  .landing .li-hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .landing .li-hero::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(to left, rgba(13,43,71,0.88) 0%, rgba(13,43,71,0.58) 46%, rgba(13,43,71,0.22) 100%);}
+  .landing .li-hero-inner{position:relative;z-index:2;max-width:1080px;margin:0 auto;padding:96px 28px 72px;width:100%;}
+  .landing .li-eyebrow{display:inline-flex;align-items:center;gap:8px;color:#cfe4ec;font-size:13.5px;font-weight:700;margin-bottom:12px;}
+  .landing .li-eyebrow::before{content:"";width:26px;height:2px;background:var(--teal);border-radius:2px;}
+  .landing .li-hero h1{color:#ffffff;font-size:clamp(30px,4.4vw,46px);line-height:1.28;margin:0 0 14px;font-weight:800;}
+  .landing .li-hero p{color:#dbe7ee;max-width:600px;font-size:clamp(14.5px,1.6vw,17px);line-height:1.95;margin:0 0 24px;}
+  .landing .li-cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:44px;}
+  .landing .li-btn-ghost{
+    display:inline-flex;align-items:center;padding:12px 34px;border-radius:var(--radius-sm,8px);
+    font-size:14.5px;font-weight:800;cursor:pointer;
+    background:rgba(255,255,255,0.10);color:#fff;border:1px solid rgba(255,255,255,0.45);
+    transition:background .18s;
+  }
+  .landing .li-btn-ghost:hover{background:rgba(255,255,255,0.22);}
+  .landing .li-sound{
+    position:absolute;z-index:3;bottom:18px;inset-inline-end:18px;width:42px;height:42px;border-radius:50%;
+    border:1px solid rgba(255,255,255,0.5);background:rgba(13,43,71,0.55);color:#fff;font-size:16px;cursor:pointer;
+  }
+  .landing .li-sound:hover{background:rgba(13,43,71,0.85);}
+  .landing .li-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:880px;}
+  .landing .li-stat{
+    background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.22);
+    backdrop-filter:blur(8px);border-radius:var(--radius-sm,10px);padding:16px 12px;text-align:center;
+  }
+  .landing .li-stat b{display:block;font-size:clamp(20px,2.4vw,27px);color:#fff;font-weight:800;margin-bottom:4px;}
+  .landing .li-stat small{color:#cfe0ec;font-size:12px;line-height:1.7;display:block;}
+  .landing .li-news-slide{flex-direction:column;justify-content:center;}
+  .landing .li-news{max-width:1080px;width:100%;margin:0 auto;}
+  .landing .li-news-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:6px;}
+  .landing .li-news-head h2{
+    margin:0;font-size:clamp(22px,2.8vw,30px);
+    background:linear-gradient(115deg,#122b42 40%, #149a8b 90%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .landing .li-news-head a{color:#0f8577;font-size:13px;font-weight:800;text-decoration:none;white-space:nowrap;}
+  .landing .li-news-head a:hover{text-decoration:underline;}
+  .landing .li-news-sub{color:var(--l-muted);font-size:14px;margin:0 0 20px;line-height:1.8;}
+  .landing .li-news-scroll{
+    display:grid;grid-auto-flow:column;grid-auto-columns:228px;gap:14px;
+    overflow-x:auto;padding:4px 2px 16px;scroll-snap-type:x proximity;
+  }
+  .landing .li-news-scroll::-webkit-scrollbar{height:8px;}
+  .landing .li-news-scroll::-webkit-scrollbar-thumb{background:#c8d4de;border-radius:8px;}
+  .landing .li-news-card{
+    scroll-snap-align:start;background:var(--l-card);border:1px solid var(--l-line);
+    border-radius:var(--radius-sm,10px);overflow:hidden;cursor:pointer;margin:0;
+    box-shadow:0 8px 30px rgba(18,43,66,0.07);transition:transform .18s, box-shadow .18s;
+    display:flex;flex-direction:column;
+  }
+  .landing .li-news-card:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(18,43,66,0.14);}
+  .landing .li-news-card img{width:100%;aspect-ratio:9/16;object-fit:cover;object-position:top;display:block;background:#eef2f6;}
+  .landing .li-news-card figcaption{padding:11px 13px;font-size:12.5px;color:#2a4258;line-height:1.7;border-top:1px solid var(--l-line);}
+  .landing .li-lightbox{
+    position:fixed;inset:0;background:rgba(10,22,33,0.86);z-index:999;
+    display:none;align-items:center;justify-content:center;padding:28px;
+  }
+  .landing .li-lightbox.open{display:flex;}
+  .landing .li-lightbox img{max-width:min(92vw,540px);max-height:92vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+  .landing .li-lightbox button{
+    position:absolute;top:18px;inset-inline-start:18px;width:44px;height:44px;border-radius:50%;border:none;
+    background:rgba(255,255,255,0.14);color:#fff;font-size:20px;cursor:pointer;
+  }
+  .landing .li-lightbox button:hover{background:rgba(255,255,255,0.28);}
+  @media(max-width:860px){
+    .landing .li-stats{grid-template-columns:repeat(2,1fr);}
+    .landing .li-news-scroll{grid-auto-columns:196px;}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .landing .li-news-card{transition:none;}
+    .landing .li-news-card:hover{transform:none;}
+  }
   /* ---- Large displays: 1440p ---- */
   @media(min-width:1600px){
     main{padding:46px 64px 80px;}
@@ -942,6 +1019,218 @@
     document.documentElement.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
   }catch(e){}})();
 </script>
+<style id="rdSkin">
+/* ================= REDESIGN SKIN (landing + apply) =================
+   Dark KACST redesign ported from the Claude Design prototype.
+   Loaded last so it overrides the earlier .landing theme. */
+.landing{
+  --rd-bg:#050f1e; --rd-bg2:#081426; --rd-card:#0b1a30;
+  --rd-ink:#eef6fa; --rd-mut:#9db4c6; --rd-line:rgba(157,180,198,.16);
+  --rd-violet:#8b5cf6; --rd-blue:#2f7ff0; --rd-gold:#e8b93e; --rd-teal:#19b8a6; --rd-rose:#f4536e;
+  --rd-grad:linear-gradient(120deg,#2f7ff0,#8b5cf6);
+  background:var(--rd-bg) !important;
+  color:var(--rd-ink);
+  font-family:'Tajawal','Segoe UI',Tahoma,sans-serif !important;
+  scroll-snap-type:none !important;
+}
+.landing .lslide{scroll-snap-align:none !important;}
+.landing ::selection{background:rgba(139,92,246,.35);}
+
+/* ---- nav ---- */
+.landing .landing-nav{
+  position:fixed;top:0;right:0;left:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+  padding:12px 26px;background:rgba(5,15,30,.72) !important;backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--rd-line) !important;box-shadow:none !important;
+}
+.landing .landing-nav::before{content:"";position:absolute;top:0;right:0;left:0;height:3px;
+  background:linear-gradient(90deg,#f4536e,#e8b93e,#19b8a6,#2f7ff0,#8b5cf6);}
+.landing .landing-nav .nb{display:flex;align-items:center;gap:12px;}
+.landing .landing-nav .nb img{width:40px;height:40px;object-fit:contain;}
+.landing .landing-nav .nt{font-weight:800;font-size:15px;color:var(--rd-ink) !important;line-height:1.3;}
+.landing .landing-nav .nt small{display:block;font-weight:400;font-size:10.5px;color:var(--rd-mut) !important;}
+.landing .landing-nav .na{display:flex;gap:10px;}
+.landing .btn{font-family:'Tajawal',sans-serif;}
+.landing .btn-primary{
+  background:var(--rd-grad) !important;color:#fff !important;border:none !important;border-radius:999px !important;
+  font-weight:800;box-shadow:0 8px 26px rgba(47,127,240,.35) !important;
+}
+.landing .btn-primary:hover{filter:brightness(1.12);}
+.landing .btn-ghost{
+  background:rgba(255,255,255,.05) !important;color:var(--rd-ink) !important;
+  border:1px solid rgba(157,180,198,.35) !important;border-radius:999px !important;font-weight:700;
+}
+.landing .btn-ghost:hover{background:rgba(255,255,255,.12) !important;}
+
+/* ---- reveal-on-scroll ---- */
+.landing .rd-rev{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease;}
+.landing .rd-rev.in{opacity:1;transform:none;}
+@media (prefers-reduced-motion:reduce){ .landing .rd-rev{opacity:1;transform:none;transition:none;} }
+
+/* ---- hero ---- */
+.landing .rd-hero{position:relative;min-height:100vh;display:flex;align-items:center;overflow:hidden;background:var(--rd-bg);}
+.landing .rd-hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;}
+.landing .rd-hero::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(to left, rgba(5,15,30,.9) 0%, rgba(5,15,30,.55) 50%, rgba(5,15,30,.35) 100%);}
+.landing .rd-hero-inner{position:relative;z-index:2;max-width:1180px;margin:0 auto;width:100%;padding:130px 30px 60px;}
+.landing .rd-hero h1{
+  font-size:clamp(42px,7.2vw,92px);line-height:1.12;font-weight:900;color:#fff;margin:0 0 22px;max-width:760px;
+}
+.landing .rd-hero h1 .g{
+  background:linear-gradient(100deg,#8b5cf6 10%,#f4536e 90%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.landing .rd-hero p{color:#c8d9e6;max-width:640px;font-size:clamp(15px,1.6vw,18px);line-height:2;margin:0 0 30px;}
+.landing .rd-cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:56px;}
+.landing .rd-btn-lg{font-size:16px !important;padding:15px 48px !important;}
+.landing .rd-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--rd-line);
+  border:1px solid var(--rd-line);border-radius:16px;overflow:hidden;max-width:1000px;}
+.landing .rd-stat{background:rgba(8,20,38,.82);backdrop-filter:blur(8px);padding:22px 16px;text-align:center;position:relative;}
+.landing .rd-stat b{display:block;font-size:clamp(24px,2.8vw,34px);font-weight:900;color:#fff;}
+.landing .rd-stat b sup{color:var(--sc,#19b8a6);font-size:.55em;margin-inline-start:2px;}
+.landing .rd-stat small{color:var(--rd-mut);font-size:12px;line-height:1.7;display:block;margin-top:4px;}
+.landing .rd-stat::after{content:"";position:absolute;bottom:0;right:20%;left:20%;height:3px;border-radius:3px;background:var(--sc,#19b8a6);}
+.landing .rd-sound{
+  position:absolute;z-index:3;bottom:20px;inset-inline-end:20px;width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(157,180,198,.4);background:rgba(5,15,30,.6);color:#fff;font-size:16px;cursor:pointer;
+}
+.landing .rd-sound:hover{background:rgba(5,15,30,.9);}
+
+/* ---- marquee ---- */
+.landing .rd-marquee{border-block:1px solid var(--rd-line);padding:16px 0;overflow:hidden;background:var(--rd-bg2);}
+.landing .rd-mq-track{display:flex;gap:14px;width:max-content;animation:rdmq 32s linear infinite;}
+@keyframes rdmq{from{transform:translateX(0)}to{transform:translateX(50%)}}
+.landing .rd-chip{
+  font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--rd-mut);white-space:nowrap;
+  border:1px solid var(--rd-line);border-radius:999px;padding:8px 18px;
+}
+@media (prefers-reduced-motion:reduce){ .landing .rd-mq-track{animation:none;flex-wrap:wrap;width:auto;} }
+
+/* ---- section shells ---- */
+.landing .rd-wrap{max-width:1180px;margin:0 auto;padding:90px 30px;}
+.landing .rd-kicker{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;color:var(--rd-teal);margin-bottom:10px;display:block;}
+.landing .rd-title{font-size:clamp(28px,4vw,44px);font-weight:900;color:#fff;margin:0 0 14px;line-height:1.3;}
+
+/* ---- vision / mission ---- */
+.landing .rd-vm{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.landing .rd-vm-card{background:var(--rd-card);border:1px solid var(--rd-line);border-radius:18px;padding:30px 28px;}
+.landing .rd-vm-card h3{margin:0 0 8px;font-size:15px;color:var(--rd-teal);font-weight:800;}
+.landing .rd-vm-card strong{display:block;font-size:clamp(18px,2vw,23px);color:#fff;font-weight:800;margin-bottom:10px;line-height:1.6;}
+.landing .rd-vm-card p{margin:0;color:var(--rd-mut);font-size:14px;line-height:2;}
+
+/* ---- timeline ---- */
+.landing .rd-tl{position:relative;height:520vh;}
+.landing .rd-tl-sticky{position:sticky;top:0;height:100vh;display:flex;align-items:center;overflow:hidden;background:radial-gradient(ellipse at 70% 30%, rgba(25,184,166,.08), transparent 55%), var(--rd-bg);}
+.landing .rd-tl-inner{max-width:1180px;margin:0 auto;width:100%;height:100%;padding:80px 30px 40px;position:relative;}
+.landing .rd-ch{position:absolute;inset-inline:30px;top:50%;transform:translateY(-50%);opacity:0;pointer-events:none;max-width:620px;will-change:opacity,transform;}
+.landing .rd-ch.on{pointer-events:auto;}
+.landing .rd-tl-photos{position:absolute;inset:0;pointer-events:none;}
+.landing .rd-tl-photo{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;filter:saturate(.75) brightness(.9);will-change:opacity;}
+.landing .rd-tl-shade{position:absolute;inset:0;background:linear-gradient(to left, rgba(5,15,30,.88) 12%, rgba(5,15,30,.6) 55%, rgba(5,15,30,.34) 100%);}
+.landing .rd-tl-beam{position:absolute;top:16%;bottom:16%;inset-inline-end:38px;width:3px;border-radius:3px;background:rgba(157,180,198,.18);overflow:hidden;}
+.landing .rd-tl-beam i{position:absolute;top:0;right:0;left:0;height:0%;border-radius:3px;background:linear-gradient(180deg,#19b8a6,#2f7ff0,#8b5cf6);}
+.landing .rd-tl-credit{position:absolute;bottom:30px;inset-inline-end:30px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:rgba(157,180,198,.55);}
+.landing .rd-ch .num{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--rd-mut);direction:ltr;display:inline-block;}
+.landing .rd-ch .num i{font-style:normal;color:var(--cc,#19b8a6);}
+.landing .rd-ch .yr{font-size:clamp(56px,8.5vw,110px);font-weight:900;line-height:1;color:var(--cc,#19b8a6);margin:6px 0 0;}
+.landing .rd-ch .tt{font-size:clamp(24px,3.2vw,40px);font-weight:900;color:#fff;margin:2px 0 14px;}
+.landing .rd-ch .ds{color:var(--rd-mut);font-size:clamp(14px,1.5vw,16.5px);line-height:2;max-width:560px;}
+.landing .rd-tl-dots{position:absolute;bottom:30px;inset-inline:30px;display:flex;align-items:center;gap:8px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--rd-mut);}
+.landing .rd-tl-dots .d{width:26px;height:12px;border-radius:3px;background:linear-gradient(rgba(157,180,198,.25),rgba(157,180,198,.25)) center/100% 3px no-repeat;cursor:pointer;transition:background .3s;}
+.landing .rd-tl-dots .d.on{background:linear-gradient(var(--rd-teal),var(--rd-teal)) center/100% 3px no-repeat;}
+@media (prefers-reduced-motion:reduce){
+  .landing .rd-tl{height:auto;}
+  .landing .rd-tl-sticky{position:static;height:auto;display:block;padding:40px 0;}
+  .landing .rd-ch{position:static;opacity:1;transform:none;margin:0 auto 60px;max-width:1120px;padding:0 30px;}
+  .landing .rd-tl-dots{display:none;}
+  .landing .rd-tl-beam,.landing .rd-tl-photos,.landing .rd-tl-credit{display:none;}
+  .landing .rd-ch{opacity:1;}
+}
+
+/* ---- sectors ---- */
+.landing .rd-sector{position:relative;border-top:1px solid var(--rd-line);overflow:hidden;}
+.landing .rd-sector .wm{
+  position:absolute;top:10px;inset-inline-start:-10px;font-size:clamp(160px,26vw,340px);font-weight:900;line-height:1;
+  color:transparent;-webkit-text-stroke:1px rgba(157,180,198,.12);pointer-events:none;font-family:'IBM Plex Mono',monospace;
+}
+.landing .rd-sec-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:44px;align-items:start;position:relative;}
+.landing .rd-sec-head .rd-kicker{color:var(--sc);}
+.landing .rd-sec-head h2{font-size:clamp(30px,4.4vw,52px);font-weight:900;margin:0 0 12px;color:var(--sc);}
+.landing .rd-sec-head p{color:#c8d9e6;font-size:clamp(14.5px,1.6vw,17px);line-height:2;margin:0 0 26px;max-width:560px;}
+.landing .rd-sub{background:var(--rd-card);border:1px solid var(--rd-line);border-inline-start:3px solid var(--sc);
+  border-radius:12px;padding:16px 18px;margin-bottom:12px;}
+.landing .rd-sub strong{display:block;color:#fff;font-size:15px;font-weight:800;margin-bottom:4px;}
+.landing .rd-sub span{color:var(--rd-mut);font-size:13px;line-height:1.9;}
+.landing .rd-impact{background:rgba(8,20,38,.7);border:1px dashed rgba(157,180,198,.35);border-radius:14px;padding:20px 22px;margin-top:26px;}
+.landing .rd-impact h4{margin:0 0 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;color:var(--sc);font-weight:600;}
+.landing .rd-impact div{color:#d7e4ee;font-size:13.5px;line-height:1.9;margin-bottom:8px;}
+.landing .rd-impact div::before{content:"✦";color:var(--sc);margin-inline-end:8px;font-size:11px;}
+.landing .rd-sec-art{display:flex;align-items:center;justify-content:center;padding-top:40px;}
+.landing .rd-sec-art svg{width:min(240px,60%);height:auto;stroke:var(--sc);opacity:.9;}
+
+/* ---- news (restyle existing li-news markup) ---- */
+.landing .li-news-slide{background:var(--rd-bg2);border-top:1px solid var(--rd-line);padding:90px 0 !important;min-height:0 !important;display:block !important;}
+.landing .li-news{max-width:1180px;padding:0 30px;}
+.landing .li-news-head h2{background:none !important;-webkit-text-fill-color:currentColor;color:#fff !important;font-weight:900;}
+.landing .li-news-head a{color:var(--rd-teal) !important;}
+.landing .li-news-sub{color:var(--rd-mut) !important;}
+.landing .li-news-scroll::-webkit-scrollbar-thumb{background:#28405a !important;}
+.landing .li-news-card{background:var(--rd-card) !important;border-color:var(--rd-line) !important;box-shadow:none !important;}
+.landing .li-news-card figcaption{color:#c8d9e6 !important;border-top-color:var(--rd-line) !important;}
+
+/* ---- CTA ---- */
+.landing .rd-cta{padding:120px 30px;text-align:center;background:
+  radial-gradient(ellipse at 50% 0%, rgba(139,92,246,.14), transparent 60%), var(--rd-bg);}
+.landing .rd-cta h2{font-size:clamp(38px,6vw,72px);font-weight:900;color:#fff;margin:0 0 14px;}
+.landing .rd-cta h2 .dot{color:var(--rd-violet);}
+.landing .rd-cta p{color:var(--rd-mut);font-size:clamp(14.5px,1.7vw,17px);margin:0 0 30px;}
+.landing .rd-staff{display:block;margin-top:20px;color:var(--rd-mut);font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:4px;}
+.landing .rd-staff:hover{color:var(--rd-ink);}
+.landing .landing-login{max-width:420px;margin:26px auto 0;display:none;text-align:right;}
+.landing .landing-login.open{display:block;}
+.landing .landing-login .modal{background:var(--rd-card) !important;border:1px solid var(--rd-line) !important;border-radius:16px !important;box-shadow:0 30px 80px rgba(0,0,0,.5) !important;padding:26px !important;}
+.landing .rd-foot{border-top:1px solid var(--rd-line);padding:26px 30px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  color:var(--rd-mut);font-size:12.5px;background:var(--rd-bg2);}
+.landing .rd-foot .mono{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;}
+
+/* ---- forms on dark (login card + apply page) ---- */
+.landing .field label{color:#c8d9e6 !important;font-weight:700;}
+.landing .field input,.landing .field select,.landing .field textarea{
+  background:rgba(5,15,30,.6) !important;border:1px solid rgba(157,180,198,.3) !important;
+  color:var(--rd-ink) !important;border-radius:10px !important;
+}
+.landing .field input:focus,.landing .field select:focus,.landing .field textarea:focus{
+  border-color:var(--rd-teal) !important;box-shadow:0 0 0 3px rgba(25,184,166,.18) !important;outline:none;
+}
+.landing .field input::placeholder,.landing .field textarea::placeholder{color:#5b7186 !important;}
+
+/* ---- apply page ---- */
+.landing .landing-inner{padding-top:110px;}
+.landing .landing-inner .landing-hero h1{font-size:clamp(30px,5vw,44px) !important;font-weight:900;color:#fff !important;}
+.landing .landing-inner .landing-hero h1 .g{background:linear-gradient(100deg,#8b5cf6,#2f7ff0);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.landing .rd-join-kicker{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:2px;color:var(--rd-teal);display:block;margin-bottom:8px;}
+.landing .landing-inner .tag{color:var(--rd-mut) !important;}
+.landing .landing-inner .modal{background:var(--rd-card) !important;border:1px solid var(--rd-line) !important;border-radius:18px !important;box-shadow:0 30px 90px rgba(0,0,0,.45) !important;}
+.landing .ap-progress{background:rgba(157,180,198,.15) !important;border-radius:99px;}
+.landing .ap-bar{background:var(--rd-grad) !important;}
+.landing .ap-step{color:var(--rd-mut) !important;}
+.landing .ap-step.active{color:#fff !important;font-weight:800;}
+.landing #apFile{border:1.5px dashed rgba(25,184,166,.5) !important;background:rgba(25,184,166,.05) !important;padding:26px 14px !important;border-radius:14px !important;width:100%;cursor:pointer;}
+.landing #apFile:hover{background:rgba(25,184,166,.1) !important;}
+.landing .landing-foot{background:transparent !important;color:var(--rd-mut) !important;margin:40px 0 0 !important;padding:20px 0 !important;border-top:1px solid var(--rd-line) !important;}
+
+@media (max-width:900px){
+  .landing .rd-stats{grid-template-columns:repeat(2,1fr);}
+  .landing .rd-vm{grid-template-columns:1fr;}
+  .landing .rd-sec-grid{grid-template-columns:1fr;gap:20px;}
+  .landing .rd-sec-art{order:-1;padding-top:0;}
+  .landing .rd-sec-art svg{width:120px;}
+  .landing .rd-wrap{padding:64px 22px;}
+  .landing .rd-hero-inner{padding:110px 22px 50px;}
+  .landing .landing-nav{padding:10px 16px;}
+  .landing .landing-nav .nt small{display:none;}
+}
+</style>
 </head>
 <body>
 <div id="app">
@@ -2846,75 +3135,265 @@ function showLogin(){
       </div>
     </div>`;
   ov.innerHTML = navbar + `
-    <section class="lslide landing-hero">
-      <div>
-        ${brandImg ? `<img src="${brandImg.src}" alt="KACST">` : ''}
-        <h1>إدارة استقطاب الكفاءات</h1>
-        <div class="org">${LANDING.org}</div>
-        <div class="tag">${LANDING.tag}</div>
-        <div class="vm-grid" style="max-width:880px;margin:34px auto 0;text-align:right;">
-          <div class="vm-card"><h2>الرؤية</h2><p>${LANDING.vision}</p></div>
-          <div class="vm-card"><h2>الرسالة</h2><p>${LANDING.mission}</p></div>
+    <section class="rd-hero">
+      <video id="liVideo" autoplay muted loop playsinline preload="metadata" poster="/intro/kacst-intro-poster.jpg">
+        <source src="/intro/kacst-intro.mp4" type="video/mp4">
+      </video>
+      <div class="rd-hero-inner">
+        <h1>نستقطب العقول التي تصنع <span class="g">المستقبل</span></h1>
+        <p>البحث العلمي والتطوير التقني ركيزتا النمو في المملكة. هذه بوابتك للانضمام إلى نخبة الباحثين والمبتكرين وروّاد التقنيات العميقة الذين يصنعون الغد في المختبر الوطني.</p>
+        <div class="rd-cta-row">
+          <button class="btn btn-primary rd-btn-lg" id="liHeroApply">قدّم الآن</button>
+          <button class="btn btn-ghost rd-btn-lg" id="rdExplore">استكشف قطاعاتنا</button>
         </div>
-        <div class="scroll-hint" aria-hidden="true">↓ اسحب لاستكشاف قطاعات التركيز</div>
+        <div class="rd-stats">
+          <div class="rd-stat" style="--sc:#19b8a6;"><b>3,000<sup>+</sup></b><small>باحث ومبتكر ومختص</small></div>
+          <div class="rd-stat" style="--sc:#8b5cf6;"><b>90<sup>+</sup></b><small>شركة ناشئة في التقنيات العميقة</small></div>
+          <div class="rd-stat" style="--sc:#2f7ff0;"><b>600<sup>+</sup></b><small>شركة تقنية تخرّجت من «الكراج»</small></div>
+          <div class="rd-stat" style="--sc:#e8b93e;"><b>21,700<sup>+</sup></b><small>مستفيد من البرامج التدريبية والتأهيلية</small></div>
+        </div>
+      </div>
+      <button class="rd-sound" id="liSound" aria-label="تشغيل الصوت" title="تشغيل / كتم الصوت">🔇</button>
+    </section>
+
+    <div class="rd-marquee" aria-hidden="true"><div class="rd-mq-track">
+      ${Array(2).fill(['الذكاء الاصطناعي','التقنية الحيوية والجينوم','الفضاء والاتصالات','الطاقة النظيفة','التصنيع المتقدم','تقنيات المياه','أشباه الموصلات','ريادة التقنيات العميقة']).flat().map(c=>`<span class="rd-chip">${c}</span>`).join('')}
+    </div></div>
+
+    <section class="rd-wrap">
+      <div class="rd-vm">
+        <div class="rd-vm-card rd-rev"><h3>الرؤية</h3><strong>الريادة العالمية في البحث والتطوير والابتكار.</strong>
+          <p>بما يعزز تنافسية المملكة، ويبني اقتصادًا معرفيًا مزدهرًا يتماشى مع مستهدفات رؤية المملكة 2030.</p></div>
+        <div class="rd-vm-card rd-rev"><h3>الرسالة</h3><strong>المختبر الوطني وواحات الابتكار.</strong>
+          <p>تقود كاكست البحث التطبيقي والتطوير التقني وفق الأولويات الوطنية، وتحوّل مخرجات المعرفة إلى منتجات وخدمات ابتكارية ذات قيمة مضافة، وتمكّن رواد الأعمال والشركات الناشئة في التقنيات العميقة، وتؤدي دور الجهة التقنية المرجعية للجهات الحكومية والقطاع الخاص.</p></div>
       </div>
     </section>
 
-    ${LANDING.sectors.map((s,i)=>`
-    <section class="lslide sector-slide" style="--scolor:${s.color};">
-      <div class="ss-grid ${i%2?'flip':''}">
-        <div class="ss-text">
-          <div class="ss-kicker">قطاع ${'٠١٠٢٠٣٠٤٠٥'.slice(i*2,i*2+2)}</div>
+    <section class="rd-tl" id="rdTimeline">
+      <div class="rd-tl-sticky">
+        <div class="rd-tl-photos">
+          ${['/intro/tl-01.jpg','/intro/tl-02.jpg','/intro/tl-03.jpg','/intro/tl-04.jpg','/intro/tl-05.jpg','/intro/kacst-intro-poster.jpg'].map((u,i)=>`<div class="rd-tl-photo" data-p="${i}" style="background-image:url('${u}');"></div>`).join('')}
+          <div class="rd-tl-shade"></div>
+        </div>
+        <div class="rd-tl-beam" aria-hidden="true"><i id="rdBeamFill"></i></div>
+        <span class="rd-tl-credit">PHOTO · KACST FILM</span>
+        <div class="rd-tl-inner">
+          ${[
+            {n:'01',y:'1977',t:'البداية',d:'مرسوم ملكي يُنشئ المركز الوطني السعودي للعلوم والتقنية في الرياض — أول مؤسسة علمية وطنية في المملكة.',c:'#19b8a6'},
+            {n:'02',y:'1985',t:'مدينة الملك عبدالعزيز',d:'إعادة التنظيم والتسمية بمرسوم ملكي لتصبح مدينة الملك عبدالعزيز للعلوم والتقنية — بيت البحث والتطوير في المملكة.',c:'#2f7ff0'},
+            {n:'03',y:'2000',t:'إلى الفضاء',d:'إطلاق «سعودي سات-1» — أول ١٣ قمرًا صناعيًا سعوديًا صُممت وصُنعت في المدينة بين 2000 و2017.',c:'#8b5cf6'},
+            {n:'04',y:'2018',t:'سعودي سات 5',d:'قمرا الاستشعار عالي الدقة 5A و5B — تصميم وتصنيع وتشغيل بأيدٍ سعودية بالكامل.',c:'#e8b93e'},
+            {n:'05',y:'2022',t:'«الكراج»',d:'افتتاح أكبر واحة ابتكار للتقنيات العميقة في المنطقة — تخرّجت منها أكثر من 600 شركة تقنية.',c:'#f4536e'},
+            {n:'06',y:'اليوم',t:'المختبر الوطني — وأنت التالي',d:'كاكست اليوم مختبر المملكة الوطني وواحات ابتكارها. القصة تستمر.',c:'#19b8a6'}
+          ].map((ch,i)=>`
+          <div class="rd-ch${i===0?' on':''}" style="--cc:${ch.c};" data-ch="${i}">
+            <span class="num"><i>${ch.n}</i> / 06</span>
+            <div class="yr">${ch.y}</div>
+            <div class="tt">${ch.t}</div>
+            <div class="ds">${ch.d}</div>
+          </div>`).join('')}
+          <div class="rd-tl-dots"><span>SCROLL ↓</span>${Array.from({length:6},(_,i)=>`<span class="d${i===0?' on':''}" data-d="${i}"></span>`).join('')}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rd-wrap" id="rdSectors" style="padding-bottom:20px;">
+      <span class="rd-kicker">قطاعاتنا</span>
+      <h2 class="rd-title">خمسة قطاعات. مهمة واحدة.</h2>
+    </section>
+
+    ${[
+      {n:'01',name:'الصحة',c:'#f4536e',desc:'التقنية الحيوية والحلول الصحية المتقدمة لجودة حياة أفضل للإنسان.',
+       subs:[['التقنية الحيوية والجينوم','أبحاث الجينوم والعلاجات الحيوية للأمراض ذات الأولوية الوطنية.'],['الأدوية واللقاحات','تطوير وتوطين صناعة الأدوية واللقاحات والمستحضرات الحيوية.'],['الأجهزة والحلول الطبية','تقنيات تشخيصية وعلاجية متقدمة بشراكات مع المنظومة الصحية.']],
+       impact:['علاجات وحلول صحية موطّنة','شراكات بحثية مع المنظومة الصحية','شركات ناشئة في التقنية الحيوية'],
+       art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 52h18l7-20 12 40 9-28 5 8h33"/><circle cx="50" cy="16" r="8"/></svg>'},
+      {n:'02',name:'البيئة والاستدامة',c:'#19b8a6',desc:'حلول المياه والبيئة والزراعة لمواجهة تحديات المناخ وتأمين الموارد.',
+       subs:[['تقنيات المياه','التحلية والمعالجة وكفاءة الاستهلاك لمواجهة تحدي شح المياه.'],['البيئة والمناخ','الرصد البيئي والنمذجة المناخية وحلول خفض الانبعاثات.'],['الزراعة والأمن الغذائي','الزراعة الذكية وتقنيات الإنتاج المستدام في البيئات القاحلة.']],
+       impact:['حلول وطنية لتحديات المياه والغذاء','رصد وبيانات بيئية دقيقة','دعم مستهدفات الاستدامة في رؤية 2030'],
+       art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M50 10C38 30 26 44 26 60a24 24 0 0 0 48 0c0-16-12-30-24-50z"/><path d="M38 62a12 12 0 0 0 12 12"/></svg>'},
+      {n:'03',name:'الطاقة والصناعة',c:'#e8b93e',desc:'تقنيات الطاقة النظيفة والتصنيع المتقدم لتنويع الاقتصاد الوطني.',
+       subs:[['الطاقة المتجددة والتخزين','الخلايا الشمسية وتخزين الطاقة والمواد المتقدمة للطاقة النظيفة.'],['التصنيع المتقدم','الروبوتات والأتمتة والتصنيع الرقمي لرفع تنافسية الصناعة الوطنية.'],['المواد المتقدمة','مواد جديدة لقطاعات الطيران والبناء والصناعات الدقيقة.']],
+       impact:['تقنيات موطّنة للصناعة السعودية','كفاءة أعلى للطاقة','منتجات وطنية ذات قيمة مضافة'],
+       art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M55 8 25 56h20l-6 36 34-52H51z"/></svg>'},
+      {n:'04',name:'اقتصاديات المستقبل',c:'#2f7ff0',desc:'الذكاء الاصطناعي والتقنيات العميقة وبناء الاقتصاد المعرفي.',
+       subs:[['الذكاء الاصطناعي والحوسبة','نماذج وتطبيقات الذكاء الاصطناعي والحوسبة المتقدمة.'],['الفضاء والاتصالات','التقنيات الفضائية واتصالات الجيل القادم وأشباه الموصلات.'],['ريادة التقنيات العميقة','احتضان وتسريع الشركات الناشئة عبر واحات الابتكار وبرامجها.']],
+       impact:['تقنيات عميقة سعودية المنشأ','شركات ناشئة من مخرجات البحث','اقتصاد معرفي تنافسي عالميًا'],
+       art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="30" y="30" width="40" height="40" rx="6"/><rect x="42" y="42" width="16" height="16" rx="3"/><path d="M40 30V16M60 30V16M40 84V70M60 84V70M30 40H16M30 60H16M84 40H70M84 60H70"/></svg>'},
+      {n:'05',name:'رأس المال البشري',c:'#8b5cf6',desc:'استقطاب الكفاءات وتنمية العقول التي تقود البحث والتطوير والابتكار.',
+       subs:[['استقطاب الكفاءات','جذب أفضل العقول محليًا وعالميًا لمنظومة البحث والتطوير والابتكار.'],['تطوير الباحثين والقيادات','برامج تأهيل وزمالات وتدريب متقدم لصناعة القيادات العلمية.'],['بيئة عمل مُمكِّنة','ثقافة محفزة تستبقي المواهب وتحوّل الأفكار إلى أثر ملموس.']],
+       impact:['كفاءات وطنية بمعايير عالمية','مسارات مهنية بحثية واضحة','ثقافة ابتكار جاذبة للمواهب'],
+       art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="38" cy="34" r="12"/><path d="M14 84c2-16 11-24 24-24s22 8 24 24"/><circle cx="72" cy="40" r="9"/><path d="M64 84c1-11 6-18 16-19 5 0 9 2 12 5"/></svg>'}
+    ].map(s=>`
+    <section class="rd-sector" style="--sc:${s.c};">
+      <div class="wm">${s.n}</div>
+      <div class="rd-wrap rd-sec-grid">
+        <div class="rd-sec-head rd-rev">
+          <span class="rd-kicker">قطاع ${s.n}</span>
           <h2>${s.name}</h2>
-          <p class="ss-desc">${s.desc}</p>
-          <div class="ss-block"><span>رؤية القطاع</span><p>${s.vision}</p></div>
-          <div class="ss-block"><span>رسالته</span><p>${s.mission}</p></div>
-          <div class="ss-pillars">
-            ${s.pillars.map(p=>`<div class="ss-pillar"><strong>${p.t}</strong><p>${p.d}</p></div>`).join('')}
-          </div>
+          <p>${s.desc}</p>
+          ${s.subs.map(x=>`<div class="rd-sub"><strong>${x[0]}</strong><span>${x[1]}</span></div>`).join('')}
+          <div class="rd-impact"><h4>الأثر المستهدف</h4>${s.impact.map(o=>`<div>${o}</div>`).join('')}</div>
         </div>
-        <div class="ss-visual">
-          <div class="ss-model">${SECTOR_ART[s.model]||s.icon}</div>
-          <div class="ss-outcomes">
-            <span>الأثر المستهدف</span>
-            ${s.outcomes.map(o=>`<div class="ss-outcome">${o}</div>`).join('')}
-          </div>
-        </div>
+        <div class="rd-sec-art rd-rev">${s.art}</div>
       </div>
     </section>`).join('')}
 
-    <section class="lslide landing-cta">
-      <div>
-        <h2 class="landing-sec-title" style="font-size:26px;">انضم إلى مسيرة الابتكار</h2>
-        <div style="font-size:14px;color:var(--muted);margin:10px 0 26px;max-width:520px;margin-inline:auto;">
-          قدّم طلبك وسيرتك الذاتية مباشرة إلى فريق استقطاب الكفاءات في كاكست — أو سجّل الدخول إن كنت من فريق العمل.
+    <section class="lslide li-news-slide">
+      <div class="li-news">
+        <div class="li-news-head">
+          <div><span class="rd-kicker">آخر أخبار المدينة</span>
+          <h2>من مختبرات المدينة وواحاتها</h2></div>
+          <a href="https://www.linkedin.com/company/kacst---employment" target="_blank" rel="noopener">تابعنا على LinkedIn ←</a>
         </div>
-        <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
-          <button class="btn btn-primary" id="landingApply" style="font-size:16px;padding:14px 52px;">قدّم الآن</button>
-          <button class="btn btn-ghost" id="landingSignIn" style="font-size:14.5px;padding:12px 44px;">تسجيل الدخول</button>
+        <p class="li-news-sub">أحدث الإنجازات والبراءات والبرامج من مدينة الملك عبدالعزيز للعلوم والتقنية.</p>
+        <div class="li-news-scroll" id="liNews">
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-innovations-ar.jpg">
+            <img src="/intro/news-innovations-ar.jpg" alt="ابتكارات شهر يوليو 2026" loading="lazy">
+            <figcaption>ابتكارات شهر يوليو ٢٠٢٦: براءات اختراع وورش عمل وإنجازات بحثية</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-isef-champions.jpg">
+            <img src="/intro/news-isef-champions.jpg" alt="أبطال اليوم مبتكرو المستقبل" loading="lazy">
+            <figcaption>الاحتفاء بأبطال المنتخب السعودي للعلوم والهندسة بعد ٢٤ جائزة دولية في آيسف ٢٠٢٦</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-omar-yaghi.jpg">
+            <img src="/intro/news-omar-yaghi.jpg" alt="لقاء البروفيسور عمر ياغي" loading="lazy">
+            <figcaption>البروفيسور عمر ياغي يشارك رحلته العلمية لطلبة برنامج موهبة الإثرائي البحثي</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-future-researcher.jpg">
+            <img src="/intro/news-future-researcher.jpg" alt="جائزة باحث المستقبل" loading="lazy">
+            <figcaption>١٠ مشروعات بحثية تفوز بجائزة باحث المستقبل في برنامج موهبة الإثرائي ٢٠٢٦</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-skill-to-impact.jpg">
+            <img src="/intro/news-skill-to-impact.jpg" alt="كاكست من المهارة إلى الأثر" loading="lazy">
+            <figcaption>من المهارة إلى الأثر: تمكين الشباب في البحث والابتكار وريادة الأعمال</figcaption>
+          </figure>
+          <figure class="li-news-card" tabindex="0" data-limg="/intro/news-innovations-en.jpg">
+            <img src="/intro/news-innovations-en.jpg" alt="Innovations of the Month — July 2026" loading="lazy">
+            <figcaption>Innovations of the Month — July 2026</figcaption>
+          </figure>
         </div>
-
-        <div class="landing-login" id="landingLogin">
-          <div class="modal" style="max-width:none;text-align:center;">
-            <div class="field" style="text-align:right;"><label>اسم المستخدم</label><input type="text" id="loginUser" autocomplete="username" style="direction:ltr;text-align:left;"></div>
-            <div class="field" style="text-align:right;"><label>كلمة المرور</label><input type="password" id="loginPass" autocomplete="current-password" style="direction:ltr;text-align:left;"></div>
-            <div class="field" id="tfaField" style="display:none;text-align:right;">
-              <label>رمز المصادقة الثنائية (من تطبيق Authenticator)</label>
-              <input type="text" id="loginTotp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:18px;">
-            </div>
-            <div id="loginErr" style="color:var(--rose);font-size:12px;min-height:18px;margin:4px 0 10px;"></div>
-            <button class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;">دخول</button>
-            <div style="margin-top:14px;"><span id="forgotLink" style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;">نسيت كلمة المرور؟</span></div>
-          </div>
-        </div>
-        <div class="landing-foot">© مدينة الملك عبدالعزيز للعلوم والتقنية — كاكست</div>
       </div>
-    </section>`;
+    </section>
+
+    <div class="li-lightbox" id="liLightbox" role="dialog" aria-modal="true" aria-label="عرض الصورة">
+      <button id="liLbClose" aria-label="إغلاق">✕</button>
+      <img id="liLbImg" src="" alt="">
+    </div>
+
+    <section class="rd-cta">
+      <h2 class="rd-rev">مكان عقلك هنا<span class="dot">.</span></h2>
+      <p class="rd-rev">أرسل سيرتك الذاتية مباشرة لفريق استقطاب الكفاءات.</p>
+      <button class="btn btn-primary rd-btn-lg" id="landingApply">قدّم الآن</button>
+      <span class="rd-staff" id="landingSignIn">من منسوبي كاكست؟ سجّل الدخول</span>
+
+      <div class="landing-login" id="landingLogin">
+        <div class="modal" style="max-width:none;text-align:center;">
+          <div class="field" style="text-align:right;"><label>اسم المستخدم</label><input type="text" id="loginUser" autocomplete="username" style="direction:ltr;text-align:left;"></div>
+          <div class="field" style="text-align:right;"><label>كلمة المرور</label><input type="password" id="loginPass" autocomplete="current-password" style="direction:ltr;text-align:left;"></div>
+          <div class="field" id="tfaField" style="display:none;text-align:right;">
+            <label>رمز المصادقة الثنائية (من تطبيق Authenticator)</label>
+            <input type="text" id="loginTotp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" style="direction:ltr;text-align:center;letter-spacing:6px;font-size:18px;">
+          </div>
+          <div id="loginErr" style="color:var(--rd-rose);font-size:12px;min-height:18px;margin:4px 0 10px;"></div>
+          <button class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;">دخول</button>
+          <div style="margin-top:14px;"><span id="forgotLink" style="font-size:12px;color:var(--rd-mut);cursor:pointer;text-decoration:underline;">نسيت كلمة المرور؟</span></div>
+        </div>
+      </div>
+    </section>
+    <div class="rd-foot">
+      <span>© مدينة الملك عبدالعزيز للعلوم والتقنية — كاكست</span>
+      <span class="mono">KACST · TALENT ACQUISITION · RD-20260811-4</span>
+    </div>`;
   document.body.appendChild(ov);
 
   document.getElementById('landingApply').onclick = ()=>{ location.href = '/?apply=1'; };
   document.getElementById('navApply').onclick = ()=>{ location.href = '/?apply=1'; };
   document.getElementById('navSignIn').onclick = ()=>{ document.getElementById('landingSignIn').click(); };
+  // ---- Redesign wiring (video hero, explore, timeline, reveals, lightbox) ----
+  document.getElementById('liHeroApply').onclick = ()=>{ location.href = '/?apply=1'; };
+  const rdExplore = document.getElementById('rdExplore');
+  if(rdExplore) rdExplore.onclick = ()=>{ const s=document.getElementById('rdSectors'); if(s) s.scrollIntoView({behavior:'smooth'}); };
+  const liVideo = document.getElementById('liVideo');
+  const liSound = document.getElementById('liSound');
+  if(liSound && liVideo){
+    liSound.onclick = ()=>{
+      liVideo.muted = !liVideo.muted;
+      liSound.textContent = liVideo.muted ? '🔇' : '🔊';
+      liSound.setAttribute('aria-label', liVideo.muted ? 'تشغيل الصوت' : 'كتم الصوت');
+      if(!liVideo.muted) liVideo.play();
+    };
+  }
+  const rdReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(liVideo && rdReduced){ liVideo.removeAttribute('autoplay'); liVideo.pause(); }
+  // ---- Storyline engine: one rAF ticker drives chapters, photos, beam, and reveals ----
+  const rdTl = document.getElementById('rdTimeline');
+  const rdRevEls = Array.from(ov.querySelectorAll('.rd-rev'));
+  if(rdReduced){
+    rdRevEls.forEach(el=>el.classList.add('in'));
+    if(rdTl) rdTl.querySelectorAll('.rd-ch').forEach(c=>{ c.style.opacity=1; c.classList.add('on'); });
+  } else {
+    const chs = rdTl ? Array.from(rdTl.querySelectorAll('.rd-ch')) : [];
+    const photos = rdTl ? Array.from(rdTl.querySelectorAll('.rd-tl-photo')) : [];
+    const dots = rdTl ? Array.from(rdTl.querySelectorAll('.rd-tl-dots .d')) : [];
+    const beamFill = document.getElementById('rdBeamFill');
+    const N = chs.length || 1;
+    // clickable milestones
+    dots.forEach(d=>{ d.onclick = ()=>{
+      const i = +d.dataset.d;
+      const total = rdTl.offsetHeight - window.innerHeight;
+      ov.scrollTo({ top: rdTl.offsetTop + ((i + 0.5) / N) * total, behavior: 'smooth' });
+    };});
+    let rdLastY = -1;
+    const rdFrame = ()=>{
+      const y = ov.scrollTop;
+      if(y !== rdLastY){
+        rdLastY = y;
+        const vh = window.innerHeight;
+        // reveals
+        for(const el of rdRevEls){
+          if(el.classList.contains('in')) continue;
+          const r = el.getBoundingClientRect();
+          if(r.top < vh * 0.88 && r.bottom > 0) el.classList.add('in');
+        }
+        // timeline
+        if(rdTl){
+          const r = rdTl.getBoundingClientRect();
+          const total = r.height - vh;
+          const prog = Math.min(1, Math.max(0, -r.top / Math.max(1,total)));
+          const pf = prog * N;                      // 0..N
+          const idx = Math.min(N-1, Math.floor(pf));
+          for(let i=0;i<N;i++){
+            const d = pf - 0.5 - i;                 // 0 when chapter centered
+            const v = Math.max(0, 1 - Math.abs(d) * 1.5);
+            chs[i].style.opacity = v;
+            chs[i].style.transform = `translateY(calc(-50% + ${(-d*46).toFixed(1)}px))`;
+            chs[i].classList.toggle('on', i===idx);
+            if(photos[i]) photos[i].style.opacity = (v * 0.7).toFixed(3);
+          }
+          if(beamFill) beamFill.style.height = (prog*100).toFixed(2) + '%';
+          dots.forEach((dd,i)=>dd.classList.toggle('on', i<=idx));
+        }
+      }
+      requestAnimationFrame(rdFrame);
+    };
+    requestAnimationFrame(rdFrame);
+  }
+  const liLb = document.getElementById('liLightbox');
+  const liLbImg = document.getElementById('liLbImg');
+  const liCloseLb = ()=>{ liLb.classList.remove('open'); liLbImg.src = ''; };
+  document.getElementById('liNews').addEventListener('click', (e)=>{
+    const c = e.target.closest('.li-news-card');
+    if(c){ liLbImg.src = c.dataset.limg; liLbImg.alt = c.querySelector('img').alt; liLb.classList.add('open'); }
+  });
+  document.getElementById('liNews').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' || e.key === ' '){
+      const c = e.target.closest('.li-news-card');
+      if(c){ e.preventDefault(); liLbImg.src = c.dataset.limg; liLbImg.alt = c.querySelector('img').alt; liLb.classList.add('open'); }
+    }
+  });
+  document.getElementById('liLbClose').onclick = liCloseLb;
+  liLb.addEventListener('click', (e)=>{ if(e.target === liLb) liCloseLb(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && liLb.classList.contains('open')) liCloseLb(); });
   const doLogin = async ()=>{
     const btn = document.getElementById('loginBtn');
     btn.disabled = true; btn.textContent = 'جارٍ الدخول…';
@@ -2988,8 +3467,9 @@ async function showApplyPage(){
     </div>
     <div class="landing-inner" style="max-width:620px;">
       <div class="landing-hero" style="padding:10px 0 18px;">
-        <h1 style="font-size:28px;">انضم إلى كاكست</h1>
-        <div class="tag">عرّفنا بنفسك وأرفق سيرتك الذاتية — يصل ملفك مباشرة لفريق استقطاب الكفاءات.</div>
+        <span class="rd-join-kicker">/ JOIN KACST</span>
+        <h1>انضم إلى <span class="g">كاكست</span>.</h1>
+        <div class="tag">عرّفنا بنفسك وأرفق سيرتك الذاتية — يقرؤها النظام ويعبّئ بياناتك تلقائيًا.</div>
       </div>
 
       <div class="ap-progress"><div class="ap-bar" id="apBar"></div></div>
