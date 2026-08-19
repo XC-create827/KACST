@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   city            TEXT,
   salary_range    TEXT,
   closing_date    DATE,
+  eval_criteria   JSONB,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
