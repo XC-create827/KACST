@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>console.log("KACST build RD-20260819-3");</script>
+<script>console.log("KACST build RD-20260819-4");</script>
 <style>
   /* ============================================================
      DESIGN SYSTEM v3 — "aurora, refined"
@@ -1210,6 +1210,8 @@
 .landing .landing-inner{padding-top:110px;}
 .landing .landing-inner .landing-hero h1{font-size:clamp(30px,5vw,44px) !important;font-weight:900;color:#fff !important;}
 .landing .landing-inner .landing-hero h1 .g{color:#eef6fa;}
+.landing .ap-dob-row{display:flex;gap:8px;}
+.landing .ap-dob-row select{flex:1;min-width:0;}
 .landing .rd-join-kicker{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:2px;color:var(--rd-teal);display:block;margin-bottom:8px;}
 .landing .landing-inner .tag{color:var(--rd-mut) !important;}
 .landing .landing-inner .modal{background:var(--rd-card) !important;border:1px solid var(--rd-line) !important;border-radius:18px !important;box-shadow:0 30px 90px rgba(0,0,0,.45) !important;}
@@ -2416,6 +2418,21 @@ const SEN_KEY = {'مبتدئ':'sen_junior','متوسط':'sen_mid','كبير':'se
 function tSen(v){ return SEN_KEY[v] ? t(SEN_KEY[v]) : (v||''); }
 const DEG_KEY = {'ثانوية عامة':'deg_hs','دبلوم':'deg_diploma','بكالوريوس':'deg_bachelor','ماجستير':'deg_master','دكتوراه':'deg_phd','أخرى':'deg_other'};
 function tDeg(v){ return DEG_KEY[v] ? t(DEG_KEY[v]) : (v||''); }
+// Apply page: custom DOB dropdowns compose YYYY-MM-DD into the hidden #apDob
+// (Chromium renders native RTL date inputs with broken glyph order).
+function apDobSync(){
+  const gv = id => { const el = document.getElementById(id); return el ? parseInt(el.value, 10) || 0 : 0; };
+  const d = gv('apDobD'), m = gv('apDobM'), y = gv('apDobY');
+  const out = document.getElementById('apDob');
+  if(!out) return;
+  if(d && m && y){
+    const dim = new Date(y, m, 0).getDate();
+    if(d > dim){ document.getElementById('apDobD').value = ''; out.value = ''; return; }
+    out.value = y + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+  } else {
+    out.value = '';
+  }
+}
 function applyLang(l){
   LANG = (l==='ar') ? 'ar' : 'en';
   try{ localStorage.setItem('tad_lang', LANG); }catch(e){}
@@ -3565,8 +3582,15 @@ async function showApplyPage(){
           </div>
           <div class="field"><label>الاسم الكامل *</label><input type="text" id="apName"></div>
           <div class="field-row">
-            <div class="field"><label>تاريخ الميلاد</label><input type="date" id="apDob" style="direction:ltr;text-align:right;"></div>
-            <div class="field"><label>${t('m_candcity')}</label><input type="text" id="apCity" placeholder="الرياض"></div>
+            <div class="field"><label>تاريخ الميلاد</label>
+              <input type="hidden" id="apDob">
+              <div class="ap-dob-row">
+                <select id="apDobD" onchange="apDobSync()" aria-label="اليوم"><option value="">اليوم</option>${Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>
+                <select id="apDobM" onchange="apDobSync()" aria-label="الشهر"><option value="">الشهر</option>${['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((n,i)=>`<option value="${i+1}">${i+1} — ${n}</option>`).join('')}</select>
+                <select id="apDobY" onchange="apDobSync()" aria-label="السنة"><option value="">السنة</option>${(()=>{const yn=new Date().getFullYear();return Array.from({length:61},(_,i)=>`<option value="${yn-15-i}">${yn-15-i}</option>`).join('');})()}</select>
+              </div>
+            </div>
+            <div class="field"><label>المدينة</label><input type="text" id="apCity" placeholder="الرياض"></div>
           </div>
           <div class="field"><label>العنوان</label><input type="text" id="apAddress" placeholder="الحي، الشارع…"></div>
           <div class="field-row">
@@ -3581,8 +3605,8 @@ async function showApplyPage(){
 
         <div id="apStep2" style="display:none;">
           <div class="field-row">
-            <div class="field"><label>${t('m_spec')}</label><input type="text" id="apSpec" placeholder="مثال: علوم حاسب، هندسة صناعية…"></div>
-            <div class="field"><label>${t('m_degree')}</label>
+            <div class="field"><label>التخصص</label><input type="text" id="apSpec" placeholder="مثال: علوم حاسب، هندسة صناعية…"></div>
+            <div class="field"><label>الدرجة العلمية</label>
               <select id="apDegree">
                 <option value="">— اختر —</option>
                 <option>ثانوية عامة</option><option>دبلوم</option><option>بكالوريوس</option>
