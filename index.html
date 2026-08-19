@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>console.log("KACST build RD-20260819-4");</script>
+<script>console.log("KACST build RD-20260819-5");</script>
 <style>
   /* ============================================================
      DESIGN SYSTEM v3 — "aurora, refined"
@@ -1164,11 +1164,11 @@
 .landing .rd-impact h4{margin:0 0 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;color:var(--sc);font-weight:600;}
 .landing .rd-impact div{color:#d7e4ee;font-size:13.5px;line-height:1.9;margin-bottom:8px;}
 .landing .rd-impact div::before{content:"✦";color:var(--sc);margin-inline-end:8px;font-size:11px;}
-.landing .rd-sec-art{display:flex;align-items:center;justify-content:center;padding-top:40px;position:relative;}
-.landing .rd-3d{width:min(340px,80%);aspect-ratio:1;display:none;}
-.landing .rd-sec-art.has3d .rd-3d{display:block;}
-.landing .rd-sec-art.has3d svg{display:none;}
-.landing .rd-sec-art svg{width:min(240px,60%);height:auto;stroke:var(--sc);opacity:.9;}
+.landing .rd-sec-art{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:18px;padding-top:40px;}
+.landing .rd-sec-vm{width:100%;background:var(--rd-card);border:1px solid var(--rd-line);border-inline-start:3px solid var(--sc);border-radius:12px;padding:14px 18px;}
+.landing .rd-sec-vm h5{margin:0 0 6px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--sc);font-weight:600;}
+.landing .rd-sec-vm p{margin:0;color:#c8d9e6;font-size:13px;line-height:2;}
+.landing .rd-sec-art svg{width:min(180px,50%);height:auto;stroke:var(--sc);opacity:.9;}
 
 /* ---- news (restyle existing li-news markup) ---- */
 .landing .li-news-slide{background:var(--rd-bg2);border-top:1px solid var(--rd-line);padding:90px 0 !important;min-height:0 !important;display:block !important;}
@@ -3158,19 +3158,19 @@ function showLogin(){
     </section>
 
     ${[
-      {n:'01',name:'الصحة',c:'#7d2ef0',fig:'dna',desc:'التقنية الحيوية والحلول الصحية المتقدمة لجودة حياة أفضل للإنسان.',
+      {n:'01',name:'الصحة',c:'#7d2ef0',v:'صحة إنسان أفضل بعلوم وتقنيات سعودية رائدة.',m:'تطوير التقنية الحيوية والأدوية واللقاحات والأجهزة الطبية، وتوطين الصناعات الصحية بالشراكة مع القطاعين الحكومي والخاص.',desc:'التقنية الحيوية والحلول الصحية المتقدمة لجودة حياة أفضل للإنسان.',
        subs:[['التقنية الحيوية والجينوم','أبحاث الجينوم والعلاجات الحيوية للأمراض ذات الأولوية الوطنية.'],['الأدوية واللقاحات','تطوير وتوطين صناعة الأدوية واللقاحات والمستحضرات الحيوية.'],['الأجهزة والحلول الطبية','تقنيات تشخيصية وعلاجية متقدمة بشراكات مع المنظومة الصحية.']],
        impact:['علاجات وحلول صحية موطّنة','شراكات بحثية مع المنظومة الصحية','شركات ناشئة في التقنية الحيوية'],
        art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 52h18l7-20 12 40 9-28 5 8h33"/><circle cx="50" cy="16" r="8"/></svg>'},
-      {n:'02',name:'البيئة والاستدامة',c:'#00b25a',fig:'drop',desc:'حلول المياه والبيئة والزراعة لمواجهة تحديات المناخ وتأمين الموارد.',
+      {n:'02',name:'البيئة والاستدامة',c:'#00b25a',v:'بيئة مستدامة وموارد مؤمّنة للأجيال القادمة.',m:'ابتكار حلول المياه والزراعة والبيئة، ومواجهة التحديات المناخية بتقنيات الاستشعار والمراقبة والمعالجة المتقدمة.',desc:'حلول المياه والبيئة والزراعة لمواجهة تحديات المناخ وتأمين الموارد.',
        subs:[['تقنيات المياه','التحلية والمعالجة وكفاءة الاستهلاك لمواجهة تحدي شح المياه.'],['البيئة والمناخ','الرصد البيئي والنمذجة المناخية وحلول خفض الانبعاثات.'],['الزراعة والأمن الغذائي','الزراعة الذكية وتقنيات الإنتاج المستدام في البيئات القاحلة.']],
        impact:['حلول وطنية لتحديات المياه والغذاء','رصد وبيانات بيئية دقيقة','دعم مستهدفات الاستدامة في رؤية 2030'],
        art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M50 10C38 30 26 44 26 60a24 24 0 0 0 48 0c0-16-12-30-24-50z"/><path d="M38 62a12 12 0 0 0 12 12"/></svg>'},
-      {n:'03',name:'الطاقة والصناعة',c:'#ff5526',fig:'gears',desc:'تقنيات الطاقة النظيفة والتصنيع المتقدم لتنويع الاقتصاد الوطني.',
+      {n:'03',name:'الطاقة والصناعة',c:'#ff5526',v:'ريادة صناعية وطاقة نظيفة تصنع اقتصادًا منافسًا.',m:'تطوير تقنيات الطاقة المتجددة والتخزين والتصنيع المتقدم والمواد الجديدة، ودعم توطين الصناعات الإستراتيجية.',desc:'تقنيات الطاقة النظيفة والتصنيع المتقدم لتنويع الاقتصاد الوطني.',
        subs:[['الطاقة المتجددة والتخزين','الخلايا الشمسية وتخزين الطاقة والمواد المتقدمة للطاقة النظيفة.'],['التصنيع المتقدم','الروبوتات والأتمتة والتصنيع الرقمي لرفع تنافسية الصناعة الوطنية.'],['المواد المتقدمة','مواد جديدة لقطاعات الطيران والبناء والصناعات الدقيقة.']],
        impact:['تقنيات موطّنة للصناعة السعودية','كفاءة أعلى للطاقة','منتجات وطنية ذات قيمة مضافة'],
        art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M55 8 25 56h20l-6 36 34-52H51z"/></svg>'},
-      {n:'04',name:'اقتصاديات المستقبل',c:'#2f6bff',fig:'sat',desc:'الذكاء الاصطناعي والتقنيات العميقة وبناء الاقتصاد المعرفي.',
+      {n:'04',name:'اقتصاديات المستقبل',c:'#2f6bff',v:'اقتصاد معرفي تقوده التقنيات العميقة والعقول السعودية.',m:'البحث والتطوير في الذكاء الاصطناعي وعلوم الفضاء والاتصالات المتقدمة وأشباه الموصلات، وتمكين الشركات الناشئة في التقنيات العميقة.',desc:'الذكاء الاصطناعي والتقنيات العميقة وبناء الاقتصاد المعرفي.',
        subs:[['الذكاء الاصطناعي والحوسبة','نماذج وتطبيقات الذكاء الاصطناعي والحوسبة المتقدمة.'],['الفضاء والاتصالات','التقنيات الفضائية واتصالات الجيل القادم وأشباه الموصلات.'],['ريادة التقنيات العميقة','احتضان وتسريع الشركات الناشئة عبر واحات الابتكار وبرامجها.']],
        impact:['تقنيات عميقة سعودية المنشأ','شركات ناشئة من مخرجات البحث','اقتصاد معرفي تنافسي عالميًا'],
        art:'<svg viewBox="0 0 100 100" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="30" y="30" width="40" height="40" rx="6"/><rect x="42" y="42" width="16" height="16" rx="3"/><path d="M40 30V16M60 30V16M40 84V70M60 84V70M30 40H16M30 60H16M84 40H70M84 60H70"/></svg>'}
@@ -3185,7 +3185,10 @@ function showLogin(){
           ${s.subs.map(x=>`<div class="rd-sub"><strong>${x[0]}</strong><span>${x[1]}</span></div>`).join('')}
           <div class="rd-impact"><h4>الأثر المستهدف</h4>${s.impact.map(o=>`<div>${o}</div>`).join('')}</div>
         </div>
-        <div class="rd-sec-art rd-rev" data-fig="${s.fig}" data-color="${s.c}">${s.art}<canvas class="rd-3d" width="360" height="360"></canvas></div>
+        <div class="rd-sec-art rd-rev">${s.art}
+          <div class="rd-sec-vm"><h5>الرؤية</h5><p>${s.v}</p></div>
+          <div class="rd-sec-vm"><h5>الرسالة</h5><p>${s.m}</p></div>
+        </div>
       </div>
     </section>`).join('')}
 
@@ -3334,144 +3337,6 @@ function showLogin(){
     requestAnimationFrame(rdFrame);
   }
 
-  // ---- Industry 3D figures (three.js, lazy). DNA / droplet / gears / satellite ----
-  (function rdFigures(){
-    const arts = Array.from(ov.querySelectorAll('.rd-sec-art[data-fig]'));
-    if(!arts.length) return;
-    const boot = ()=>{
-      if(!window.THREE) return;
-      arts.forEach(art=>{
-        try{
-          const canvas = art.querySelector('.rd-3d');
-          const color = art.dataset.color || '#2f6bff';
-          const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
-          renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
-          renderer.setSize(360, 360, false);
-          const scene = new THREE.Scene();
-          const cam = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-          cam.position.set(0, 0, 11);
-          const mat = ()=> new THREE.MeshBasicMaterial({color, wireframe:true, transparent:true, opacity:0.85});
-          const group = new THREE.Group();
-          const fig = art.dataset.fig;
-          if(fig === 'dna'){
-            const turns = 2.2, H = 7, R = 1.7, seg = 90;
-            const pts1 = [], pts2 = [];
-            for(let i=0;i<=seg;i++){
-              const t = i/seg, a = t * turns * Math.PI * 2;
-              pts1.push(new THREE.Vector3(Math.cos(a)*R, t*H - H/2, Math.sin(a)*R));
-              pts2.push(new THREE.Vector3(Math.cos(a+Math.PI)*R, t*H - H/2, Math.sin(a+Math.PI)*R));
-            }
-            group.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts1), 90, 0.16, 6), mat()));
-            group.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2), 90, 0.16, 6), mat()));
-            for(let i=0;i<=14;i++){
-              const t = i/14, a = t * turns * Math.PI * 2;
-              const p1 = new THREE.Vector3(Math.cos(a)*R, t*H - H/2, Math.sin(a)*R);
-              const p2 = new THREE.Vector3(Math.cos(a+Math.PI)*R, t*H - H/2, Math.sin(a+Math.PI)*R);
-              const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, p1.distanceTo(p2), 5), mat());
-              rung.position.copy(p1).add(p2).multiplyScalar(0.5);
-              rung.lookAt(p2); rung.rotateX(Math.PI/2);
-              group.add(rung);
-            }
-            group.rotation.z = 0.25;
-          } else if(fig === 'drop'){
-            const prof = [];
-            for(let i=0;i<=24;i++){
-              const t = i/24;                       // 0 bottom .. 1 top
-              const r = Math.sin(t*Math.PI*0.82) * 2.1 * (1 - t*0.55);
-              prof.push(new THREE.Vector2(Math.max(0.001, r), t*5.6 - 2.2));
-            }
-            group.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 26), mat()));
-            [2.6, 3.4, 4.2].forEach((rr, i)=>{
-              const ring = new THREE.Mesh(new THREE.TorusGeometry(rr, 0.045, 5, 60), mat());
-              ring.rotation.x = Math.PI/2; ring.position.y = -2.6 - i*0.22;
-              group.add(ring);
-            });
-          } else if(fig === 'gears'){
-            // Gears face the camera; teeth live in the XY plane, spin is in-plane (z).
-            const gear = (R, teeth, thick)=>{
-              const g = new THREE.Group();
-              const body = new THREE.Mesh(new THREE.CylinderGeometry(R, R, thick, 28), mat());
-              body.rotation.x = Math.PI/2; g.add(body);
-              const hub = new THREE.Mesh(new THREE.CylinderGeometry(R*0.32, R*0.32, thick*1.5, 14), mat());
-              hub.rotation.x = Math.PI/2; g.add(hub);
-              for(let i=0;i<teeth;i++){
-                const a = i/teeth * Math.PI*2;
-                const tooth = new THREE.Mesh(new THREE.BoxGeometry(R*0.30, R*0.26, thick), mat());
-                tooth.position.set(Math.cos(a)*(R+R*0.13), Math.sin(a)*(R+R*0.13), 0);
-                tooth.rotation.z = a;
-                g.add(tooth);
-              }
-              return g;
-            };
-            const g1 = gear(2.15, 12, 0.7); g1.position.set(-1.2, 1.1, 0);
-            const g2 = gear(1.4, 8, 0.7);  g2.position.set(1.9, -1.5, 0);
-            group.add(g1); group.add(g2);
-            group.userData.gears = [g1, g2];
-            group.userData.sway = true;
-          } else if(fig === 'sat'){
-            const body = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.7, 2.6), mat());
-            group.add(body);
-            [-1, 1].forEach(s=>{
-              const panel = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.6, 6, 3), mat());
-              panel.position.x = s * 3.1;
-              group.add(panel);
-              const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.3, 5), mat());
-              arm.rotation.z = Math.PI/2; arm.position.x = s * 1.35;
-              group.add(arm);
-            });
-            const dishArm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.9, 5), mat());
-            dishArm.position.y = 1.25; group.add(dishArm);
-            const dish = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.5, 18, 1, true), mat());
-            dish.position.y = 1.9; dish.rotation.x = Math.PI;
-            group.add(dish);
-            group.rotation.z = -0.18;
-          }
-          scene.add(group);
-          art.classList.add('has3d');
-          let mx = 0, my = 0;
-          const sect = art.closest('.rd-sector');
-          if(sect && window.matchMedia('(pointer:fine)').matches){
-            sect.addEventListener('mousemove', e=>{
-              const r = sect.getBoundingClientRect();
-              mx = ((e.clientX - r.left)/r.width - 0.5);
-              my = ((e.clientY - r.top)/r.height - 0.5);
-            });
-          }
-          const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-          let playing = false, raf = 0, t0 = performance.now();
-          const frame = (now)=>{
-            const t = (now - t0)/1000;
-            if(group.userData.sway){
-              group.rotation.y = Math.sin(t*0.5)*0.32 + mx*0.6;
-              group.rotation.x = Math.sin(t*0.3)*0.10 + my*0.35;
-            } else {
-              group.rotation.y = t*0.45 + mx*0.7;
-              group.rotation.x = Math.sin(t*0.30)*0.14 + my*0.4;
-            }
-            if(group.userData.gears){
-              group.userData.gears[0].rotation.z = t*0.55;
-              group.userData.gears[1].rotation.z = -t*0.85 + 0.22;
-            }
-            renderer.render(scene, cam);
-            if(playing) raf = requestAnimationFrame(frame);
-          };
-          if(reduced){ group.rotation.y = group.userData.sway ? 0.15 : 0.6; renderer.render(scene, cam); return; }
-          const io = new IntersectionObserver(en=>{
-            en.forEach(x=>{
-              if(x.isIntersecting && !playing){ playing = true; raf = requestAnimationFrame(frame); }
-              else if(!x.isIntersecting && playing){ playing = false; cancelAnimationFrame(raf); }
-            });
-          }, {threshold: 0.05});
-          io.observe(art);
-        }catch(e){ /* figure fails -> SVG fallback stays */ }
-      });
-    };
-    if(window.THREE){ boot(); return; }
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-    s.onload = boot;
-    document.head.appendChild(s);
-  })();
 
   const liLb = document.getElementById('liLightbox');
   const liLbImg = document.getElementById('liLbImg');
