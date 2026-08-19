@@ -9,7 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script>console.log("KACST build RD-20260819-1");</script>
+<script>console.log("KACST build RD-20260819-2");</script>
 <style>
   /* ============================================================
      DESIGN SYSTEM v3 — "aurora, refined"
@@ -3153,7 +3153,6 @@ function showLogin(){
           <div class="rd-stat" style="--sc:#e8b93e;"><b>21,700<sup>+</sup></b><small>مستفيد من البرامج التدريبية والتأهيلية</small></div>
         </div>
       </div>
-      <button class="rd-sound" id="liSound" aria-label="تشغيل الصوت" title="تشغيل / كتم الصوت">🔇</button>
     </section>
 
     <div class="rd-marquee" aria-hidden="true"><div class="rd-mq-track">
@@ -3314,15 +3313,6 @@ function showLogin(){
   const rdExplore = document.getElementById('rdExplore');
   if(rdExplore) rdExplore.onclick = ()=>{ const s=document.getElementById('rdSectors'); if(s) s.scrollIntoView({behavior:'smooth'}); };
   const liVideo = document.getElementById('liVideo');
-  const liSound = document.getElementById('liSound');
-  if(liSound && liVideo){
-    liSound.onclick = ()=>{
-      liVideo.muted = !liVideo.muted;
-      liSound.textContent = liVideo.muted ? '🔇' : '🔊';
-      liSound.setAttribute('aria-label', liVideo.muted ? 'تشغيل الصوت' : 'كتم الصوت');
-      if(!liVideo.muted) liVideo.play();
-    };
-  }
   const rdReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if(liVideo && rdReduced){ liVideo.removeAttribute('autoplay'); liVideo.pause(); }
   // ---- Storyline engine: one rAF ticker drives chapters, photos, beam, and reveals ----
